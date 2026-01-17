@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        color-scheme: light;
+    }
+
+    :root.dark {
+        color-scheme: dark;
+    }
+
+    body {
+        @apply bg-surface-100 text-surface-900 antialiased;
+    }
+
+    .dark body {
+        @apply bg-surface-900 text-surface-100;
+    }
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+@layer components {
+    .card {
+        @apply rounded-2xl bg-surface-50/90 p-6 shadow-sm backdrop-blur dark:bg-surface-800/80;
+    }
+
+    .nav-link {
+        @apply flex items-center gap-3 rounded-xl px-4 py-2 text-sm font-medium text-surface-600 transition hover:bg-surface-200/70 hover:text-surface-900 dark:text-surface-300 dark:hover:bg-surface-700/70 dark:hover:text-white;
+    }
+
+    .nav-link-active {
+        @apply bg-primary-100 text-primary-700 dark:bg-primary-700/30 dark:text-primary-200;
+    }
+}
