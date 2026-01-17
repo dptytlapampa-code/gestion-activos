@@ -20,14 +20,13 @@ RUN apt-get update \
     && docker-php-ext-install pdo_pgsql zip \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=node-build /app/public/build /var/www/app/public/build
+COPY --from=node-build /app/public/build /var/www/app-src/public/build
 
-COPY backend /var/www/app
+COPY backend /var/www/app-src
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
-    && composer install --no-dev --optimize-autoloader \
-    && php artisan storage:link \
-    && chown -R www-data:www-data /var/www/app
+    && composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --working-dir=/var/www/app-src \
+    && chown -R www-data:www-data /var/www/app-src
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
