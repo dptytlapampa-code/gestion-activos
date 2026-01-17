@@ -6,3 +6,4 @@
 /backend/storage/framework/views
 /backend/storage/logs
 /backend/public/storage
+/backend/.env
