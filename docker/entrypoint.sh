@@ -1,14 +1,21 @@
 #!/bin/sh
 set -e
 
-if [ ! -f /var/www/html/artisan ]; then
-    mkdir -p /var/www/html
-    cp -a /var/www/app/. /var/www/html/
+APP_DIR="/var/www/app"
+APP_SRC="/var/www/app-src"
+
+if [ ! -f "${APP_DIR}/artisan" ]; then
+    mkdir -p "${APP_DIR}"
+    cp -a "${APP_SRC}/." "${APP_DIR}/"
 fi
 
-chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+chown -R www-data:www-data "${APP_DIR}/storage" "${APP_DIR}/bootstrap/cache"
 
-cd /var/www/html
+cd "${APP_DIR}"
+
+if [ ! -L "${APP_DIR}/public/storage" ]; then
+    php artisan storage:link
+fi
 
 php artisan migrate --force --seed
 
