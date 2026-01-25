@@ -3,8 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    env_file:
-      - ./backend/.env
     volumes:
       - app-code:/var/www/app
     depends_on:
@@ -28,15 +26,13 @@ services:
   db:
     image: postgres:16.2
     environment:
-      POSTGRES_DB: gestion_activos
+      POSTGRES_DB: gestion_activos_prod
       POSTGRES_USER: gestion_activos
-      POSTGRES_PASSWORD: secret
-    ports:
-      - "5432:5432"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U gestion_activos -d gestion_activos"]
+      test: ["CMD-SHELL", "pg_isready -U gestion_activos -d gestion_activos_prod"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -45,9 +41,7 @@ services:
 
 volumes:
   db-data:
-    name: gestion_activos_db_data
   app-code:
-    name: gestion_activos_app_code
 
 networks:
   app-network:
