@@ -15,6 +15,7 @@ class User extends Authenticatable
         'email',
         'password',
         'theme',
+        'role',
     ];
 
     protected $hidden = [
@@ -28,5 +29,10 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function hasRole(string ...$roles): bool
+    {
+        return in_array($this->role, $roles, true);
     }
 }

@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth' => Illuminate\Auth\Middleware\Authenticate::class,
             'guest' => App\Http\Middleware\RedirectIfAuthenticated::class,
             'throttle' => Illuminate\Routing\Middleware\ThrottleRequests::class,
+            'role' => App\Http\Middleware\EnsureUserRole::class,
         ]);
 
         $middleware->validateCsrfTokens(except: []);
