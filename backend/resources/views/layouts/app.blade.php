@@ -15,6 +15,9 @@
             </div>
             <nav class="space-y-2">
                 <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'nav-link-active' : '' }}">Panel</a>
+                @if (auth()->user()->hasRole('superadmin', 'admin', 'tecnico'))
+                    <a href="{{ route('institutions.index') }}" class="nav-link {{ request()->routeIs('institutions.*') ? 'nav-link-active' : '' }}">Instituciones</a>
+                @endif
                 <a href="{{ route('profile.show') }}" class="nav-link {{ request()->routeIs('profile.show') ? 'nav-link-active' : '' }}">Perfil</a>
             </nav>
         </aside>
