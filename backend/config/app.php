@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\App;
-
 return [
     'name' => env('APP_NAME', 'Gestion Activos'),
     'env' => env('APP_ENV', 'local'),
@@ -14,27 +12,5 @@ return [
     'cipher' => 'AES-256-CBC',
     'maintenance' => [
         'driver' => 'file',
-    ],
-    'providers' => [
-        Illuminate\Auth\AuthServiceProvider::class,
-        Illuminate\Broadcasting\BroadcastServiceProvider::class,
-        Illuminate\Bus\BusServiceProvider::class,
-        Illuminate\Cache\CacheServiceProvider::class,
-        Illuminate\Foundation\Providers\FoundationServiceProvider::class,
-        Illuminate\Foundation\Providers\FormRequestServiceProvider::class,
-        Illuminate\Foundation\Providers\RouteServiceProvider::class,
-        Illuminate\Hashing\HashServiceProvider::class,
-        Illuminate\Pagination\PaginationServiceProvider::class,
-        Illuminate\Pipeline\PipelineServiceProvider::class,
-        Illuminate\Queue\QueueServiceProvider::class,
-        Illuminate\Redis\RedisServiceProvider::class,
-        Illuminate\Session\SessionServiceProvider::class,
-        Illuminate\Translation\TranslationServiceProvider::class,
-        Illuminate\Validation\ValidationServiceProvider::class,
-        Illuminate\View\ViewServiceProvider::class,
-        App\Providers\AppServiceProvider::class,
-    ],
-    'aliases' => [
-        'App' => App::class,
     ],
 ];
