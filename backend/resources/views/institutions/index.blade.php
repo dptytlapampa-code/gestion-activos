@@ -16,7 +16,7 @@
         @endif
     </div>
 
-    <div class="overflow-hidden rounded-2xl border border-surface-200/70 bg-white shadow-sm dark:border-surface-700/70 dark:bg-surface-900">
+    <div class="overflow-hidden rounded-2xl border border-surface-200/70 bg-surface-50 shadow-sm dark:border-surface-700/70 dark:bg-surface-900">
         <table class="min-w-full divide-y divide-surface-200/60 text-sm dark:divide-surface-700/60">
             <thead class="bg-surface-50 text-left text-xs font-semibold uppercase tracking-wide text-surface-500 dark:bg-surface-800 dark:text-surface-400">
                 <tr>

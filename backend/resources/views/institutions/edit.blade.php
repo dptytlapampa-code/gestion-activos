@@ -35,7 +35,7 @@
             </div>
         @endif
 
-        <div class="rounded-2xl border border-surface-200/70 bg-white p-6 shadow-sm dark:border-surface-700/70 dark:bg-surface-900">
+        <div class="rounded-2xl border border-surface-200/70 bg-surface-50 p-6 shadow-sm dark:border-surface-700/70 dark:bg-surface-900">
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <h3 class="text-lg font-semibold text-surface-800 dark:text-surface-100">Editar institución</h3>
@@ -58,7 +58,7 @@
             </div>
         </div>
 
-        <div class="rounded-2xl border border-surface-200/70 bg-white p-6 shadow-sm dark:border-surface-700/70 dark:bg-surface-900">
+        <div class="rounded-2xl border border-surface-200/70 bg-surface-50 p-6 shadow-sm dark:border-surface-700/70 dark:bg-surface-900">
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-lg font-semibold text-surface-800 dark:text-surface-100">Servicios y oficinas</h3>

@@ -24,7 +24,6 @@
             <p class="mt-2 text-sm text-surface-500 dark:text-surface-400">Elegí el modo de color que mejor se adapte a tu jornada.</p>
             <form method="POST" action="{{ route('profile.theme') }}" class="mt-4 flex items-center gap-3">
                 @csrf
-                @method('PATCH')
                 <input type="hidden" name="theme" value="{{ $user->theme === 'dark' ? 'light' : 'dark' }}">
                 <button type="submit" class="rounded-xl bg-primary-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600">
                     Cambiar a modo {{ $user->theme === 'dark' ? 'claro' : 'oscuro' }}

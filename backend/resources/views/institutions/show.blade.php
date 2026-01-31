@@ -5,7 +5,7 @@
 
 @section('content')
     <div class="space-y-6">
-        <div class="rounded-2xl border border-surface-200/70 bg-white p-6 shadow-sm dark:border-surface-700/70 dark:bg-surface-900">
+        <div class="rounded-2xl border border-surface-200/70 bg-surface-50 p-6 shadow-sm dark:border-surface-700/70 dark:bg-surface-900">
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <h3 class="text-xl font-semibold text-surface-800 dark:text-surface-100">{{ $institution->name }}</h3>
@@ -24,7 +24,7 @@
             </div>
         </div>
 
-        <div class="rounded-2xl border border-surface-200/70 bg-white p-6 shadow-sm dark:border-surface-700/70 dark:bg-surface-900">
+        <div class="rounded-2xl border border-surface-200/70 bg-surface-50 p-6 shadow-sm dark:border-surface-700/70 dark:bg-surface-900">
             <div class="mb-4 flex items-center justify-between">
                 <div>
                     <h3 class="text-lg font-semibold text-surface-800 dark:text-surface-100">Servicios y oficinas</h3>
@@ -48,7 +48,7 @@
 
                         <div class="mt-3 grid gap-3 md:grid-cols-2">
                             @forelse ($service->offices as $office)
-                                <div class="rounded-lg border border-surface-200/60 bg-white px-3 py-2 text-xs text-surface-600 dark:border-surface-700/60 dark:bg-surface-900 dark:text-surface-300">
+                                <div class="rounded-lg border border-surface-200/60 bg-surface-50 px-3 py-2 text-xs text-surface-600 dark:border-surface-700/60 dark:bg-surface-900 dark:text-surface-300">
                                     <div class="font-semibold text-surface-700 dark:text-surface-200">{{ $office->name }}</div>
                                     <div>Piso: {{ $office->floor ?? '—' }}</div>
                                 </div>
