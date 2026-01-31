@@ -1,6 +1,7 @@
 import defaultTheme from 'tailwindcss/defaultTheme';
 
 export default {
+    darkMode: 'class',
     content: [
         './resources/views/**/*.blade.php',
         './resources/js/**/*.js',

@@ -27,7 +27,7 @@ Route::get('/profile', [ProfileController::class, 'show'])
     ->middleware('auth')
     ->name('profile.show');
 
-Route::patch('/profile/theme', [ProfileController::class, 'updateTheme'])
+Route::post('/profile/theme', [ProfileController::class, 'updateTheme'])
     ->middleware('auth')
     ->name('profile.theme');
 
