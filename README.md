@@ -10,7 +10,6 @@
 ```bash
 git clone git@github.com:dptytlapampa-code/gestion-activos.git
 cd gestion-activos
-cp backend/.env.example backend/.env
 docker compose up -d --build
 ```
 
@@ -21,6 +20,15 @@ La aplicación queda disponible en `http://localhost:8080`.
 - **Puerto HTTP**: ajustá el mapeo en `docker-compose.yml` (servicio `web`).
 - **Base de datos**: cambiá las variables `DB_*` en `backend/.env`.
 - **Ejecución de migraciones/seeders**: seteá `RUN_MIGRATIONS=true` en `backend/.env`.
+
+## Acceso inicial
+
+Si activás `RUN_MIGRATIONS=true`, el seeder crea un usuario inicial para autenticación.
+
+- **Email**: `admin@gestion-activos.local`
+- **Password**: `password`
+
+La llave `APP_KEY` se genera automáticamente en el primer arranque del contenedor.
 
 ## Comandos útiles
 
