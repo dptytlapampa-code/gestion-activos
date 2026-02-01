@@ -14,8 +14,6 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'theme',
-        'role',
     ];
 
     protected $hidden = [
@@ -31,8 +29,4 @@ class User extends Authenticatable
         ];
     }
 
-    public function hasRole(string ...$roles): bool
-    {
-        return in_array($this->role, $roles, true);
-    }
 }

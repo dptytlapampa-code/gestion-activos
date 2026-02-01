@@ -15,7 +15,6 @@ class DatabaseSeeder extends Seeder
         ], [
             'name' => 'Administrador',
             'password' => Hash::make('password'),
-            'theme' => 'light',
         ]);
     }
 }
