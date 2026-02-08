@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\InstitutionController;
+use App\Http\Controllers\ServiceController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])
@@ -21,4 +22,7 @@ Route::get('/', function () {
 })->middleware('auth')->name('dashboard');
 
 Route::resource('institutions', InstitutionController::class)
+    ->except('show');
+
+Route::resource('services', ServiceController::class)
     ->except('show');

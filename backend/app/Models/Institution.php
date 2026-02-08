@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Institution extends Model
 {
@@ -22,5 +23,10 @@ class Institution extends Model
                 $institution->codigo = $institution->getOriginal('codigo');
             }
         });
+    }
+
+    public function services(): HasMany
+    {
+        return $this->hasMany(Service::class);
     }
 }
