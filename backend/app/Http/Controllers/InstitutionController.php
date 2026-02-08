@@ -37,6 +37,7 @@ class InstitutionController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'codigo' => ['required', 'string', 'max:20', 'unique:institutions,codigo'],
             'nombre' => ['required', 'string', 'max:255', 'unique:institutions,nombre'],
             'descripcion' => ['nullable', 'string', 'max:2000'],
         ]);
@@ -57,10 +58,20 @@ class InstitutionController extends Controller
 
     public function update(Request $request, Institution $institution): RedirectResponse
     {
-        $validated = $request->validate([
+        $rules = [
             'nombre' => ['required', 'string', 'max:255', 'unique:institutions,nombre,' . $institution->id],
             'descripcion' => ['nullable', 'string', 'max:2000'],
-        ]);
+        ];
+
+        if ($institution->codigo === null) {
+            $rules['codigo'] = ['required', 'string', 'max:20', 'unique:institutions,codigo'];
+        }
+
+        $validated = $request->validate($rules);
+
+        if ($institution->codigo !== null) {
+            unset($validated['codigo']);
+        }
 
         $institution->update($validated);
 

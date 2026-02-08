@@ -25,12 +25,27 @@
             @csrf
 
             <div>
+                <label for="codigo" class="text-sm font-semibold text-surface-700">Código institucional</label>
+                <input
+                    type="text"
+                    id="codigo"
+                    name="codigo"
+                    value="{{ old('codigo') }}"
+                    maxlength="20"
+                    class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                    required
+                />
+                <p class="mt-2 text-xs text-surface-500">Debe ser único y no se podrá modificar posteriormente.</p>
+            </div>
+
+            <div>
                 <label for="nombre" class="text-sm font-semibold text-surface-700">Nombre</label>
                 <input
                     type="text"
                     id="nombre"
                     name="nombre"
                     value="{{ old('nombre') }}"
+                    maxlength="255"
                     class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
                     required
                 />
@@ -42,6 +57,7 @@
                     id="descripcion"
                     name="descripcion"
                     rows="4"
+                    maxlength="2000"
                     class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
                 >{{ old('descripcion') }}</textarea>
             </div>

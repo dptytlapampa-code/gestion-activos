@@ -10,7 +10,17 @@ class Institution extends Model
     use HasFactory;
 
     protected $fillable = [
+        'codigo',
         'nombre',
         'descripcion',
     ];
+
+    protected static function booted(): void
+    {
+        static::updating(function (Institution $institution): void {
+            if ($institution->getOriginal('codigo') !== null && $institution->isDirty('codigo')) {
+                $institution->codigo = $institution->getOriginal('codigo');
+            }
+        });
+    }
 }
