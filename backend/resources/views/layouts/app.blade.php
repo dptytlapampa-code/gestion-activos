@@ -24,6 +24,9 @@
                 @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO))
                     <a href="{{ route('offices.index') }}" class="nav-link {{ request()->routeIs('offices.*') ? 'nav-link-active' : '' }}">Oficinas</a>
                 @endif
+                @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO))
+                    <a href="{{ route('equipos.index') }}" class="nav-link {{ request()->routeIs('equipos.*') ? 'nav-link-active' : '' }}">Equipos</a>
+                @endif
             </nav>
         </aside>
 

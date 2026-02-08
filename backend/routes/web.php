@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\EquipoController;
 use App\Http\Controllers\InstitutionController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\ServiceController;
@@ -29,4 +30,7 @@ Route::resource('services', ServiceController::class)
     ->except('show');
 
 Route::resource('offices', OfficeController::class)
+    ->except('show');
+
+Route::resource('equipos', EquipoController::class)
     ->except('show');
