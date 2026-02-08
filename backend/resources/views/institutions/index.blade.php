@@ -20,6 +20,7 @@
         <table class="min-w-full divide-y divide-surface-200">
             <thead class="bg-surface-50">
                 <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-surface-500">Código</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-surface-500">Nombre</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-surface-500">Descripción</th>
                     <th scope="col" class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wide text-surface-500">Acciones</th>
@@ -28,6 +29,7 @@
             <tbody class="divide-y divide-surface-100">
                 @forelse ($institutions as $institution)
                     <tr>
+                        <td class="px-6 py-4 text-sm font-semibold text-surface-900">{{ $institution->codigo ?? 'Pendiente' }}</td>
                         <td class="px-6 py-4 text-sm font-medium text-surface-900">{{ $institution->nombre }}</td>
                         <td class="px-6 py-4 text-sm text-surface-500">{{ $institution->descripcion ?? 'Sin descripción' }}</td>
                         <td class="px-6 py-4 text-right text-sm text-surface-500">
@@ -51,7 +53,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="3" class="px-6 py-10 text-center text-sm text-surface-500">
+                        <td colspan="4" class="px-6 py-10 text-center text-sm text-surface-500">
                             No hay instituciones registradas.
                         </td>
                     </tr>

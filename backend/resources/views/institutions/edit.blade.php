@@ -26,12 +26,35 @@
             @method('PUT')
 
             <div>
+                <label for="codigo" class="text-sm font-semibold text-surface-700">Código institucional</label>
+                <input
+                    type="text"
+                    id="codigo"
+                    name="codigo"
+                    value="{{ old('codigo', $institution->codigo) }}"
+                    maxlength="20"
+                    class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                    @if ($institution->codigo)
+                        readonly
+                    @else
+                        required
+                    @endif
+                />
+                @if ($institution->codigo)
+                    <p class="mt-2 text-xs text-surface-500">El código es inmutable una vez definido.</p>
+                @else
+                    <p class="mt-2 text-xs text-surface-500">Debe completar un código único para cerrar la institución.</p>
+                @endif
+            </div>
+
+            <div>
                 <label for="nombre" class="text-sm font-semibold text-surface-700">Nombre</label>
                 <input
                     type="text"
                     id="nombre"
                     name="nombre"
                     value="{{ old('nombre', $institution->nombre) }}"
+                    maxlength="255"
                     class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
                     required
                 />
@@ -43,6 +66,7 @@
                     id="descripcion"
                     name="descripcion"
                     rows="4"
+                    maxlength="2000"
                     class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
                 >{{ old('descripcion', $institution->descripcion) }}</textarea>
             </div>
