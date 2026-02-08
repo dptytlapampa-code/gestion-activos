@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\InstitutionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])
@@ -18,3 +19,6 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 Route::get('/', function () {
     return view('dashboard');
 })->middleware('auth')->name('dashboard');
+
+Route::resource('institutions', InstitutionController::class)
+    ->except('show');
