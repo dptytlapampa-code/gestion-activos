@@ -2,6 +2,9 @@
     $institutionSelected = old('institution_id', $equipo?->oficina?->service?->institution_id);
     $serviceSelected = old('service_id', $equipo?->oficina?->service_id);
     $officeSelected = old('oficina_id', $equipo?->oficina_id);
+    $institutionLabelSelected = old('institution_id')
+        ? optional($instituciones->firstWhere('id', (int) old('institution_id')))->nombre
+        : $equipo?->oficina?->service?->institution?->nombre;
 
     $estadoSeleccionado = old('estado', $equipo?->estado);
     $fechaIngreso = old('fecha_ingreso', $equipo?->fecha_ingreso?->format('Y-m-d'));
@@ -10,7 +13,6 @@
 <div
     class="rounded-2xl border border-slate-200 bg-white shadow-sm"
     x-data="{
-        instituciones: @js($instituciones),
         servicios: @js($servicios),
         oficinas: @js($oficinas),
         institution_id: @js((string) $institutionSelected),
@@ -60,23 +62,18 @@
             <h4 id="ubicacion-heading" class="text-sm font-semibold uppercase tracking-wide text-slate-700">Ubicación</h4>
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div>
+                <div
+                    @autocomplete-selected.window="if ($event.detail.name === 'institution_id') { institution_id = String($event.detail.value); onInstitutionChange(); }"
+                    @autocomplete-cleared.window="if ($event.detail.name === 'institution_id') { institution_id = ''; onInstitutionChange(); }"
+                >
                     <label for="institution_id" class="block text-sm font-medium text-slate-700">Institución <span class="text-red-600" aria-hidden="true">*</span></label>
-                    <select
-                        id="institution_id"
+                    <x-autocomplete
                         name="institution_id"
-                        x-model="institution_id"
-                        @change="onInstitutionChange"
-                        class="mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 @error('institution_id') border-red-400 focus:border-red-500 focus:ring-red-100 @else border-slate-300 @enderror"
-                        aria-invalid="@error('institution_id') true @else false @enderror"
-                        aria-describedby="@error('institution_id') institution_id_error @enderror"
-                        required
-                    >
-                        <option value="">Seleccione una institución</option>
-                        <template x-for="item in instituciones" :key="item.id">
-                            <option :value="String(item.id)" x-text="item.nombre"></option>
-                        </template>
-                    </select>
+                        endpoint="/api/search/institutions"
+                        placeholder="Buscar institución..."
+                        :value="$institutionSelected"
+                        :label="$institutionLabelSelected"
+                    />
                     @error('institution_id')
                         <p id="institution_id_error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
