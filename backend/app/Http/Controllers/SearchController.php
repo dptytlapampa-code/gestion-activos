@@ -32,8 +32,10 @@ class SearchController extends Controller
     public function searchServices(Request $request): JsonResponse
     {
         $q = $this->validatedQuery($request);
+        $institutionId = $request->integer('institution_id');
 
         $items = Service::query()
+            ->when($institutionId > 0, fn ($query) => $query->where('institution_id', $institutionId))
             ->where('nombre', 'ilike', "%{$q}%")
             ->orderBy('nombre')
             ->limit(20)
@@ -50,8 +52,10 @@ class SearchController extends Controller
     public function searchOffices(Request $request): JsonResponse
     {
         $q = $this->validatedQuery($request);
+        $serviceId = $request->integer('service_id');
 
         $items = Office::query()
+            ->when($serviceId > 0, fn ($query) => $query->where('service_id', $serviceId))
             ->where('nombre', 'ilike', "%{$q}%")
             ->orderBy('nombre')
             ->limit(20)

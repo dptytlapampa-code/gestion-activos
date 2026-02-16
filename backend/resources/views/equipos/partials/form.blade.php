@@ -2,9 +2,18 @@
     $institutionSelected = old('institution_id', $equipo?->oficina?->service?->institution_id);
     $serviceSelected = old('service_id', $equipo?->oficina?->service_id);
     $officeSelected = old('oficina_id', $equipo?->oficina_id);
+
     $institutionLabelSelected = old('institution_id')
         ? optional($instituciones->firstWhere('id', (int) old('institution_id')))->nombre
         : $equipo?->oficina?->service?->institution?->nombre;
+
+    $serviceLabelSelected = old('service_id')
+        ? optional($servicios->firstWhere('id', (int) old('service_id')))->nombre
+        : $equipo?->oficina?->service?->nombre;
+
+    $officeLabelSelected = old('oficina_id')
+        ? optional($oficinas->firstWhere('id', (int) old('oficina_id')))->nombre
+        : $equipo?->oficina?->nombre;
 
     $estadoSeleccionado = old('estado', $equipo?->estado);
     $fechaIngreso = old('fecha_ingreso', $equipo?->fecha_ingreso?->format('Y-m-d'));
@@ -13,24 +22,64 @@
 <div
     class="rounded-2xl border border-slate-200 bg-white shadow-sm"
     x-data="{
-        servicios: @js($servicios),
-        oficinas: @js($oficinas),
-        institution_id: @js((string) $institutionSelected),
-        service_id: @js((string) $serviceSelected),
-        oficina_id: @js((string) $officeSelected),
+        selectedInstitutionId: @js((string) ($institutionSelected ?? '')),
+        selectedServiceId: @js((string) ($serviceSelected ?? '')),
+        selectedOfficeId: @js((string) ($officeSelected ?? '')),
         isSubmitting: false,
-        get filteredServicios() {
-            return this.servicios.filter((servicio) => String(servicio.institution_id) === String(this.institution_id));
+        init() {
+            this.dispatchAutocompleteParams();
         },
-        get filteredOficinas() {
-            return this.oficinas.filter((oficina) => String(oficina.service_id) === String(this.service_id));
+        resetAutocomplete(name) {
+            window.dispatchEvent(new CustomEvent('autocomplete-reset', {
+                detail: { name },
+            }));
         },
-        onInstitutionChange() {
-            this.service_id = '';
-            this.oficina_id = '';
+        dispatchAutocompleteParams() {
+            window.dispatchEvent(new CustomEvent('autocomplete-set-params', {
+                detail: {
+                    name: 'service_id',
+                    params: {
+                        institution_id: this.selectedInstitutionId,
+                    },
+                },
+            }));
+
+            window.dispatchEvent(new CustomEvent('autocomplete-set-params', {
+                detail: {
+                    name: 'oficina_id',
+                    params: {
+                        service_id: this.selectedServiceId,
+                    },
+                },
+            }));
         },
-        onServiceChange() {
-            this.oficina_id = '';
+        handleInstitutionSelected(value) {
+            const nextInstitutionId = String(value ?? '');
+
+            if (nextInstitutionId === this.selectedInstitutionId) {
+                return;
+            }
+
+            this.selectedInstitutionId = nextInstitutionId;
+            this.selectedServiceId = '';
+            this.selectedOfficeId = '';
+
+            this.resetAutocomplete('service_id');
+            this.resetAutocomplete('oficina_id');
+            this.dispatchAutocompleteParams();
+        },
+        handleServiceSelected(value) {
+            const nextServiceId = String(value ?? '');
+
+            if (nextServiceId === this.selectedServiceId) {
+                return;
+            }
+
+            this.selectedServiceId = nextServiceId;
+            this.selectedOfficeId = '';
+
+            this.resetAutocomplete('oficina_id');
+            this.dispatchAutocompleteParams();
         },
     }"
 >
@@ -63,8 +112,8 @@
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div
-                    @autocomplete-selected.window="if ($event.detail.name === 'institution_id') { institution_id = String($event.detail.value); onInstitutionChange(); }"
-                    @autocomplete-cleared.window="if ($event.detail.name === 'institution_id') { institution_id = ''; onInstitutionChange(); }"
+                    @autocomplete-selected.window="if ($event.detail.name === 'institution_id') { handleInstitutionSelected($event.detail.value); }"
+                    @autocomplete-cleared.window="if ($event.detail.name === 'institution_id') { handleInstitutionSelected(''); }"
                 >
                     <label for="institution_id" class="block text-sm font-medium text-slate-700">Institución <span class="text-red-600" aria-hidden="true">*</span></label>
                     <x-autocomplete
@@ -73,50 +122,44 @@
                         placeholder="Buscar institución..."
                         :value="$institutionSelected"
                         :label="$institutionLabelSelected"
+                        x-ref="institution"
                     />
                     @error('institution_id')
                         <p id="institution_id_error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <div>
+                <div
+                    @autocomplete-selected.window="if ($event.detail.name === 'service_id') { handleServiceSelected($event.detail.value); }"
+                    @autocomplete-cleared.window="if ($event.detail.name === 'service_id') { handleServiceSelected(''); }"
+                >
                     <label for="service_id" class="block text-sm font-medium text-slate-700">Servicio <span class="text-red-600" aria-hidden="true">*</span></label>
-                    <select
-                        id="service_id"
+                    <x-autocomplete
                         name="service_id"
-                        x-model="service_id"
-                        @change="onServiceChange"
-                        class="mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 @error('service_id') border-red-400 focus:border-red-500 focus:ring-red-100 @else border-slate-300 @enderror"
-                        aria-invalid="@error('service_id') true @else false @enderror"
-                        aria-describedby="@error('service_id') service_id_error @enderror"
-                        required
-                    >
-                        <option value="">Seleccione un servicio</option>
-                        <template x-for="item in filteredServicios" :key="item.id">
-                            <option :value="String(item.id)" x-text="item.nombre"></option>
-                        </template>
-                    </select>
+                        endpoint="/api/search/services"
+                        placeholder="Buscar servicio..."
+                        :value="$serviceSelected"
+                        :label="$serviceLabelSelected"
+                        :params="['institution_id' => $institutionSelected]"
+                    />
                     @error('service_id')
                         <p id="service_id_error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <div>
+                <div
+                    @autocomplete-selected.window="if ($event.detail.name === 'oficina_id') { selectedOfficeId = String($event.detail.value); }"
+                    @autocomplete-cleared.window="if ($event.detail.name === 'oficina_id') { selectedOfficeId = ''; }"
+                >
                     <label for="oficina_id" class="block text-sm font-medium text-slate-700">Oficina <span class="text-red-600" aria-hidden="true">*</span></label>
-                    <select
-                        id="oficina_id"
+                    <x-autocomplete
                         name="oficina_id"
-                        x-model="oficina_id"
-                        class="mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 @error('oficina_id') border-red-400 focus:border-red-500 focus:ring-red-100 @else border-slate-300 @enderror"
-                        aria-invalid="@error('oficina_id') true @else false @enderror"
-                        aria-describedby="@error('oficina_id') oficina_id_error @enderror"
-                        required
-                    >
-                        <option value="">Seleccione una oficina</option>
-                        <template x-for="item in filteredOficinas" :key="item.id">
-                            <option :value="String(item.id)" x-text="item.nombre"></option>
-                        </template>
-                    </select>
+                        endpoint="/api/search/offices"
+                        placeholder="Buscar oficina..."
+                        :value="$officeSelected"
+                        :label="$officeLabelSelected"
+                        :params="['service_id' => $serviceSelected]"
+                    />
                     @error('oficina_id')
                         <p id="oficina_id_error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
