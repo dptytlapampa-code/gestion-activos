@@ -5,33 +5,30 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Equipo extends Model
 {
     use HasFactory;
-    use SoftDeletes;
 
     public const ESTADO_OPERATIVO = 'operativo';
-    public const ESTADO_EN_REPARACION = 'en_reparacion';
+    public const ESTADO_MANTENIMIENTO = 'mantenimiento';
     public const ESTADO_BAJA = 'baja';
 
     public const ESTADOS = [
         self::ESTADO_OPERATIVO,
-        self::ESTADO_EN_REPARACION,
+        self::ESTADO_MANTENIMIENTO,
         self::ESTADO_BAJA,
     ];
 
     protected $fillable = [
-        'office_id',
-        'tipo_equipo',
+        'tipo',
         'marca',
         'modelo',
-        'numero_serie',
+        'nro_serie',
         'bien_patrimonial',
-        'descripcion',
         'estado',
         'fecha_ingreso',
+        'oficina_id',
     ];
 
     protected function casts(): array
@@ -41,18 +38,8 @@ class Equipo extends Model
         ];
     }
 
-    public function office(): BelongsTo
+    public function oficina(): BelongsTo
     {
-        return $this->belongsTo(Office::class);
-    }
-
-    public function getServiceAttribute(): ?Service
-    {
-        return $this->office?->service;
-    }
-
-    public function getInstitutionAttribute(): ?Institution
-    {
-        return $this->office?->service?->institution;
+        return $this->belongsTo(Office::class, 'oficina_id');
     }
 }

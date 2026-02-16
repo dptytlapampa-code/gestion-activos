@@ -24,6 +24,6 @@ class Office extends Model
 
     public function equipos(): HasMany
     {
-        return $this->hasMany(Equipo::class);
+        return $this->hasMany(Equipo::class, 'oficina_id');
     }
 }

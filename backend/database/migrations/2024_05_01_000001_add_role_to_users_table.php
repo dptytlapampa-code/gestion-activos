@@ -9,13 +9,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('role')->default('admin')->after('password');
+            $table->string('role')->default('viewer')->after('password');
+            $table->foreignId('institution_id')->nullable()->after('role')->constrained('institutions')->nullOnDelete();
+            $table->index(['role', 'institution_id']);
         });
     }
 
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
+            $table->dropIndex(['role', 'institution_id']);
+            $table->dropConstrainedForeignId('institution_id');
             $table->dropColumn('role');
         });
     }
