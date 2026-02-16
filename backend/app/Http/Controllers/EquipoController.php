@@ -68,16 +68,18 @@ class EquipoController extends Controller
 
     public function store(StoreEquipoRequest $request): RedirectResponse
     {
-        Equipo::query()->create($request->safe()->only([
+        $data = $request->safe()->only([
             'tipo',
             'marca',
             'modelo',
-            'nro_serie',
             'bien_patrimonial',
             'estado',
             'fecha_ingreso',
             'oficina_id',
-        ]));
+        ]);
+        $data['numero_serie'] = $request->input('numero_serie');
+
+        Equipo::query()->create($data);
 
         return redirect()->route('equipos.index')->with('status', 'Equipo creado correctamente.');
     }
@@ -106,16 +108,18 @@ class EquipoController extends Controller
 
     public function update(UpdateEquipoRequest $request, Equipo $equipo): RedirectResponse
     {
-        $equipo->update($request->safe()->only([
+        $data = $request->safe()->only([
             'tipo',
             'marca',
             'modelo',
-            'nro_serie',
             'bien_patrimonial',
             'estado',
             'fecha_ingreso',
             'oficina_id',
-        ]));
+        ]);
+        $data['numero_serie'] = $request->input('numero_serie');
+
+        $equipo->update($data);
 
         return redirect()->route('equipos.index')->with('status', 'Equipo actualizado correctamente.');
     }

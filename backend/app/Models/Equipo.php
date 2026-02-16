@@ -24,7 +24,7 @@ class Equipo extends Model
         'tipo',
         'marca',
         'modelo',
-        'nro_serie',
+        'numero_serie',
         'bien_patrimonial',
         'estado',
         'fecha_ingreso',

@@ -43,7 +43,7 @@
                     <td class="px-4 py-3">{{ $equipo->marca }}</td>
                     <td class="px-4 py-3">{{ $equipo->modelo }}</td>
                     <td class="px-4 py-3">{{ ucfirst($equipo->estado) }}</td>
-                    <td class="px-4 py-3">{{ $equipo->nro_serie }}</td>
+                    <td class="px-4 py-3">{{ $equipo->numero_serie }}</td>
                     <td class="px-4 py-3">{{ $equipo->oficina?->nombre }}</td>
                     <td class="px-4 py-3">
                         <div class="flex gap-3">

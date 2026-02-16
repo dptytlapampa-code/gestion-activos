@@ -50,7 +50,7 @@ class EquipoModuleTest extends TestCase
             'tipo' => 'Monitor',
             'marca' => 'Samsung',
             'modelo' => 'M1',
-            'nro_serie' => 'SER-001',
+            'numero_serie' => 'SER-001',
             'bien_patrimonial' => 'BP-001',
             'estado' => Equipo::ESTADO_OPERATIVO,
             'fecha_ingreso' => '2025-01-20',
@@ -59,7 +59,7 @@ class EquipoModuleTest extends TestCase
         $this->post(route('equipos.store'), $payload)->assertRedirect(route('equipos.index'));
         $equipo = Equipo::firstOrFail();
 
-        $this->put(route('equipos.update', $equipo), array_merge($payload, ['modelo' => 'M2', 'nro_serie' => 'SER-002', 'bien_patrimonial' => 'BP-002']))
+        $this->put(route('equipos.update', $equipo), array_merge($payload, ['modelo' => 'M2', 'numero_serie' => 'SER-002', 'bien_patrimonial' => 'BP-002']))
             ->assertRedirect(route('equipos.index'));
 
         $this->get(route('equipos.show', $equipo))->assertOk()->assertSee('M2');
@@ -79,7 +79,7 @@ class EquipoModuleTest extends TestCase
                 'tipo' => $i % 2 === 0 ? 'Laptop' : 'Impresora',
                 'marca' => $i % 2 === 0 ? 'Dell' : 'HP',
                 'modelo' => 'M-'.$i,
-                'nro_serie' => 'NS-'.$i,
+                'numero_serie' => 'NS-'.$i,
                 'bien_patrimonial' => 'BP-'.$i,
                 'estado' => $i % 2 === 0 ? Equipo::ESTADO_OPERATIVO : Equipo::ESTADO_BAJA,
                 'fecha_ingreso' => now()->toDateString(),
@@ -134,7 +134,7 @@ class EquipoModuleTest extends TestCase
             'tipo' => 'Laptop',
             'marca' => 'Dell',
             'modelo' => 'XPS',
-            'nro_serie' => $serie,
+            'numero_serie' => $serie,
             'bien_patrimonial' => $bien,
             'estado' => Equipo::ESTADO_OPERATIVO,
             'fecha_ingreso' => now()->toDateString(),

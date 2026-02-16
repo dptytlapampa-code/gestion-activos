@@ -158,10 +158,10 @@
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                    <label for="nro_serie" class="block text-sm font-medium text-slate-700">Número de serie <span class="text-red-600" aria-hidden="true">*</span></label>
-                    <input id="nro_serie" name="nro_serie" type="text" value="{{ old('nro_serie', $equipo?->nro_serie) }}" class="mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 @error('nro_serie') border-red-400 focus:border-red-500 focus:ring-red-100 @else border-slate-300 @enderror" aria-invalid="@error('nro_serie') true @else false @enderror" aria-describedby="@error('nro_serie') nro_serie_error @enderror" required />
-                    @error('nro_serie')
-                        <p id="nro_serie_error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <label for="numero_serie" class="block text-sm font-medium text-slate-700">Número de serie <span class="text-red-600" aria-hidden="true">*</span></label>
+                    <input id="numero_serie" name="numero_serie" type="text" value="{{ old('numero_serie', $equipo?->numero_serie) }}" class="mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 @error('numero_serie') border-red-400 focus:border-red-500 focus:ring-red-100 @else border-slate-300 @enderror" aria-invalid="@error('numero_serie') true @else false @enderror" aria-describedby="@error('numero_serie') numero_serie_error @enderror" required />
+                    @error('numero_serie')
+                        <p id="numero_serie_error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 
