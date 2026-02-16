@@ -4,6 +4,7 @@
     'placeholder' => 'Buscar...',
     'value' => null,
     'label' => null,
+    'params' => [],
 ])
 
 @php
@@ -12,7 +13,7 @@
 @endphp
 
 <div
-    class="relative"
+    {{ $attributes->merge(['class' => 'relative']) }}
     x-data="{
         query: @js((string) ($current_label ?? '')),
         selected_id: @js($current_value !== null ? (string) $current_value : ''),
@@ -22,6 +23,39 @@
         is_loading: false,
         debounce_timer: null,
         min_chars: 2,
+        extra_params: @js($params),
+        init() {
+            window.addEventListener('autocomplete-set-params', (event) => {
+                if (event.detail?.name !== @js($name)) {
+                    return;
+                }
+
+                this.extra_params = event.detail?.params ?? {};
+            });
+
+            window.addEventListener('autocomplete-reset', (event) => {
+                if (event.detail?.name !== @js($name)) {
+                    return;
+                }
+
+                this.resetAutocomplete();
+            });
+        },
+        sanitizedParams() {
+            if (!this.extra_params || typeof this.extra_params !== 'object') {
+                return {};
+            }
+
+            return Object.entries(this.extra_params).reduce((carry, [key, value]) => {
+                if (value === null || value === undefined || value === '') {
+                    return carry;
+                }
+
+                carry[key] = value;
+
+                return carry;
+            }, {});
+        },
         async search() {
             if (this.debounce_timer) {
                 clearTimeout(this.debounce_timer);
@@ -37,7 +71,12 @@
                 this.is_loading = true;
 
                 try {
-                    const response = await fetch(`${@js($endpoint)}?q=${encodeURIComponent(this.query.trim())}`, {
+                    const searchParams = new URLSearchParams({
+                        q: this.query.trim(),
+                        ...this.sanitizedParams(),
+                    });
+
+                    const response = await fetch(`${@js($endpoint)}?${searchParams.toString()}`, {
                         headers: {
                             'Accept': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest',
@@ -88,6 +127,12 @@
                     name: @js($name),
                 },
             }));
+        },
+        resetAutocomplete() {
+            this.query = '';
+            this.results = [];
+            this.is_open = false;
+            this.clearSelection();
         },
     }"
     @click.outside="is_open = false"
