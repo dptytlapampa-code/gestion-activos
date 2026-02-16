@@ -34,7 +34,7 @@ class EquipoController extends Controller
         $equiposQuery = Equipo::query()->with(['oficina.service.institution', 'tipoEquipo']);
 
         if ($user->hasRole(User::ROLE_ADMIN)) {
-            $equiposQuery->whereHas('oficina.service', function ($query) use ($user) {
+            $equiposQuery->whereHas('oficina.service', function ($query) use ($user): void {
                 $query->where('institution_id', $user->institution_id);
             });
         }
@@ -86,16 +86,21 @@ class EquipoController extends Controller
 
         $equipo = Equipo::query()->create($data);
 
-        $ubicacionDestino = $this->mapOfficeLocation($equipo->oficina()->with('service.institution')->first());
+        $oficinaDestino = Office::query()
+            ->with('service.institution')
+            ->find($equipo->oficina_id);
+
+        $ubicacionDestino = $this->mapOfficeLocation($oficinaDestino);
 
         Movimiento::query()->create([
             'equipo_id' => $equipo->id,
-            'usuario_id' => $request->user()?->id,
+            'user_id' => auth()->id(),
             'tipo_movimiento' => 'ingreso',
             'fecha' => now(),
             'institucion_destino_id' => $ubicacionDestino['institucion_id'],
             'servicio_destino_id' => $ubicacionDestino['servicio_id'],
             'oficina_destino_id' => $ubicacionDestino['oficina_id'],
+            'observacion' => 'Ingreso de equipo',
         ]);
 
         return redirect()->route('equipos.index')->with('status', 'Equipo creado correctamente.');
@@ -106,7 +111,7 @@ class EquipoController extends Controller
         $equipo->load([
             'oficina.service.institution',
             'tipoEquipo',
-            'movimientos.usuario',
+            'movimientos.user',
         ]);
 
         $officeIds = $equipo->movimientos
@@ -148,7 +153,9 @@ class EquipoController extends Controller
     public function update(UpdateEquipoRequest $request, Equipo $equipo): RedirectResponse
     {
         $tipoEquipo = TipoEquipo::query()->findOrFail($request->integer('tipo_equipo_id'));
-        $oficinaOriginal = $equipo->oficina()->with('service.institution')->first();
+        $oficinaOriginal = Office::query()
+            ->with('service.institution')
+            ->find($equipo->oficina_id);
 
         $data = $request->safe()->only([
             'tipo_equipo_id',
@@ -166,11 +173,14 @@ class EquipoController extends Controller
 
         if ($equipo->wasChanged('oficina_id')) {
             $ubicacionOrigen = $this->mapOfficeLocation($oficinaOriginal);
-            $ubicacionDestino = $this->mapOfficeLocation($equipo->oficina()->with('service.institution')->first());
+            $oficinaDestino = Office::query()
+                ->with('service.institution')
+                ->find($equipo->oficina_id);
+            $ubicacionDestino = $this->mapOfficeLocation($oficinaDestino);
 
             Movimiento::query()->create([
                 'equipo_id' => $equipo->id,
-                'usuario_id' => $request->user()?->id,
+                'user_id' => auth()->id(),
                 'tipo_movimiento' => 'traslado',
                 'fecha' => now(),
                 'institucion_origen_id' => $ubicacionOrigen['institucion_id'],
@@ -179,6 +189,7 @@ class EquipoController extends Controller
                 'institucion_destino_id' => $ubicacionDestino['institucion_id'],
                 'servicio_destino_id' => $ubicacionDestino['servicio_id'],
                 'oficina_destino_id' => $ubicacionDestino['oficina_id'],
+                'observacion' => 'Traslado de ubicación',
             ]);
         }
 

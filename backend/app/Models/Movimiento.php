@@ -12,7 +12,7 @@ class Movimiento extends Model
 
     protected $fillable = [
         'equipo_id',
-        'usuario_id',
+        'user_id',
         'tipo_movimiento',
         'fecha',
         'institucion_origen_id',
@@ -36,8 +36,8 @@ class Movimiento extends Model
         return $this->belongsTo(Equipo::class);
     }
 
-    public function usuario(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'usuario_id');
+        return $this->belongsTo(User::class);
     }
 }
