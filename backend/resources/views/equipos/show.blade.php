@@ -8,11 +8,9 @@
     <div class="rounded-xl border border-slate-200 bg-white p-6">
         <div class="mb-4 flex items-center justify-between">
             <h3 class="text-lg font-semibold text-slate-900">Información del equipo</h3>
-            @can('update', $equipo)
-                <a href="{{ route('equipos.movimientos.create', $equipo) }}" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700">
-                    Registrar movimiento
-                </a>
-            @endcan
+            <a href="{{ route('equipos.edit', $equipo) }}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100">
+                Editar
+            </a>
         </div>
 
         <dl class="grid gap-4 md:grid-cols-2">
@@ -26,6 +24,41 @@
             <div><dt class="text-xs uppercase text-slate-500">Ubicación</dt><dd class="font-medium">{{ $equipo->oficina?->service?->institution?->nombre }} / {{ $equipo->oficina?->service?->nombre }} / {{ $equipo->oficina?->nombre }}</dd></div>
         </dl>
     </div>
+
+    @can('update', $equipo)
+        <div class="rounded-xl border border-slate-200 bg-white p-6">
+            <h3 class="mb-4 text-lg font-semibold text-slate-900">Registrar movimiento</h3>
+
+            <form method="POST" action="{{ route('equipos.movimientos.store', $equipo) }}" class="space-y-4">
+                @csrf
+
+                <div>
+                    <label for="tipo_movimiento" class="mb-1 block text-sm font-medium text-slate-700">Tipo de movimiento</label>
+                    <select id="tipo_movimiento" name="tipo_movimiento" required class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                        <option value="">Seleccionar...</option>
+                        <option value="mantenimiento" @selected(old('tipo_movimiento') === 'mantenimiento')>Mantenimiento</option>
+                        <option value="prestamo" @selected(old('tipo_movimiento') === 'prestamo')>Prestamo</option>
+                        <option value="baja" @selected(old('tipo_movimiento') === 'baja')>Baja</option>
+                    </select>
+                    @error('tipo_movimiento')
+                        <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="observacion" class="mb-1 block text-sm font-medium text-slate-700">Observación</label>
+                    <textarea id="observacion" name="observacion" rows="3" maxlength="2000" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">{{ old('observacion') }}</textarea>
+                    @error('observacion')
+                        <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700">
+                    Guardar
+                </button>
+            </form>
+        </div>
+    @endcan
 
     <div class="rounded-xl border border-slate-200 bg-white p-6">
         <h3 class="mb-4 text-lg font-semibold text-slate-900">Historial de movimientos</h3>
@@ -47,14 +80,20 @@
                         @php
                             $origen = $offices->get($movimiento->oficina_origen_id);
                             $destino = $offices->get($movimiento->oficina_destino_id);
+                            $origenTexto = $origen
+                                ? $origen->service?->institution?->nombre.' / '.$origen->service?->nombre.' / '.$origen->nombre
+                                : '-';
+                            $destinoTexto = $destino
+                                ? $destino->service?->institution?->nombre.' / '.$destino->service?->nombre.' / '.$destino->nombre
+                                : '-';
                         @endphp
                         <tr>
                             <td class="px-4 py-3 text-slate-700">{{ $movimiento->fecha?->format('d/m/Y H:i') }}</td>
                             <td class="px-4 py-3 font-medium text-slate-900">{{ ucfirst($movimiento->tipo_movimiento) }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $movimiento->usuario?->name ?? 'Sistema' }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $origen?->service?->institution?->nombre }} / {{ $origen?->service?->nombre }} / {{ $origen?->nombre }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $destino?->service?->institution?->nombre }} / {{ $destino?->service?->nombre }} / {{ $destino?->nombre }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $movimiento->observacion ?? '—' }}</td>
+                            <td class="px-4 py-3 text-slate-700">{{ $movimiento->user?->name ?? '-' }}</td>
+                            <td class="px-4 py-3 text-slate-700">{{ $origenTexto }}</td>
+                            <td class="px-4 py-3 text-slate-700">{{ $destinoTexto }}</td>
+                            <td class="px-4 py-3 text-slate-700">{{ $movimiento->observacion ?? '-' }}</td>
                         </tr>
                     @empty
                         <tr>

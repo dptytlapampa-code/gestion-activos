@@ -35,7 +35,6 @@ Route::middleware('auth')->group(function (): void {
     ]);
 
     Route::resource('equipos', EquipoController::class);
-    Route::get('equipos/{equipo}/movimientos/create', [MovimientoController::class, 'create'])->name('equipos.movimientos.create');
     Route::post('equipos/{equipo}/movimientos', [MovimientoController::class, 'store'])->name('equipos.movimientos.store');
 
     Route::prefix('api/search')->group(function (): void {
