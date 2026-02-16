@@ -6,6 +6,7 @@ use App\Http\Controllers\InstitutionController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\TipoEquipoController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])
@@ -28,6 +29,9 @@ Route::middleware('auth')->group(function (): void {
     Route::resource('institutions', InstitutionController::class)->except('show');
     Route::resource('services', ServiceController::class)->except('show');
     Route::resource('offices', OfficeController::class)->except('show');
+    Route::resource('tipos-equipos', TipoEquipoController::class)->parameters([
+        'tipos-equipos' => 'tipo_equipo',
+    ]);
 
     Route::resource('equipos', EquipoController::class);
 
@@ -38,3 +42,5 @@ Route::middleware('auth')->group(function (): void {
         Route::get('equipos', [SearchController::class, 'searchEquipos']);
     });
 });
+
+Route::get('/api/search/tipos-equipos', [SearchController::class, 'tiposEquipos'])->middleware('auth');

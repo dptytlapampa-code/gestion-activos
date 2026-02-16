@@ -172,10 +172,16 @@
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div>
-                    <label for="tipo" class="block text-sm font-medium text-slate-700">Tipo de equipo <span class="text-red-600" aria-hidden="true">*</span></label>
-                    <input id="tipo" name="tipo" type="text" value="{{ old('tipo', $equipo?->tipo) }}" class="mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 @error('tipo') border-red-400 focus:border-red-500 focus:ring-red-100 @else border-slate-300 @enderror" aria-invalid="@error('tipo') true @else false @enderror" aria-describedby="@error('tipo') tipo_error @enderror" required />
-                    @error('tipo')
-                        <p id="tipo_error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    <label for="tipo_equipo_id" class="block text-sm font-medium text-slate-700">Tipo de equipo <span class="text-red-600" aria-hidden="true">*</span></label>
+                    <x-autocomplete
+                        name="tipo_equipo_id"
+                        endpoint="/api/search/tipos-equipos"
+                        placeholder="Buscar tipo de equipo..."
+                        :value="old('tipo_equipo_id', $equipo->tipo_equipo_id ?? '')"
+                        :label="old('tipo_equipo_label', $equipo?->tipoEquipo?->nombre ?? '')"
+                    />
+                    @error('tipo_equipo_id')
+                        <p id="tipo_equipo_id_error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
 

@@ -7,8 +7,9 @@ use App\Http\Requests\UpdateEquipoRequest;
 use App\Models\Equipo;
 use App\Models\Institution;
 use App\Models\Office;
-use App\Models\User;
 use App\Models\Service;
+use App\Models\TipoEquipo;
+use App\Models\User;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,7 +30,7 @@ class EquipoController extends Controller
 
         $user = $request->user();
 
-        $equiposQuery = Equipo::query()->with('oficina.service.institution');
+        $equiposQuery = Equipo::query()->with(['oficina.service.institution', 'tipoEquipo']);
 
         if ($user->hasRole(User::ROLE_ADMIN)) {
             $equiposQuery->whereHas('oficina.service', function ($query) use ($user) {
@@ -68,8 +69,10 @@ class EquipoController extends Controller
 
     public function store(StoreEquipoRequest $request): RedirectResponse
     {
+        $tipoEquipo = TipoEquipo::query()->findOrFail($request->integer('tipo_equipo_id'));
+
         $data = $request->safe()->only([
-            'tipo',
+            'tipo_equipo_id',
             'marca',
             'modelo',
             'bien_patrimonial',
@@ -77,6 +80,7 @@ class EquipoController extends Controller
             'fecha_ingreso',
             'oficina_id',
         ]);
+        $data['tipo'] = $tipoEquipo->nombre;
         $data['numero_serie'] = $request->input('numero_serie');
 
         Equipo::query()->create($data);
@@ -87,7 +91,7 @@ class EquipoController extends Controller
     public function show(Equipo $equipo): View
     {
         return view('equipos.show', [
-            'equipo' => $equipo->load('oficina.service.institution'),
+            'equipo' => $equipo->load(['oficina.service.institution', 'tipoEquipo']),
         ]);
     }
 
@@ -98,7 +102,7 @@ class EquipoController extends Controller
         $oficinas = Office::query()->orderBy('nombre')->get(['id', 'nombre', 'service_id']);
 
         return view('equipos.edit', [
-            'equipo' => $equipo->load('oficina.service.institution'),
+            'equipo' => $equipo->load(['oficina.service.institution', 'tipoEquipo']),
             'estados' => Equipo::ESTADOS,
             'instituciones' => $instituciones,
             'servicios' => $servicios,
@@ -108,8 +112,10 @@ class EquipoController extends Controller
 
     public function update(UpdateEquipoRequest $request, Equipo $equipo): RedirectResponse
     {
+        $tipoEquipo = TipoEquipo::query()->findOrFail($request->integer('tipo_equipo_id'));
+
         $data = $request->safe()->only([
-            'tipo',
+            'tipo_equipo_id',
             'marca',
             'modelo',
             'bien_patrimonial',
@@ -117,6 +123,7 @@ class EquipoController extends Controller
             'fecha_ingreso',
             'oficina_id',
         ]);
+        $data['tipo'] = $tipoEquipo->nombre;
         $data['numero_serie'] = $request->input('numero_serie');
 
         $equipo->update($data);

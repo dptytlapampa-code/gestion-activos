@@ -25,6 +25,9 @@
                     <a href="{{ route('offices.index') }}" class="nav-link {{ request()->routeIs('offices.*') ? 'nav-link-active' : '' }}">Oficinas</a>
                 @endif
                 @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO, \App\Models\User::ROLE_VIEWER))
+                    <a href="{{ route('tipos-equipos.index') }}" class="nav-link {{ request()->routeIs('tipos-equipos.*') ? 'nav-link-active' : '' }}">Tipos de equipo</a>
+                @endif
+                @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO, \App\Models\User::ROLE_VIEWER))
                     <a href="{{ route('equipos.index') }}" class="nav-link {{ request()->routeIs('equipos.*') ? 'nav-link-active' : '' }}">Equipos</a>
                 @endif
             </nav>
@@ -34,7 +37,7 @@
             <header class="flex items-center justify-between border-b border-surface-200/70 bg-surface-50/80 px-8 py-4 backdrop-blur">
                 <div>
                     <h2 class="text-lg font-semibold text-surface-800">@yield('header', 'Panel')</h2>
-                    <p class="text-sm text-surface-500">{{ now()->translatedFormat('l, j \d\e F Y') }}</p>
+                    <p class="text-sm text-surface-500">{{ now()->translatedFormat('l, j \\d\\e F Y') }}</p>
                 </div>
                 <div class="flex items-center gap-4">
                     <span class="text-sm text-surface-500">{{ auth()->user()->name }}</span>

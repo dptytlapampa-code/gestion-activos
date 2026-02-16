@@ -22,6 +22,7 @@ class Equipo extends Model
 
     protected $fillable = [
         'tipo',
+        'tipo_equipo_id',
         'marca',
         'modelo',
         'numero_serie',
@@ -41,5 +42,10 @@ class Equipo extends Model
     public function oficina(): BelongsTo
     {
         return $this->belongsTo(Office::class, 'oficina_id');
+    }
+
+    public function tipoEquipo(): BelongsTo
+    {
+        return $this->belongsTo(TipoEquipo::class);
     }
 }
