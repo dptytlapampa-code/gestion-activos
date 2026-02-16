@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\EquipoController;
 use App\Http\Controllers\InstitutionController;
+use App\Http\Controllers\MovimientoController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ServiceController;
@@ -34,6 +35,8 @@ Route::middleware('auth')->group(function (): void {
     ]);
 
     Route::resource('equipos', EquipoController::class);
+    Route::get('equipos/{equipo}/movimientos/create', [MovimientoController::class, 'create'])->name('equipos.movimientos.create');
+    Route::post('equipos/{equipo}/movimientos', [MovimientoController::class, 'store'])->name('equipos.movimientos.store');
 
     Route::prefix('api/search')->group(function (): void {
         Route::get('institutions', [SearchController::class, 'searchInstitutions']);

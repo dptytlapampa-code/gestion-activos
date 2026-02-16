@@ -6,6 +6,7 @@ use App\Http\Requests\StoreEquipoRequest;
 use App\Http\Requests\UpdateEquipoRequest;
 use App\Models\Equipo;
 use App\Models\Institution;
+use App\Models\Movimiento;
 use App\Models\Office;
 use App\Models\Service;
 use App\Models\TipoEquipo;
@@ -83,15 +84,49 @@ class EquipoController extends Controller
         $data['tipo'] = $tipoEquipo->nombre;
         $data['numero_serie'] = $request->input('numero_serie');
 
-        Equipo::query()->create($data);
+        $equipo = Equipo::query()->create($data);
+
+        $ubicacionDestino = $this->mapOfficeLocation($equipo->oficina()->with('service.institution')->first());
+
+        Movimiento::query()->create([
+            'equipo_id' => $equipo->id,
+            'usuario_id' => $request->user()?->id,
+            'tipo_movimiento' => 'ingreso',
+            'fecha' => now(),
+            'institucion_destino_id' => $ubicacionDestino['institucion_id'],
+            'servicio_destino_id' => $ubicacionDestino['servicio_id'],
+            'oficina_destino_id' => $ubicacionDestino['oficina_id'],
+        ]);
 
         return redirect()->route('equipos.index')->with('status', 'Equipo creado correctamente.');
     }
 
     public function show(Equipo $equipo): View
     {
+        $equipo->load([
+            'oficina.service.institution',
+            'tipoEquipo',
+            'movimientos.usuario',
+        ]);
+
+        $officeIds = $equipo->movimientos
+            ->flatMap(fn (Movimiento $movimiento) => [
+                $movimiento->oficina_origen_id,
+                $movimiento->oficina_destino_id,
+            ])
+            ->filter()
+            ->unique()
+            ->values();
+
+        $offices = Office::query()
+            ->with('service.institution')
+            ->whereIn('id', $officeIds)
+            ->get()
+            ->keyBy('id');
+
         return view('equipos.show', [
-            'equipo' => $equipo->load(['oficina.service.institution', 'tipoEquipo']),
+            'equipo' => $equipo,
+            'offices' => $offices,
         ]);
     }
 
@@ -113,6 +148,7 @@ class EquipoController extends Controller
     public function update(UpdateEquipoRequest $request, Equipo $equipo): RedirectResponse
     {
         $tipoEquipo = TipoEquipo::query()->findOrFail($request->integer('tipo_equipo_id'));
+        $oficinaOriginal = $equipo->oficina()->with('service.institution')->first();
 
         $data = $request->safe()->only([
             'tipo_equipo_id',
@@ -128,6 +164,24 @@ class EquipoController extends Controller
 
         $equipo->update($data);
 
+        if ($equipo->wasChanged('oficina_id')) {
+            $ubicacionOrigen = $this->mapOfficeLocation($oficinaOriginal);
+            $ubicacionDestino = $this->mapOfficeLocation($equipo->oficina()->with('service.institution')->first());
+
+            Movimiento::query()->create([
+                'equipo_id' => $equipo->id,
+                'usuario_id' => $request->user()?->id,
+                'tipo_movimiento' => 'traslado',
+                'fecha' => now(),
+                'institucion_origen_id' => $ubicacionOrigen['institucion_id'],
+                'servicio_origen_id' => $ubicacionOrigen['servicio_id'],
+                'oficina_origen_id' => $ubicacionOrigen['oficina_id'],
+                'institucion_destino_id' => $ubicacionDestino['institucion_id'],
+                'servicio_destino_id' => $ubicacionDestino['servicio_id'],
+                'oficina_destino_id' => $ubicacionDestino['oficina_id'],
+            ]);
+        }
+
         return redirect()->route('equipos.index')->with('status', 'Equipo actualizado correctamente.');
     }
 
@@ -136,5 +190,17 @@ class EquipoController extends Controller
         $equipo->delete();
 
         return redirect()->route('equipos.index')->with('status', 'Equipo eliminado correctamente.');
+    }
+
+    /**
+     * @return array{institucion_id:int|null,servicio_id:int|null,oficina_id:int|null}
+     */
+    private function mapOfficeLocation(?Office $office): array
+    {
+        return [
+            'institucion_id' => $office?->service?->institution?->id,
+            'servicio_id' => $office?->service?->id,
+            'oficina_id' => $office?->id,
+        ];
     }
 }
