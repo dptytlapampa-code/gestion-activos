@@ -6,6 +6,7 @@ use App\Models\Equipo;
 use App\Models\Institution;
 use App\Models\Office;
 use App\Models\Service;
+use App\Models\TipoEquipo;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -89,6 +90,19 @@ class SearchController extends Controller
             ->values();
 
         return response()->json($items);
+    }
+
+    public function tiposEquipos(Request $request): JsonResponse
+    {
+        $q = $request->get('q');
+
+        return response()->json(
+            TipoEquipo::query()
+                ->where('nombre', 'ILIKE', "%{$q}%")
+                ->orderBy('nombre')
+                ->limit(20)
+                ->get(['id', 'nombre as label'])
+        );
     }
 
     private function validatedQuery(Request $request): string

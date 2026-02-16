@@ -6,6 +6,7 @@ use App\Models\Equipo;
 use App\Models\Institution;
 use App\Models\Office;
 use App\Models\Service;
+use App\Models\TipoEquipo;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -19,7 +20,8 @@ class EquipoModuleTest extends TestCase
         $hospital = Institution::create(['nombre' => 'Hospital Norte']);
         $service = Service::create(['nombre' => 'Clínica', 'institution_id' => $hospital->id]);
         $office = Office::create(['nombre' => 'Oficina 1', 'service_id' => $service->id]);
-        $equipo = $this->crearEquipo($office);
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Laptop clínica']);
+        $equipo = $this->crearEquipo($office, $tipoEquipo);
 
         $viewer = $this->crearUsuario(User::ROLE_VIEWER);
         $viewer->institution_id = $hospital->id;
@@ -39,6 +41,7 @@ class EquipoModuleTest extends TestCase
         $institution = Institution::create(['nombre' => 'Hospital Central']);
         $service = Service::create(['nombre' => 'Laboratorio', 'institution_id' => $institution->id]);
         $office = Office::create(['nombre' => 'Oficina Lab', 'service_id' => $service->id]);
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Monitor']);
 
         $superadmin = $this->crearUsuario(User::ROLE_SUPERADMIN);
         $this->actingAs($superadmin);
@@ -47,7 +50,7 @@ class EquipoModuleTest extends TestCase
             'institution_id' => $institution->id,
             'service_id' => $service->id,
             'oficina_id' => $office->id,
-            'tipo' => 'Monitor',
+            'tipo_equipo_id' => $tipoEquipo->id,
             'marca' => 'Samsung',
             'modelo' => 'M1',
             'numero_serie' => 'SER-001',
@@ -73,10 +76,15 @@ class EquipoModuleTest extends TestCase
         $inst = Institution::create(['nombre' => 'Hospital Sur']);
         $service = Service::create(['nombre' => 'Imágenes', 'institution_id' => $inst->id]);
         $office = Office::create(['nombre' => 'Oficina RX', 'service_id' => $service->id]);
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Laptop']);
+        $tipoEquipo2 = TipoEquipo::create(['nombre' => 'Impresora']);
 
         for ($i = 1; $i <= 20; $i++) {
+            $selectedTipoEquipo = $i % 2 === 0 ? $tipoEquipo : $tipoEquipo2;
+
             Equipo::create([
-                'tipo' => $i % 2 === 0 ? 'Laptop' : 'Impresora',
+                'tipo' => $selectedTipoEquipo->nombre,
+                'tipo_equipo_id' => $selectedTipoEquipo->id,
                 'marca' => $i % 2 === 0 ? 'Dell' : 'HP',
                 'modelo' => 'M-'.$i,
                 'numero_serie' => 'NS-'.$i,
@@ -105,8 +113,10 @@ class EquipoModuleTest extends TestCase
         $officeA = Office::create(['nombre' => 'Oficina A', 'service_id' => $serviceA->id]);
         $officeB = Office::create(['nombre' => 'Oficina B', 'service_id' => $serviceB->id]);
 
-        $equipoA = $this->crearEquipo($officeA);
-        $equipoB = $this->crearEquipo($officeB, 'SER-B', 'BP-B');
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Laptop']);
+
+        $equipoA = $this->crearEquipo($officeA, $tipoEquipo);
+        $equipoB = $this->crearEquipo($officeB, $tipoEquipo, 'SER-B', 'BP-B');
 
         $admin = $this->crearUsuario(User::ROLE_ADMIN);
         $admin->institution_id = $a->id;
@@ -128,10 +138,11 @@ class EquipoModuleTest extends TestCase
         ]);
     }
 
-    private function crearEquipo(Office $office, string $serie = 'SER-01', string $bien = 'BP-01'): Equipo
+    private function crearEquipo(Office $office, TipoEquipo $tipoEquipo, string $serie = 'SER-01', string $bien = 'BP-01'): Equipo
     {
         return Equipo::create([
-            'tipo' => 'Laptop',
+            'tipo' => $tipoEquipo->nombre,
+            'tipo_equipo_id' => $tipoEquipo->id,
             'marca' => 'Dell',
             'modelo' => 'XPS',
             'numero_serie' => $serie,
