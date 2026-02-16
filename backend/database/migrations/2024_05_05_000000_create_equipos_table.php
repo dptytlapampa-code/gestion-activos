@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('tipo', 100);
             $table->string('marca', 100);
             $table->string('modelo', 100);
-            $table->string('nro_serie', 120)->unique();
+            $table->string('numero_serie', 120)->unique();
             $table->string('bien_patrimonial', 120)->unique();
             $table->enum('estado', ['operativo', 'mantenimiento', 'baja'])->default('operativo');
             $table->date('fecha_ingreso');
