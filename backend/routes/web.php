@@ -19,18 +19,14 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
 
-Route::get('/', function () {
-    return view('dashboard');
-})->middleware('auth')->name('dashboard');
+Route::middleware('auth')->group(function (): void {
+    Route::get('/', function () {
+        return view('dashboard');
+    })->name('dashboard');
 
-Route::resource('institutions', InstitutionController::class)
-    ->except('show');
+    Route::resource('institutions', InstitutionController::class)->except('show');
+    Route::resource('services', ServiceController::class)->except('show');
+    Route::resource('offices', OfficeController::class)->except('show');
 
-Route::resource('services', ServiceController::class)
-    ->except('show');
-
-Route::resource('offices', OfficeController::class)
-    ->except('show');
-
-Route::resource('equipos', EquipoController::class)
-    ->except('show');
+    Route::resource('equipos', EquipoController::class);
+});

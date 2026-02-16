@@ -10,22 +10,22 @@ return new class extends Migration
     {
         Schema::create('equipos', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('office_id')
-                ->constrained('offices')
-                ->restrictOnDelete();
-            $table->string('tipo_equipo');
-            $table->string('marca');
-            $table->string('modelo');
-            $table->string('numero_serie')->unique();
-            $table->string('bien_patrimonial')->unique();
-            $table->text('descripcion')->nullable();
-            $table->string('estado');
+            $table->string('tipo', 100);
+            $table->string('marca', 100);
+            $table->string('modelo', 100);
+            $table->string('nro_serie', 120)->unique();
+            $table->string('bien_patrimonial', 120)->unique();
+            $table->enum('estado', ['operativo', 'mantenimiento', 'baja'])->default('operativo');
             $table->date('fecha_ingreso');
+            $table->foreignId('oficina_id')->constrained('offices')->restrictOnDelete();
             $table->timestamps();
-            $table->softDeletes();
 
-            $table->index(['office_id', 'estado']);
-            $table->index('tipo_equipo');
+            $table->index('tipo');
+            $table->index('marca');
+            $table->index('modelo');
+            $table->index('estado');
+            $table->index('oficina_id');
+            $table->index(['tipo', 'marca', 'modelo', 'estado'], 'equipos_busqueda_idx');
         });
     }
 
