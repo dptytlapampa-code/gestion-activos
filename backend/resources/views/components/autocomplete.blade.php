@@ -148,7 +148,7 @@
         class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
     />
 
-    <input type="hidden" name="{{ $name }}" x-ref="hidden_input" x-model="selected_id" />
+    <input type="hidden" name="{{ $name }}" x-ref="hidden_input" :value="selected_id" />
     <input type="hidden" name="{{ $name }}_label" :value="selected_label" />
 
     <div x-show="is_loading" x-cloak class="pointer-events-none absolute right-3 top-3 text-xs text-slate-400">
