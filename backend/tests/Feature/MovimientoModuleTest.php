@@ -137,6 +137,8 @@ class MovimientoModuleTest extends TestCase
         $this->actingAs($usuario)
             ->post(route('equipos.movimientos.store', $equipo), [
                 'tipo_movimiento' => 'traslado',
+                'institucion_destino_id' => $institutionDestino->id,
+                'servicio_destino_id' => $serviceDestino->id,
                 'oficina_destino_id' => $officeDestino->id,
                 'observacion' => 'Traslado administrativo',
             ])
@@ -185,7 +187,7 @@ class MovimientoModuleTest extends TestCase
             ->assertSessionHasErrors('equipo');
     }
 
-    public function test_traslado_requiere_oficina_destino(): void
+    public function test_traslado_requiere_ubicacion_destino_completa(): void
     {
         [, , $office] = $this->crearUbicacion('Hospital Cuatro', 'Oncología', 'Oficina 4');
 
@@ -197,6 +199,43 @@ class MovimientoModuleTest extends TestCase
             ->post(route('equipos.movimientos.store', $equipo), [
                 'tipo_movimiento' => 'traslado',
                 'observacion' => 'Falta destino',
+            ])
+            ->assertSessionHasErrors([
+                'institucion_destino_id',
+                'servicio_destino_id',
+                'oficina_destino_id',
+            ]);
+    }
+
+    public function test_traslado_valida_coherencia_jerarquica_de_destino(): void
+    {
+        [$institutionOrigen, $serviceOrigen, $officeOrigen] = $this->crearUbicacion('Hospital Cinco', 'Guardia', 'Oficina 5');
+        [$institutionDestino, $serviceDestino, $officeDestino] = $this->crearUbicacion('Hospital Seis', 'Imágenes', 'Oficina 6');
+
+        $serviceInvalido = Service::create([
+            'nombre' => 'Servicio ajeno',
+            'institution_id' => $institutionOrigen->id,
+        ]);
+
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Server']);
+        $equipo = $this->crearEquipo($officeOrigen, $tipoEquipo);
+        $usuario = $this->crearUsuario(User::ROLE_SUPERADMIN);
+
+        $this->actingAs($usuario)
+            ->post(route('equipos.movimientos.store', $equipo), [
+                'tipo_movimiento' => 'traslado',
+                'institucion_destino_id' => $institutionDestino->id,
+                'servicio_destino_id' => $serviceInvalido->id,
+                'oficina_destino_id' => $officeDestino->id,
+            ])
+            ->assertSessionHasErrors('servicio_destino_id');
+
+        $this->actingAs($usuario)
+            ->post(route('equipos.movimientos.store', $equipo), [
+                'tipo_movimiento' => 'traslado',
+                'institucion_destino_id' => $institutionDestino->id,
+                'servicio_destino_id' => $serviceDestino->id,
+                'oficina_destino_id' => $officeOrigen->id,
             ])
             ->assertSessionHasErrors('oficina_destino_id');
     }
