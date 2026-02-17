@@ -8,25 +8,67 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('movimientos', function (Blueprint $table): void {
+        Schema::create('movimientos', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('equipo_id')->constrained('equipos')->cascadeOnDelete()->index();
-            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete()->index();
+
+            $table->unsignedBigInteger('equipo_id');
+            $table->unsignedBigInteger('user_id')->nullable();
+
             $table->string('tipo_movimiento', 50)->index();
             $table->timestamp('fecha')->index();
 
-            $table->foreignId('institucion_origen_id')->nullable()->constrained('institutions')->nullOnDelete();
-            $table->foreignId('servicio_origen_id')->nullable()->constrained('services')->nullOnDelete();
-            $table->foreignId('oficina_origen_id')->nullable()->constrained('offices')->nullOnDelete();
+            $table->unsignedBigInteger('institucion_origen_id')->nullable();
+            $table->unsignedBigInteger('servicio_origen_id')->nullable();
+            $table->unsignedBigInteger('oficina_origen_id')->nullable();
 
-            $table->foreignId('institucion_destino_id')->nullable()->constrained('institutions')->nullOnDelete();
-            $table->foreignId('servicio_destino_id')->nullable()->constrained('services')->nullOnDelete();
-            $table->foreignId('oficina_destino_id')->nullable()->constrained('offices')->nullOnDelete();
+            $table->unsignedBigInteger('institucion_destino_id')->nullable();
+            $table->unsignedBigInteger('servicio_destino_id')->nullable();
+            $table->unsignedBigInteger('oficina_destino_id')->nullable();
 
             $table->text('observacion')->nullable();
             $table->timestamps();
 
             $table->index(['equipo_id', 'fecha']);
+
+            $table->foreign('equipo_id', 'fk_movimientos_equipo')
+                ->references('id')
+                ->on('equipos')
+                ->onDelete('cascade');
+
+            $table->foreign('user_id', 'fk_movimientos_user')
+                ->references('id')
+                ->on('users')
+                ->onDelete('set null');
+
+            $table->foreign('institucion_origen_id', 'fk_movimientos_inst_orig')
+                ->references('id')
+                ->on('institutions')
+                ->onDelete('set null');
+
+            $table->foreign('servicio_origen_id', 'fk_movimientos_serv_orig')
+                ->references('id')
+                ->on('services')
+                ->onDelete('set null');
+
+            $table->foreign('oficina_origen_id', 'fk_movimientos_ofic_orig')
+                ->references('id')
+                ->on('offices')
+                ->onDelete('set null');
+
+            $table->foreign('institucion_destino_id', 'fk_movimientos_inst_dest')
+                ->references('id')
+                ->on('institutions')
+                ->onDelete('set null');
+
+            $table->foreign('servicio_destino_id', 'fk_movimientos_serv_dest')
+                ->references('id')
+                ->on('services')
+                ->onDelete('set null');
+
+            $table->foreign('oficina_destino_id', 'fk_movimientos_ofic_dest')
+                ->references('id')
+                ->on('offices')
+                ->onDelete('set null');
         });
     }
 
