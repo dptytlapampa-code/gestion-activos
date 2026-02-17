@@ -10,6 +10,13 @@ use Illuminate\Validation\Rule;
 
 class UpdateEquipoRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'office_id' => $this->input('office_id', $this->input('oficina_id')),
+        ]);
+    }
+
     public function authorize(): bool
     {
         /** @var Equipo $equipo */
@@ -25,7 +32,7 @@ class UpdateEquipoRequest extends FormRequest
             return true;
         }
 
-        $office = Office::query()->with('service')->find($this->integer('oficina_id'));
+        $office = Office::query()->with('service')->find($this->integer('office_id'));
 
         return $office !== null
             && $office->service !== null
@@ -44,7 +51,7 @@ class UpdateEquipoRequest extends FormRequest
                 'integer',
                 Rule::exists('services', 'id')->where(fn ($query) => $query->where('institution_id', $this->integer('institution_id'))),
             ],
-            'oficina_id' => [
+            'office_id' => [
                 'required',
                 'integer',
                 Rule::exists('offices', 'id')->where(fn ($query) => $query->where('service_id', $this->integer('service_id'))),
@@ -66,8 +73,8 @@ class UpdateEquipoRequest extends FormRequest
             'institution_id.exists' => 'La institución seleccionada no es válida.',
             'service_id.required' => 'Debe seleccionar un servicio.',
             'service_id.exists' => 'El servicio seleccionado no corresponde a la institución.',
-            'oficina_id.required' => 'Debe seleccionar una oficina.',
-            'oficina_id.exists' => 'La oficina seleccionada no corresponde al servicio.',
+            'office_id.required' => 'Debe seleccionar una oficina.',
+            'office_id.exists' => 'La oficina seleccionada no corresponde al servicio.',
             'tipo_equipo_id.required' => 'Debe seleccionar un tipo de equipo.',
             'tipo_equipo_id.exists' => 'El tipo de equipo seleccionado no es válido.',
             'marca.required' => 'El campo marca es obligatorio.',
