@@ -7,6 +7,7 @@ use App\Models\Institution;
 use App\Models\Office;
 use App\Models\Service;
 use App\Models\TipoEquipo;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,8 +16,13 @@ class SearchController extends Controller
     public function searchInstitutions(Request $request): JsonResponse
     {
         $q = $this->validatedQuery($request);
+        $user = $request->user();
 
         $items = Institution::query()
+            ->when(
+                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+                fn ($query) => $query->where('id', $user->institution_id)
+            )
             ->where('nombre', 'ilike', "%{$q}%")
             ->orderBy('nombre')
             ->limit(20)
@@ -32,11 +38,21 @@ class SearchController extends Controller
 
     public function searchServices(Request $request): JsonResponse
     {
-        $q = $this->validatedQuery($request);
-        $institutionId = $request->integer('institution_id');
+        $validated = $request->validate([
+            'q' => ['required', 'string', 'min:2'],
+            'institution_id' => ['required', 'integer', 'exists:institutions,id'],
+        ]);
+
+        $q = (string) $validated['q'];
+        $institutionId = (int) $validated['institution_id'];
+        $user = $request->user();
+
+        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && $institutionId !== (int) $user->institution_id) {
+            return response()->json([]);
+        }
 
         $items = Service::query()
-            ->when($institutionId > 0, fn ($query) => $query->where('institution_id', $institutionId))
+            ->where('institution_id', $institutionId)
             ->where('nombre', 'ilike', "%{$q}%")
             ->orderBy('nombre')
             ->limit(20)
@@ -52,11 +68,28 @@ class SearchController extends Controller
 
     public function searchOffices(Request $request): JsonResponse
     {
-        $q = $this->validatedQuery($request);
-        $serviceId = $request->integer('service_id');
+        $validated = $request->validate([
+            'q' => ['required', 'string', 'min:2'],
+            'service_id' => ['required', 'integer', 'exists:services,id'],
+        ]);
+
+        $q = (string) $validated['q'];
+        $serviceId = (int) $validated['service_id'];
+        $user = $request->user();
+
+        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN)) {
+            $isUserService = Service::query()
+                ->where('id', $serviceId)
+                ->where('institution_id', $user->institution_id)
+                ->exists();
+
+            if (! $isUserService) {
+                return response()->json([]);
+            }
+        }
 
         $items = Office::query()
-            ->when($serviceId > 0, fn ($query) => $query->where('service_id', $serviceId))
+            ->where('service_id', $serviceId)
             ->where('nombre', 'ilike', "%{$q}%")
             ->orderBy('nombre')
             ->limit(20)

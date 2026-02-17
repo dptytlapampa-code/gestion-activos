@@ -6,6 +6,7 @@ use App\Models\Equipo;
 use App\Models\Movimiento;
 use App\Models\Office;
 use App\Models\Service;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,25 +26,42 @@ class MovimientoController extends Controller
     {
         $this->authorize('update', $equipo);
 
+        $user = $request->user();
+
         $validated = $request->validate([
             'tipo_movimiento' => ['required', 'string', 'in:'.implode(',', self::TIPOS_MOVIMIENTO)],
             'institucion_destino_id' => [
                 Rule::requiredIf($request->input('tipo_movimiento') === 'traslado'),
                 'nullable',
                 'integer',
-                'exists:institutions,id',
+                Rule::exists('institutions', 'id')->when(
+                    $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+                    fn ($query) => $query->where('id', $user->institution_id)
+                ),
             ],
             'servicio_destino_id' => [
                 Rule::requiredIf($request->input('tipo_movimiento') === 'traslado'),
                 'nullable',
                 'integer',
-                'exists:services,id',
+                Rule::exists('services', 'id')->where(function ($query) use ($request): void {
+                    $institutionId = $request->integer('institucion_destino_id');
+
+                    if ($institutionId > 0) {
+                        $query->where('institution_id', $institutionId);
+                    }
+                }),
             ],
             'oficina_destino_id' => [
                 Rule::requiredIf($request->input('tipo_movimiento') === 'traslado'),
                 'nullable',
                 'integer',
-                'exists:offices,id',
+                Rule::exists('offices', 'id')->where(function ($query) use ($request): void {
+                    $serviceId = $request->integer('servicio_destino_id');
+
+                    if ($serviceId > 0) {
+                        $query->where('service_id', $serviceId);
+                    }
+                }),
             ],
             'observacion' => ['nullable', 'string', 'max:2000'],
         ]);

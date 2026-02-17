@@ -23,12 +23,11 @@ class EquipoPolicy
 
     public function view(User $user, Equipo $equipo): bool
     {
-        if ($user->hasRole(User::ROLE_TECNICO, User::ROLE_VIEWER)) {
-            return true;
+        if (! $user->hasRole(User::ROLE_ADMIN, User::ROLE_TECNICO, User::ROLE_VIEWER)) {
+            return false;
         }
 
-        return $user->hasRole(User::ROLE_ADMIN)
-            && (int) $equipo->oficina?->service?->institution_id === (int) $user->institution_id;
+        return (int) $equipo->oficina?->service?->institution_id === (int) $user->institution_id;
     }
 
     public function create(User $user): bool

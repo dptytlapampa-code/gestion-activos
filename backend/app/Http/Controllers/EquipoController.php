@@ -33,7 +33,7 @@ class EquipoController extends Controller
 
         $equiposQuery = Equipo::query()->with(['oficina.service.institution', 'tipoEquipo']);
 
-        if ($user->hasRole(User::ROLE_ADMIN)) {
+        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN)) {
             $equiposQuery->whereHas('oficina.service', function ($query) use ($user): void {
                 $query->where('institution_id', $user->institution_id);
             });
@@ -56,9 +56,14 @@ class EquipoController extends Controller
 
     public function create(): View
     {
-        $instituciones = Institution::query()->orderBy('nombre')->get(['id', 'nombre']);
-        $servicios = Service::query()->orderBy('nombre')->get(['id', 'nombre', 'institution_id']);
-        $oficinas = Office::query()->orderBy('nombre')->get(['id', 'nombre', 'service_id']);
+        $user = request()->user();
+
+        $instituciones = $this->scopedInstituciones($user);
+        $selectedInstitutionId = $this->resolveSelectedInstitutionId($user);
+        $selectedServiceId = (int) old('service_id');
+
+        $servicios = $this->scopedServicios($user, $selectedInstitutionId > 0 ? $selectedInstitutionId : null);
+        $oficinas = $this->scopedOficinas($user, $selectedServiceId > 0 ? $selectedServiceId : null);
 
         return view('equipos.create', [
             'estados' => Equipo::ESTADOS,
@@ -110,6 +115,8 @@ class EquipoController extends Controller
 
     public function show(Equipo $equipo): View
     {
+        $user = request()->user();
+
         $equipo->load([
             'oficina.service.institution',
             'tipoEquipo',
@@ -131,9 +138,12 @@ class EquipoController extends Controller
             ->get()
             ->keyBy('id');
 
-        $instituciones = Institution::query()->orderBy('nombre')->get(['id', 'nombre']);
-        $servicios = Service::query()->orderBy('nombre')->get(['id', 'nombre', 'institution_id']);
-        $oficinas = Office::query()->orderBy('nombre')->get(['id', 'nombre', 'service_id']);
+        $selectedInstitutionId = (int) old('institucion_destino_id');
+        $selectedServiceId = (int) old('servicio_destino_id');
+
+        $instituciones = $this->scopedInstituciones($user);
+        $servicios = $this->scopedServicios($user, $selectedInstitutionId > 0 ? $selectedInstitutionId : null);
+        $oficinas = $this->scopedOficinas($user, $selectedServiceId > 0 ? $selectedServiceId : null);
 
         return view('equipos.show', [
             'equipo' => $equipo,
@@ -146,9 +156,13 @@ class EquipoController extends Controller
 
     public function edit(Equipo $equipo): View
     {
-        $instituciones = Institution::query()->orderBy('nombre')->get(['id', 'nombre']);
-        $servicios = Service::query()->orderBy('nombre')->get(['id', 'nombre', 'institution_id']);
-        $oficinas = Office::query()->orderBy('nombre')->get(['id', 'nombre', 'service_id']);
+        $user = request()->user();
+
+        $instituciones = $this->scopedInstituciones($user);
+        $selectedInstitutionId = (int) old('institution_id', $equipo->oficina?->service?->institution_id);
+        $selectedServiceId = (int) old('service_id', $equipo->oficina?->service_id);
+        $servicios = $this->scopedServicios($user, $selectedInstitutionId > 0 ? $selectedInstitutionId : null);
+        $oficinas = $this->scopedOficinas($user, $selectedServiceId > 0 ? $selectedServiceId : null);
 
         return view('equipos.edit', [
             'equipo' => $equipo->load(['oficina.service.institution', 'tipoEquipo']),
@@ -224,5 +238,56 @@ class EquipoController extends Controller
             'servicio_id' => $office?->service?->id,
             'oficina_id' => $office?->id,
         ];
+    }
+
+    private function scopedInstituciones(?User $user)
+    {
+        return Institution::query()
+            ->when(
+                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+                fn ($query) => $query->where('id', $user->institution_id)
+            )
+            ->orderBy('nombre')
+            ->get(['id', 'nombre']);
+    }
+
+    private function scopedServicios(?User $user, ?int $institutionId)
+    {
+        return Service::query()
+            ->when(
+                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+                fn ($query) => $query->where('institution_id', $user->institution_id)
+            )
+            ->when($institutionId !== null, fn ($query) => $query->where('institution_id', $institutionId))
+            ->when($institutionId === null, fn ($query) => $query->whereRaw('1 = 0'))
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'institution_id']);
+    }
+
+    private function scopedOficinas(?User $user, ?int $serviceId)
+    {
+        return Office::query()
+            ->when($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN), function ($query) use ($user): void {
+                $query->whereHas('service', fn ($serviceQuery) => $serviceQuery->where('institution_id', $user->institution_id));
+            })
+            ->when($serviceId !== null, fn ($query) => $query->where('service_id', $serviceId))
+            ->when($serviceId === null, fn ($query) => $query->whereRaw('1 = 0'))
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'service_id']);
+    }
+
+    private function resolveSelectedInstitutionId(?User $user): ?int
+    {
+        $oldInstitutionId = (int) old('institution_id');
+
+        if ($oldInstitutionId > 0) {
+            return $oldInstitutionId;
+        }
+
+        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN)) {
+            return (int) $user->institution_id;
+        }
+
+        return null;
     }
 }

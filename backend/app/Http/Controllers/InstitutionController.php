@@ -18,9 +18,15 @@ class InstitutionController extends Controller
             ->except('index');
     }
 
-    public function index(): View
+    public function index(Request $request): View
     {
+        $user = $request->user();
+
         $institutions = Institution::query()
+            ->when(
+                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+                fn ($query) => $query->where('id', $user->institution_id)
+            )
             ->orderBy('nombre')
             ->paginate(10);
 

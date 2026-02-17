@@ -24,10 +24,15 @@ class OfficeController extends Controller
         ])->except('index');
     }
 
-    public function index(): View
+    public function index(Request $request): View
     {
+        $user = $request->user();
+
         $offices = Office::query()
             ->with(['service.institution'])
+            ->when($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN), function ($query) use ($user): void {
+                $query->whereHas('service', fn ($serviceQuery) => $serviceQuery->where('institution_id', $user->institution_id));
+            })
             ->orderBy('nombre')
             ->paginate(10);
 
@@ -36,10 +41,16 @@ class OfficeController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
+        $user = $request->user();
+
         $services = Service::query()
             ->with('institution')
+            ->when(
+                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+                fn ($query) => $query->where('institution_id', $user->institution_id)
+            )
             ->orderBy('nombre')
             ->get();
 
@@ -50,8 +61,17 @@ class OfficeController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
         $validated = $request->validate([
-            'service_id' => ['required', 'exists:services,id'],
+            'service_id' => [
+                'required',
+                'integer',
+                Rule::exists('services', 'id')->when(
+                    $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+                    fn ($query) => $query->where('institution_id', $user->institution_id)
+                ),
+            ],
             'nombre' => [
                 'required',
                 'string',
@@ -68,10 +88,22 @@ class OfficeController extends Controller
             ->with('status', 'Oficina creada correctamente.');
     }
 
-    public function edit(Office $office): View
+    public function edit(Request $request, Office $office): View
     {
+        $user = $request->user();
+
+        $office->loadMissing('service');
+
+        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && (int) $office->service?->institution_id !== (int) $user->institution_id) {
+            abort(403);
+        }
+
         $services = Service::query()
             ->with('institution')
+            ->when(
+                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+                fn ($query) => $query->where('institution_id', $user->institution_id)
+            )
             ->orderBy('nombre')
             ->get();
 
@@ -83,8 +115,23 @@ class OfficeController extends Controller
 
     public function update(Request $request, Office $office): RedirectResponse
     {
+        $user = $request->user();
+
+        $office->loadMissing('service');
+
+        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && (int) $office->service?->institution_id !== (int) $user->institution_id) {
+            abort(403);
+        }
+
         $validated = $request->validate([
-            'service_id' => ['required', 'exists:services,id'],
+            'service_id' => [
+                'required',
+                'integer',
+                Rule::exists('services', 'id')->when(
+                    $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+                    fn ($query) => $query->where('institution_id', $user->institution_id)
+                ),
+            ],
             'nombre' => [
                 'required',
                 'string',
@@ -103,8 +150,16 @@ class OfficeController extends Controller
             ->with('status', 'Oficina actualizada correctamente.');
     }
 
-    public function destroy(Office $office): RedirectResponse
+    public function destroy(Request $request, Office $office): RedirectResponse
     {
+        $user = $request->user();
+
+        $office->loadMissing('service');
+
+        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && (int) $office->service?->institution_id !== (int) $user->institution_id) {
+            abort(403);
+        }
+
         $office->delete();
 
         return redirect()
