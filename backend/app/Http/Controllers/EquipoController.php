@@ -131,9 +131,16 @@ class EquipoController extends Controller
             ->get()
             ->keyBy('id');
 
+        $instituciones = Institution::query()->orderBy('nombre')->get(['id', 'nombre']);
+        $servicios = Service::query()->orderBy('nombre')->get(['id', 'nombre', 'institution_id']);
+        $oficinas = Office::query()->orderBy('nombre')->get(['id', 'nombre', 'service_id']);
+
         return view('equipos.show', [
             'equipo' => $equipo,
             'offices' => $offices,
+            'instituciones' => $instituciones,
+            'servicios' => $servicios,
+            'oficinas' => $oficinas,
         ]);
     }
 
