@@ -24,10 +24,16 @@ class ServiceController extends Controller
         ])->except('index');
     }
 
-    public function index(): View
+    public function index(Request $request): View
     {
+        $user = $request->user();
+
         $services = Service::query()
             ->with('institution')
+            ->when(
+                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+                fn ($query) => $query->where('institution_id', $user->institution_id)
+            )
             ->orderBy('nombre')
             ->paginate(10);
 
@@ -36,9 +42,15 @@ class ServiceController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
+        $user = $request->user();
+
         $institutions = Institution::query()
+            ->when(
+                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+                fn ($query) => $query->where('id', $user->institution_id)
+            )
             ->orderBy('nombre')
             ->get();
 
@@ -49,8 +61,17 @@ class ServiceController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
         $validated = $request->validate([
-            'institution_id' => ['required', 'exists:institutions,id'],
+            'institution_id' => [
+                'required',
+                'integer',
+                Rule::exists('institutions', 'id')->when(
+                    $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+                    fn ($query) => $query->where('id', $user->institution_id)
+                ),
+            ],
             'nombre' => [
                 'required',
                 'string',
@@ -67,9 +88,19 @@ class ServiceController extends Controller
             ->with('status', 'Servicio creado correctamente.');
     }
 
-    public function edit(Service $service): View
+    public function edit(Request $request, Service $service): View
     {
+        $user = $request->user();
+
+        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && (int) $service->institution_id !== (int) $user->institution_id) {
+            abort(403);
+        }
+
         $institutions = Institution::query()
+            ->when(
+                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+                fn ($query) => $query->where('id', $user->institution_id)
+            )
             ->orderBy('nombre')
             ->get();
 
@@ -81,8 +112,21 @@ class ServiceController extends Controller
 
     public function update(Request $request, Service $service): RedirectResponse
     {
+        $user = $request->user();
+
+        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && (int) $service->institution_id !== (int) $user->institution_id) {
+            abort(403);
+        }
+
         $validated = $request->validate([
-            'institution_id' => ['required', 'exists:institutions,id'],
+            'institution_id' => [
+                'required',
+                'integer',
+                Rule::exists('institutions', 'id')->when(
+                    $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+                    fn ($query) => $query->where('id', $user->institution_id)
+                ),
+            ],
             'nombre' => [
                 'required',
                 'string',
@@ -101,8 +145,14 @@ class ServiceController extends Controller
             ->with('status', 'Servicio actualizado correctamente.');
     }
 
-    public function destroy(Service $service): RedirectResponse
+    public function destroy(Request $request, Service $service): RedirectResponse
     {
+        $user = $request->user();
+
+        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && (int) $service->institution_id !== (int) $user->institution_id) {
+            abort(403);
+        }
+
         $service->delete();
 
         return redirect()

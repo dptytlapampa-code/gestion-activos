@@ -29,8 +29,34 @@
         <div class="rounded-xl border border-slate-200 bg-white p-6">
             <h3 class="mb-4 text-lg font-semibold text-slate-900">Registrar movimiento</h3>
 
-            <form method="POST" action="{{ route('equipos.movimientos.store', $equipo) }}" class="space-y-4"
-                x-data="{ tipo_movimiento: '{{ old('tipo_movimiento') }}' }">
+            <form
+                method="POST"
+                action="{{ route('equipos.movimientos.store', $equipo) }}"
+                class="space-y-4"
+                x-data="{
+                    tipo_movimiento: @js(old('tipo_movimiento', '')),
+                    institucion_destino_id: @js((string) old('institucion_destino_id', '')),
+                    servicio_destino_id: @js((string) old('servicio_destino_id', '')),
+                    oficina_destino_id: @js((string) old('oficina_destino_id', '')),
+                    servicios: @js($servicios->map(fn ($servicio) => ['id' => (string) $servicio->id, 'nombre' => $servicio->nombre, 'institution_id' => (string) $servicio->institution_id])->values()),
+                    oficinas: @js($oficinas->map(fn ($oficina) => ['id' => (string) $oficina->id, 'nombre' => $oficina->nombre, 'service_id' => (string) $oficina->service_id])->values()),
+                    get filteredServicios() {
+                        if (!this.institucion_destino_id) return [];
+                        return this.servicios.filter((servicio) => servicio.institution_id === this.institucion_destino_id);
+                    },
+                    get filteredOficinas() {
+                        if (!this.servicio_destino_id) return [];
+                        return this.oficinas.filter((oficina) => oficina.service_id === this.servicio_destino_id);
+                    },
+                    onInstitutionChange() {
+                        this.servicio_destino_id = '';
+                        this.oficina_destino_id = '';
+                    },
+                    onServiceChange() {
+                        this.oficina_destino_id = '';
+                    },
+                }"
+            >
                 @csrf
 
                 <div>
@@ -50,7 +76,7 @@
                 <div x-show="tipo_movimiento === 'traslado'" x-cloak class="grid gap-4 md:grid-cols-3">
                     <div>
                         <label for="institucion_destino_id" class="mb-1 block text-sm font-medium text-slate-700">Institución destino</label>
-                        <select id="institucion_destino_id" name="institucion_destino_id" :required="tipo_movimiento === 'traslado'" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                        <select id="institucion_destino_id" name="institucion_destino_id" :required="tipo_movimiento === 'traslado'" x-model="institucion_destino_id" @change="onInstitutionChange" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
                             <option value="">Seleccionar...</option>
                             @foreach ($instituciones as $institucion)
                                 <option value="{{ $institucion->id }}" @selected((string) old('institucion_destino_id') === (string) $institucion->id)>{{ $institucion->nombre }}</option>
@@ -63,11 +89,11 @@
 
                     <div>
                         <label for="servicio_destino_id" class="mb-1 block text-sm font-medium text-slate-700">Servicio destino</label>
-                        <select id="servicio_destino_id" name="servicio_destino_id" :required="tipo_movimiento === 'traslado'" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                        <select id="servicio_destino_id" name="servicio_destino_id" :required="tipo_movimiento === 'traslado'" x-model="servicio_destino_id" @change="onServiceChange" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
                             <option value="">Seleccionar...</option>
-                            @foreach ($servicios as $servicio)
-                                <option value="{{ $servicio->id }}" @selected((string) old('servicio_destino_id') === (string) $servicio->id)>{{ $servicio->nombre }}</option>
-                            @endforeach
+                            <template x-for="servicio in filteredServicios" :key="servicio.id">
+                                <option :value="servicio.id" x-text="servicio.nombre"></option>
+                            </template>
                         </select>
                         @error('servicio_destino_id')
                             <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
@@ -76,11 +102,11 @@
 
                     <div>
                         <label for="oficina_destino_id" class="mb-1 block text-sm font-medium text-slate-700">Oficina destino</label>
-                        <select id="oficina_destino_id" name="oficina_destino_id" :required="tipo_movimiento === 'traslado'" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+                        <select id="oficina_destino_id" name="oficina_destino_id" :required="tipo_movimiento === 'traslado'" x-model="oficina_destino_id" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
                             <option value="">Seleccionar...</option>
-                            @foreach ($oficinas as $oficina)
-                                <option value="{{ $oficina->id }}" @selected((string) old('oficina_destino_id') === (string) $oficina->id)>{{ $oficina->nombre }}</option>
-                            @endforeach
+                            <template x-for="oficina in filteredOficinas" :key="oficina.id">
+                                <option :value="oficina.id" x-text="oficina.nombre"></option>
+                            </template>
                         </select>
                         @error('oficina_destino_id')
                             <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
