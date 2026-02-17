@@ -1,7 +1,8 @@
 @php
     $institutionSelected = old('institution_id', $equipo?->oficina?->service?->institution_id);
     $serviceSelected = old('service_id', $equipo?->oficina?->service_id);
-    $officeSelected = old('oficina_id', $equipo?->oficina_id);
+    $officeSelected = old('office_id', old('oficina_id', $equipo?->oficina_id));
+    $tipoEquipoSelected = old('tipo_equipo_id', $equipo?->tipo_equipo_id);
 
     $institutionLabelSelected = old('institution_id')
         ? optional($instituciones->firstWhere('id', (int) old('institution_id')))->nombre
@@ -11,9 +12,11 @@
         ? optional($servicios->firstWhere('id', (int) old('service_id')))->nombre
         : $equipo?->oficina?->service?->nombre;
 
-    $officeLabelSelected = old('oficina_id')
-        ? optional($oficinas->firstWhere('id', (int) old('oficina_id')))->nombre
+    $officeLabelSelected = old('office_id', old('oficina_id'))
+        ? optional($oficinas->firstWhere('id', (int) old('office_id', old('oficina_id'))))->nombre
         : $equipo?->oficina?->nombre;
+
+    $tipoEquipoLabelSelected = old('tipo_equipo_label', $equipo?->tipoEquipo?->nombre ?? '');
 
     $estadoSeleccionado = old('estado', $equipo?->estado);
     $fechaIngreso = old('fecha_ingreso', $equipo?->fecha_ingreso?->format('Y-m-d'));
@@ -25,6 +28,7 @@
         selectedInstitutionId: @js((string) ($institutionSelected ?? '')),
         selectedServiceId: @js((string) ($serviceSelected ?? '')),
         selectedOfficeId: @js((string) ($officeSelected ?? '')),
+        selectedTipoEquipoId: @js((string) ($tipoEquipoSelected ?? '')),
         isSubmitting: false,
         init() {
             this.dispatchAutocompleteParams();
@@ -81,6 +85,9 @@
             this.resetAutocomplete('oficina_id');
             this.dispatchAutocompleteParams();
         },
+        handleTipoEquipoSelected(value) {
+            this.selectedTipoEquipoId = String(value ?? '');
+        },
     }"
 >
     <div class="border-b border-slate-200 px-6 py-5 sm:px-8">
@@ -124,6 +131,7 @@
                         :label="$institutionLabelSelected"
                         x-ref="institution"
                     />
+                    <input type="hidden" name="institution_id" x-model="selectedInstitutionId" />
                     @error('institution_id')
                         <p id="institution_id_error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -142,6 +150,7 @@
                         :label="$serviceLabelSelected"
                         :params="['institution_id' => $institutionSelected]"
                     />
+                    <input type="hidden" name="service_id" x-model="selectedServiceId" />
                     @error('service_id')
                         <p id="service_id_error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -160,9 +169,12 @@
                         :label="$officeLabelSelected"
                         :params="['service_id' => $serviceSelected]"
                     />
-                    @error('oficina_id')
-                        <p id="oficina_id_error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
+                    <input type="hidden" name="office_id" x-model="selectedOfficeId" />
+                    @if ($errors->has('office_id'))
+                        <p id="office_id_error" class="mt-1 text-sm text-red-600">{{ $errors->first('office_id') }}</p>
+                    @elseif ($errors->has('oficina_id'))
+                        <p id="oficina_id_error" class="mt-1 text-sm text-red-600">{{ $errors->first('oficina_id') }}</p>
+                    @endif
                 </div>
             </div>
         </section>
@@ -171,15 +183,19 @@
             <h4 id="datos-tecnicos-heading" class="text-sm font-semibold uppercase tracking-wide text-slate-700">Datos técnicos</h4>
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div>
+                <div
+                    @autocomplete-selected.window="if ($event.detail.name === 'tipo_equipo_id') { handleTipoEquipoSelected($event.detail.value); }"
+                    @autocomplete-cleared.window="if ($event.detail.name === 'tipo_equipo_id') { handleTipoEquipoSelected(''); }"
+                >
                     <label for="tipo_equipo_id" class="block text-sm font-medium text-slate-700">Tipo de equipo <span class="text-red-600" aria-hidden="true">*</span></label>
                     <x-autocomplete
                         name="tipo_equipo_id"
                         endpoint="/api/search/tipos-equipos"
                         placeholder="Buscar tipo de equipo..."
-                        :value="old('tipo_equipo_id', $equipo->tipo_equipo_id ?? '')"
-                        :label="old('tipo_equipo_label', $equipo?->tipoEquipo?->nombre ?? '')"
+                        :value="$tipoEquipoSelected"
+                        :label="$tipoEquipoLabelSelected"
                     />
+                    <input type="hidden" name="tipo_equipo_id" x-model="selectedTipoEquipoId" />
                     @error('tipo_equipo_id')
                         <p id="tipo_equipo_id_error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
