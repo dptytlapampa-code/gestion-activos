@@ -107,6 +107,9 @@ class MovimientoModuleTest extends TestCase
             ])
             ->assertRedirect(route('equipos.show', $equipo));
 
+        $equipo->refresh();
+        $this->assertSame(Equipo::ESTADO_MANTENIMIENTO, $equipo->estado);
+
         $this->assertDatabaseHas('movimientos', [
             'equipo_id' => $equipo->id,
             'user_id' => $usuario->id,
@@ -119,6 +122,83 @@ class MovimientoModuleTest extends TestCase
             'oficina_destino_id' => null,
             'observacion' => 'Cambio de fuente de poder',
         ]);
+    }
+
+
+    public function test_movimiento_traslado_actualiza_ubicacion_y_estado_operativo(): void
+    {
+        [$institutionOrigen, $serviceOrigen, $officeOrigen] = $this->crearUbicacion('Hospital Uno', 'Emergencia', 'Oficina 1');
+        [$institutionDestino, $serviceDestino, $officeDestino] = $this->crearUbicacion('Hospital Dos', 'Imágenes', 'Oficina 2');
+
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Desktop']);
+        $equipo = $this->crearEquipo($officeOrigen, $tipoEquipo);
+        $usuario = $this->crearUsuario(User::ROLE_SUPERADMIN);
+
+        $this->actingAs($usuario)
+            ->post(route('equipos.movimientos.store', $equipo), [
+                'tipo_movimiento' => 'traslado',
+                'oficina_destino_id' => $officeDestino->id,
+                'observacion' => 'Traslado administrativo',
+            ])
+            ->assertRedirect(route('equipos.show', $equipo));
+
+        $equipo->refresh();
+        $this->assertSame($officeDestino->id, $equipo->oficina_id);
+        $this->assertSame(Equipo::ESTADO_OPERATIVO, $equipo->estado);
+
+
+        $this->assertDatabaseHas('movimientos', [
+            'equipo_id' => $equipo->id,
+            'tipo_movimiento' => 'traslado',
+            'institucion_origen_id' => $institutionOrigen->id,
+            'servicio_origen_id' => $serviceOrigen->id,
+            'oficina_origen_id' => $officeOrigen->id,
+            'institucion_destino_id' => $institutionDestino->id,
+            'servicio_destino_id' => $serviceDestino->id,
+            'oficina_destino_id' => $officeDestino->id,
+        ]);
+    }
+
+    public function test_movimiento_de_baja_impide_nuevos_movimientos(): void
+    {
+        [, , $office] = $this->crearUbicacion('Hospital Tres', 'Cardiología', 'Oficina 3');
+
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Escáner']);
+        $equipo = $this->crearEquipo($office, $tipoEquipo);
+        $usuario = $this->crearUsuario(User::ROLE_SUPERADMIN);
+
+        $this->actingAs($usuario)
+            ->post(route('equipos.movimientos.store', $equipo), [
+                'tipo_movimiento' => 'baja',
+                'observacion' => 'Fin de vida útil',
+            ])
+            ->assertRedirect(route('equipos.show', $equipo));
+
+        $equipo->refresh();
+        $this->assertSame(Equipo::ESTADO_BAJA, $equipo->estado);
+
+        $this->actingAs($usuario)
+            ->post(route('equipos.movimientos.store', $equipo), [
+                'tipo_movimiento' => 'mantenimiento',
+                'observacion' => 'No debe permitirse',
+            ])
+            ->assertSessionHasErrors('equipo');
+    }
+
+    public function test_traslado_requiere_oficina_destino(): void
+    {
+        [, , $office] = $this->crearUbicacion('Hospital Cuatro', 'Oncología', 'Oficina 4');
+
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Tablet']);
+        $equipo = $this->crearEquipo($office, $tipoEquipo);
+        $usuario = $this->crearUsuario(User::ROLE_SUPERADMIN);
+
+        $this->actingAs($usuario)
+            ->post(route('equipos.movimientos.store', $equipo), [
+                'tipo_movimiento' => 'traslado',
+                'observacion' => 'Falta destino',
+            ])
+            ->assertSessionHasErrors('oficina_destino_id');
     }
 
     private function crearUsuario(string $role): User
