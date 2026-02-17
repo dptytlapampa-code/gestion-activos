@@ -72,17 +72,19 @@ class EquipoController extends Controller
     {
         $tipoEquipo = TipoEquipo::query()->findOrFail($request->integer('tipo_equipo_id'));
 
-        $data = $request->safe()->only([
-            'tipo_equipo_id',
-            'marca',
-            'modelo',
-            'bien_patrimonial',
-            'estado',
-            'fecha_ingreso',
-            'oficina_id',
-        ]);
-        $data['tipo'] = $tipoEquipo->nombre;
-        $data['numero_serie'] = $request->input('numero_serie');
+        $validated = $request->validated();
+
+        $data = [
+            'tipo_equipo_id' => $validated['tipo_equipo_id'],
+            'marca' => $validated['marca'],
+            'modelo' => $validated['modelo'],
+            'bien_patrimonial' => $validated['bien_patrimonial'],
+            'estado' => $validated['estado'],
+            'fecha_ingreso' => $validated['fecha_ingreso'],
+            'oficina_id' => $validated['office_id'],
+            'tipo' => $tipoEquipo->nombre,
+            'numero_serie' => $validated['numero_serie'],
+        ];
 
         $equipo = Equipo::query()->create($data);
 
@@ -157,17 +159,19 @@ class EquipoController extends Controller
             ->with('service.institution')
             ->find($equipo->oficina_id);
 
-        $data = $request->safe()->only([
-            'tipo_equipo_id',
-            'marca',
-            'modelo',
-            'bien_patrimonial',
-            'estado',
-            'fecha_ingreso',
-            'oficina_id',
-        ]);
-        $data['tipo'] = $tipoEquipo->nombre;
-        $data['numero_serie'] = $request->input('numero_serie');
+        $validated = $request->validated();
+
+        $data = [
+            'tipo_equipo_id' => $validated['tipo_equipo_id'],
+            'marca' => $validated['marca'],
+            'modelo' => $validated['modelo'],
+            'bien_patrimonial' => $validated['bien_patrimonial'],
+            'estado' => $validated['estado'],
+            'fecha_ingreso' => $validated['fecha_ingreso'],
+            'oficina_id' => $validated['office_id'],
+            'tipo' => $tipoEquipo->nombre,
+            'numero_serie' => $validated['numero_serie'],
+        ];
 
         $equipo->update($data);
 
