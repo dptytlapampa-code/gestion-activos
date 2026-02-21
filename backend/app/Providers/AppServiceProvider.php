@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\Acta;
 use App\Models\Document;
 use App\Models\Equipo;
 use App\Models\Institution;
@@ -10,6 +11,7 @@ use App\Models\Office;
 use App\Models\Service;
 use App\Models\TipoEquipo;
 use App\Models\User;
+use App\Policies\ActaPolicy;
 use App\Policies\DocumentPolicy;
 use App\Policies\EquipoPolicy;
 use App\Policies\InstitutionPolicy;
@@ -37,6 +39,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(TipoEquipo::class, TipoEquipoPolicy::class);
         Gate::policy(Movimiento::class, MovimientoPolicy::class);
         Gate::policy(Document::class, DocumentPolicy::class);
+        Gate::policy(Acta::class, ActaPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
 
         Gate::define('manage-users', [UserPolicy::class, 'manageUsers']);

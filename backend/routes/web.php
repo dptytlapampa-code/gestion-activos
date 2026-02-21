@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\ActaController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EquipoController;
 use App\Http\Controllers\InstitutionController;
@@ -18,7 +20,7 @@ Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middlew
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::middleware('auth')->group(function (): void {
-    Route::get('/', fn () => view('dashboard'))->name('dashboard');
+    Route::get('/', DashboardController::class)->name('dashboard');
 
     Route::resource('institutions', InstitutionController::class)->except('show');
     Route::resource('services', ServiceController::class)->except('show');
@@ -27,6 +29,12 @@ Route::middleware('auth')->group(function (): void {
 
     Route::resource('equipos', EquipoController::class);
     Route::post('equipos/{equipo}/movimientos', [MovimientoController::class, 'store'])->name('equipos.movimientos.store');
+
+    Route::get('actas', [ActaController::class, 'index'])->name('actas.index');
+    Route::get('actas/create', [ActaController::class, 'create'])->name('actas.create');
+    Route::post('actas', [ActaController::class, 'store'])->name('actas.store');
+    Route::get('actas/{acta}', [ActaController::class, 'show'])->name('actas.show');
+    Route::get('actas/{acta}/pdf', [ActaController::class, 'download'])->name('actas.download');
 
     Route::post('equipos/{equipo}/documents', [DocumentController::class, 'storeForEquipo'])->name('equipos.documents.store');
     Route::post('movimientos/{movimiento}/documents', [DocumentController::class, 'storeForMovimiento'])->name('movimientos.documents.store');

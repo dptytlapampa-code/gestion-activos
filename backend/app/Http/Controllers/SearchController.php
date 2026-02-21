@@ -105,13 +105,25 @@ class SearchController extends Controller
 
     public function searchEquipos(Request $request): JsonResponse
     {
-        $q = $this->validatedQuery($request);
+        $validated = $request->validate([
+            'q' => ['required', 'string', 'min:2'],
+            'institution_id' => ['nullable', 'integer', 'exists:institutions,id'],
+        ]);
 
-        $nombreExpression = "trim(concat_ws(' ', tipo, marca, modelo, concat('(', numero_serie, ')')))";
+        $q = (string) $validated['q'];
+        $user = $request->user();
+        $institutionId = $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN)
+            ? (int) $user->institution_id
+            : (($validated['institution_id'] ?? null) !== null ? (int) $validated['institution_id'] : null);
+
+        $nombreExpression = "trim(concat_ws(' ', tipo, marca, modelo, concat('(', numero_serie, ')'), bien_patrimonial))";
 
         $items = Equipo::query()
-            ->select('id')
+            ->select('equipos.id')
             ->selectRaw("{$nombreExpression} as nombre")
+            ->join('offices', 'offices.id', '=', 'equipos.oficina_id')
+            ->join('services', 'services.id', '=', 'offices.service_id')
+            ->when($institutionId !== null, fn ($query) => $query->where('services.institution_id', $institutionId))
             ->whereRaw("{$nombreExpression} ilike ?", ["%{$q}%"])
             ->orderByRaw("{$nombreExpression} asc")
             ->limit(20)
