@@ -162,7 +162,21 @@
                             <td class="px-4 py-3 text-slate-700">{{ $movimiento->user?->name ?? '-' }}</td>
                             <td class="px-4 py-3 text-slate-700">{{ $origenTexto }}</td>
                             <td class="px-4 py-3 text-slate-700">{{ $destinoTexto }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ $movimiento->observacion ?? '-' }}</td>
+                            <td class="px-4 py-3 text-slate-700">{{ $movimiento->observacion ?? '-' }}
+                                <div class="mt-2 space-y-1">
+                                    @foreach($movimiento->documents as $documento_mov)
+                                        <div class="text-xs"><a class="text-indigo-600" href="{{ route('documents.download', $documento_mov) }}">{{ $documento_mov->original_name }}</a></div>
+                                    @endforeach
+                                </div>
+                                @if(auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO))
+                                <form method="POST" action="{{ route('movimientos.documents.store', $movimiento) }}" enctype="multipart/form-data" class="mt-2 flex gap-2">
+                                    @csrf
+                                    <select name="type" class="rounded border px-2 py-1 text-xs" required>@foreach(\App\Models\Document::TYPES as $type)<option value="{{ $type }}">{{ $type }}</option>@endforeach</select>
+                                    <input type="file" name="file" class="text-xs" required>
+                                    <button class="text-xs text-indigo-600">Adjuntar</button>
+                                </form>
+                                @endif
+                            </td>
                         </tr>
                     @empty
                         <tr>
@@ -173,5 +187,38 @@
             </table>
         </div>
     </div>
+
+    <div class="rounded-xl border border-slate-200 bg-white p-6">
+        <h3 class="mb-4 text-lg font-semibold text-slate-900">Documentos del equipo</h3>
+        @if(auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO))
+        <form method="POST" action="{{ route('equipos.documents.store', $equipo) }}" enctype="multipart/form-data" class="mb-4 grid gap-3 md:grid-cols-4">
+            @csrf
+            <select name="type" class="rounded border px-3 py-2" required>
+                <option value="">Tipo...</option>
+                @foreach(\App\Models\Document::TYPES as $type)<option value="{{ $type }}">{{ ucfirst($type) }}</option>@endforeach
+            </select>
+            <input name="note" placeholder="Nota" class="rounded border px-3 py-2">
+            <input type="file" name="file" required class="rounded border px-3 py-2">
+            <button class="rounded bg-indigo-600 px-3 py-2 text-white">Subir</button>
+        </form>
+        @endif
+
+        <ul class="space-y-2">
+            @forelse($equipo->documents as $document)
+                <li class="flex items-center justify-between rounded border px-3 py-2 text-sm">
+                    <span>{{ $document->original_name }} ({{ $document->type }})</span>
+                    <div class="space-x-3">
+                        <a class="text-indigo-600" href="{{ route('documents.download', $document) }}">Descargar</a>
+                        @can('delete', $document)
+                            <form method="POST" action="{{ route('documents.destroy', $document) }}" class="inline">@csrf @method('DELETE') <button class="text-rose-600">Eliminar</button></form>
+                        @endcan
+                    </div>
+                </li>
+            @empty
+                <li class="text-sm text-slate-500">No hay documentos del equipo.</li>
+            @endforelse
+        </ul>
+    </div>
+
 </div>
 @endsection

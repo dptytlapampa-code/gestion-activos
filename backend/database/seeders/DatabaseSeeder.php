@@ -5,18 +5,19 @@ namespace Database\Seeders;
 use App\Models\Institution;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        User::firstOrCreate([
-            'email' => 'admin@gestion-activos.local',
+        User::updateOrCreate([
+            'email' => 'admin@local.test',
         ], [
             'name' => 'Administrador',
-            'password' => Hash::make('password'),
+            'password' => '123456',
             'role' => User::ROLE_SUPERADMIN,
+            'institution_id' => null,
+            'is_active' => true,
         ]);
 
         Institution::firstOrCreate([

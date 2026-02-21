@@ -2,19 +2,16 @@
 
 namespace App\Models;
 
+use App\Support\Auditing\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Institution extends Model
 {
-    use HasFactory;
+    use Auditable, HasFactory;
 
-    protected $fillable = [
-        'codigo',
-        'nombre',
-        'descripcion',
-    ];
+    protected $fillable = ['codigo', 'nombre', 'descripcion'];
 
     protected static function booted(): void
     {

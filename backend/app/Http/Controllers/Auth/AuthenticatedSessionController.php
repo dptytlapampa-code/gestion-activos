@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,13 +29,25 @@ class AuthenticatedSessionController extends Controller
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey($request));
 
-            throw ValidationException::withMessages([
-                'email' => __('auth.failed'),
-            ]);
+            throw ValidationException::withMessages(['email' => __('auth.failed')]);
+        }
+
+        if (! (bool) auth()->user()?->is_active) {
+            Auth::logout();
+            throw ValidationException::withMessages(['email' => 'Usuario inactivo.']);
         }
 
         RateLimiter::clear($this->throttleKey($request));
         $request->session()->regenerate();
+
+        AuditLog::query()->create([
+            'user_id' => auth()->id(),
+            'action' => 'login',
+            'auditable_type' => 'auth',
+            'auditable_id' => auth()->id(),
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
 
         return redirect()->intended(route('dashboard'));
     }
@@ -56,9 +69,7 @@ class AuthenticatedSessionController extends Controller
         }
 
         throw ValidationException::withMessages([
-            'email' => __('auth.throttle', [
-                'seconds' => RateLimiter::availableIn($this->throttleKey($request)),
-            ]),
+            'email' => __('auth.throttle', ['seconds' => RateLimiter::availableIn($this->throttleKey($request))]),
         ]);
     }
 
