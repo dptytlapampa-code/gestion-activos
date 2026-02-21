@@ -6,6 +6,7 @@ use App\Support\Auditing\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -38,6 +39,12 @@ class Equipo extends Model
     public function movimientos(): HasMany
     {
         return $this->hasMany(Movimiento::class)->orderByDesc('fecha');
+    }
+
+
+    public function actas(): BelongsToMany
+    {
+        return $this->belongsToMany(Acta::class, 'acta_equipo')->withPivot(['cantidad', 'accesorios']);
     }
 
     public function documents(): MorphMany
