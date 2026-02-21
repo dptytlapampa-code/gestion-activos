@@ -19,7 +19,17 @@ class Equipo extends Model
     public const ESTADO_BAJA = 'baja';
     public const ESTADOS = [self::ESTADO_OPERATIVO, self::ESTADO_MANTENIMIENTO, self::ESTADO_BAJA];
 
-    protected $fillable = ['tipo', 'tipo_equipo_id', 'marca', 'modelo', 'numero_serie', 'bien_patrimonial', 'estado', 'fecha_ingreso', 'oficina_id'];
+    protected $fillable = ['tipo', 'tipo_equipo_id', 'marca', 'modelo', 'numero_serie', 'bien_patrimonial', 'estado', 'equipo_status_id', 'fecha_ingreso', 'oficina_id'];
+
+
+    protected static function booted(): void
+    {
+        static::creating(function (Equipo $equipo): void {
+            if ($equipo->equipo_status_id === null) {
+                $equipo->equipo_status_id = (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_OPERATIVA)->value('id');
+            }
+        });
+    }
 
     protected function casts(): array
     {
@@ -36,11 +46,20 @@ class Equipo extends Model
         return $this->belongsTo(TipoEquipo::class);
     }
 
+    public function equipoStatus(): BelongsTo
+    {
+        return $this->belongsTo(EquipoStatus::class, 'equipo_status_id');
+    }
+
     public function movimientos(): HasMany
     {
         return $this->hasMany(Movimiento::class)->orderByDesc('fecha');
     }
 
+    public function mantenimientos(): HasMany
+    {
+        return $this->hasMany(Mantenimiento::class)->orderByDesc('fecha')->orderByDesc('id');
+    }
 
     public function actas(): BelongsToMany
     {
@@ -50,5 +69,20 @@ class Equipo extends Model
     public function documents(): MorphMany
     {
         return $this->morphMany(Document::class, 'documentable')->latest();
+    }
+
+    public function isOperativa(): bool
+    {
+        return $this->equipoStatus?->code === EquipoStatus::CODE_OPERATIVA;
+    }
+
+    public function isEnServicioTecnico(): bool
+    {
+        return $this->equipoStatus?->code === EquipoStatus::CODE_EN_SERVICIO_TECNICO;
+    }
+
+    public function isBaja(): bool
+    {
+        return $this->equipoStatus?->code === EquipoStatus::CODE_BAJA;
     }
 }

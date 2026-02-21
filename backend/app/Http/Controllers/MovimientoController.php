@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Equipo;
+use App\Models\EquipoStatus;
 use App\Models\Movimiento;
 use App\Models\Office;
 use App\Models\Service;
@@ -108,6 +109,7 @@ class MovimientoController extends Controller
 
             if ($validated['tipo_movimiento'] === 'mantenimiento') {
                 $estadoNuevo = Equipo::ESTADO_MANTENIMIENTO;
+                $equipo->equipo_status_id = (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_EN_SERVICIO_TECNICO)->value('id');
             }
 
             if ($validated['tipo_movimiento'] === 'prestamo') {
@@ -116,6 +118,7 @@ class MovimientoController extends Controller
 
             if ($validated['tipo_movimiento'] === 'baja') {
                 $estadoNuevo = Equipo::ESTADO_BAJA;
+                $equipo->equipo_status_id = (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_BAJA)->value('id');
             }
 
             Movimiento::query()->create([
