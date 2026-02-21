@@ -10,6 +10,29 @@
             <p class="mt-3 text-3xl font-bold text-primary-700">{{ $totalEquipos }}</p>
         </div>
 
+        <div class="card">
+            <h3 class="text-sm font-semibold text-surface-700">Estados normalizados</h3>
+            <div class="mt-3 space-y-2 text-sm">
+                <p>Operativa: <strong>{{ $equiposPorEstado['OPERATIVA'] ?? 0 }}</strong></p>
+                <p>En Servicio Técnico: <strong>{{ $equiposPorEstado['EN_SERVICIO_TECNICO'] ?? 0 }}</strong></p>
+                <p>Baja: <strong>{{ $equiposPorEstado['BAJA'] ?? 0 }}</strong></p>
+            </div>
+        </div>
+
+        <div class="card lg:col-span-1">
+            <h3 class="text-sm font-semibold text-surface-700">Últimos 10 en servicio técnico</h3>
+            <div class="mt-3 space-y-2 text-sm">
+                @forelse ($ultimosServicioTecnico as $mantenimiento)
+                    <div class="rounded-xl border border-surface-200 px-3 py-2">
+                        <p class="font-medium">{{ $mantenimiento->equipo?->tipo }} ({{ $mantenimiento->equipo?->numero_serie }})</p>
+                        <p class="text-xs text-surface-500">{{ $mantenimiento->fecha_ingreso_st?->format('d/m/Y') }} · {{ now()->diffInDays($mantenimiento->fecha_ingreso_st ?: $mantenimiento->fecha) }} días</p>
+                    </div>
+                @empty
+                    <p class="text-sm text-surface-500">Sin equipos en servicio técnico.</p>
+                @endforelse
+            </div>
+        </div>
+
         <div class="card lg:col-span-2">
             <h3 class="text-sm font-semibold text-surface-700">Equipos por tipo (Top 10)</h3>
             <div class="mt-4 space-y-2">

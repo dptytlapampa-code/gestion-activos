@@ -25,6 +25,97 @@
         </dl>
     </div>
 
+    <div class="rounded-xl border border-slate-200 bg-white p-6" x-data="{ tipo: @js(old('tipo', 'interno')) }">
+        <div class="mb-4 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-slate-900">Mantenimiento / Servicio Técnico</h3>
+            <div class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                 @class([
+                    'bg-green-100 text-green-800' => $equipo->equipoStatus?->color === 'green',
+                    'bg-yellow-100 text-yellow-800' => $equipo->equipoStatus?->color === 'yellow',
+                    'bg-red-100 text-red-800' => $equipo->equipoStatus?->color === 'red',
+                    'bg-slate-100 text-slate-800' => ! in_array($equipo->equipoStatus?->color, ['green', 'yellow', 'red']),
+                ])>
+                Estado actual: {{ $equipo->equipoStatus?->name ?? ucfirst($equipo->estado) }}
+            </div>
+        </div>
+
+        @can('create', \App\Models\Mantenimiento::class)
+            <form method="POST" action="{{ route('equipos.mantenimientos.store', $equipo) }}" class="grid gap-4 md:grid-cols-2">
+                @csrf
+                <div>
+                    <label class="text-sm font-medium text-slate-700">Fecha</label>
+                    <input type="date" name="fecha" value="{{ old('fecha', now()->toDateString()) }}" class="mt-1 w-full rounded-lg border-slate-300 text-sm" required>
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-slate-700">Tipo</label>
+                    <select name="tipo" x-model="tipo" class="mt-1 w-full rounded-lg border-slate-300 text-sm" required>
+                        @foreach (\App\Models\Mantenimiento::TIPOS as $tipo)
+                            <option value="{{ $tipo }}" @selected(old('tipo') === $tipo)>{{ ucfirst($tipo) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-sm font-medium text-slate-700">Título</label>
+                    <input type="text" name="titulo" value="{{ old('titulo') }}" class="mt-1 w-full rounded-lg border-slate-300 text-sm" required>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-sm font-medium text-slate-700">Detalle</label>
+                    <textarea name="detalle" class="mt-1 w-full rounded-lg border-slate-300 text-sm" required>{{ old('detalle') }}</textarea>
+                </div>
+                <div x-show="tipo === 'externo'" x-cloak>
+                    <label class="text-sm font-medium text-slate-700">Proveedor</label>
+                    <input type="text" name="proveedor" value="{{ old('proveedor') }}" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
+                </div>
+                <div x-show="tipo === 'externo'" x-cloak>
+                    <label class="text-sm font-medium text-slate-700">Fecha ingreso ST</label>
+                    <input type="date" name="fecha_ingreso_st" value="{{ old('fecha_ingreso_st', now()->toDateString()) }}" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
+                </div>
+                <div x-show="tipo === 'alta'" x-cloak>
+                    <label class="text-sm font-medium text-slate-700">Fecha egreso ST</label>
+                    <input type="date" name="fecha_egreso_st" value="{{ old('fecha_egreso_st', now()->toDateString()) }}" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
+                </div>
+                <div class="md:col-span-2">
+                    <button class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Registrar mantenimiento</button>
+                </div>
+            </form>
+        @endcan
+
+        <div class="mt-6 overflow-x-auto rounded-lg border border-slate-200">
+            <table class="min-w-full text-sm">
+                <thead class="bg-slate-50 text-left text-xs uppercase text-slate-600">
+                    <tr><th class="px-3 py-2">Fecha</th><th class="px-3 py-2">Tipo</th><th class="px-3 py-2">Título</th><th class="px-3 py-2">Detalle</th><th class="px-3 py-2">Proveedor</th><th class="px-3 py-2">Estado resultante</th><th class="px-3 py-2">Duración</th><th class="px-3 py-2">Acciones</th></tr>
+                </thead>
+                <tbody>
+                @forelse($mantenimientos as $mantenimiento)
+                    <tr class="border-t border-slate-100">
+                        <td class="px-3 py-2">{{ $mantenimiento->fecha?->format('d/m/Y') }}</td>
+                        <td class="px-3 py-2">{{ ucfirst($mantenimiento->tipo) }}</td>
+                        <td class="px-3 py-2">{{ $mantenimiento->titulo }}</td>
+                        <td class="px-3 py-2">{{ $mantenimiento->detalle }}</td>
+                        <td class="px-3 py-2">{{ $mantenimiento->proveedor ?: '-' }}</td>
+                        <td class="px-3 py-2">{{ $mantenimiento->estadoResultante?->name ?: '-' }}</td>
+                        <td class="px-3 py-2">{{ $mantenimiento->dias_en_servicio !== null ? $mantenimiento->dias_en_servicio.' días' : '-' }}</td>
+                        <td class="px-3 py-2">
+                            @can('update', $mantenimiento)
+                                <a href="{{ route('mantenimientos.edit', $mantenimiento) }}" class="text-amber-600">Editar</a>
+                            @endcan
+                            @can('delete', $mantenimiento)
+                                <form method="POST" action="{{ route('mantenimientos.destroy', $mantenimiento) }}" class="inline" onsubmit="return confirm('¿Eliminar mantenimiento?')">
+                                    @csrf @method('DELETE')
+                                    <button class="ml-2 text-red-600">Eliminar</button>
+                                </form>
+                            @endcan
+                        </td>
+                    </tr>
+                @empty
+                    <tr><td colspan="8" class="px-3 py-4 text-center text-slate-500">Sin mantenimientos registrados.</td></tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
     @can('update', $equipo)
         <div class="rounded-xl border border-slate-200 bg-white p-6">
             <h3 class="mb-4 text-lg font-semibold text-slate-900">Registrar movimiento</h3>

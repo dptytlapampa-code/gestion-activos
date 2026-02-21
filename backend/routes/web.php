@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EquipoController;
 use App\Http\Controllers\InstitutionController;
+use App\Http\Controllers\MantenimientoController;
 use App\Http\Controllers\MovimientoController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\SearchController;
@@ -29,6 +30,12 @@ Route::middleware('auth')->group(function (): void {
 
     Route::resource('equipos', EquipoController::class);
     Route::post('equipos/{equipo}/movimientos', [MovimientoController::class, 'store'])->name('equipos.movimientos.store');
+
+    Route::get('mantenimientos', [MantenimientoController::class, 'index'])->name('mantenimientos.index');
+    Route::post('equipos/{equipo}/mantenimientos', [MantenimientoController::class, 'store'])->name('equipos.mantenimientos.store');
+    Route::get('mantenimientos/{mantenimiento}/edit', [MantenimientoController::class, 'edit'])->name('mantenimientos.edit');
+    Route::match(['put', 'patch'], 'mantenimientos/{mantenimiento}', [MantenimientoController::class, 'update'])->name('mantenimientos.update');
+    Route::delete('mantenimientos/{mantenimiento}', [MantenimientoController::class, 'destroy'])->name('mantenimientos.destroy');
 
     Route::get('actas', [ActaController::class, 'index'])->name('actas.index');
     Route::get('actas/create', [ActaController::class, 'create'])->name('actas.create');

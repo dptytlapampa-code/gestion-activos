@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreEquipoRequest;
 use App\Http\Requests\UpdateEquipoRequest;
 use App\Models\Equipo;
+use App\Models\EquipoStatus;
 use App\Models\Institution;
 use App\Models\Movimiento;
 use App\Models\Office;
@@ -31,7 +32,7 @@ class EquipoController extends Controller
 
         $user = $request->user();
 
-        $equiposQuery = Equipo::query()->with(['oficina.service.institution', 'tipoEquipo']);
+        $equiposQuery = Equipo::query()->with(['oficina.service.institution', 'tipoEquipo', 'equipoStatus']);
 
         if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN)) {
             $equiposQuery->whereHas('oficina.service', function ($query) use ($user): void {
@@ -85,6 +86,7 @@ class EquipoController extends Controller
             'modelo' => $validated['modelo'],
             'bien_patrimonial' => $validated['bien_patrimonial'],
             'estado' => $validated['estado'],
+            'equipo_status_id' => $this->resolveStatusIdByEstado($validated['estado']),
             'fecha_ingreso' => $validated['fecha_ingreso'],
             'oficina_id' => $validated['office_id'],
             'tipo' => $tipoEquipo->nombre,
@@ -120,10 +122,16 @@ class EquipoController extends Controller
         $equipo->load([
             'oficina.service.institution',
             'tipoEquipo',
+            'equipoStatus',
             'movimientos.user',
             'movimientos.documents',
             'documents.uploadedBy',
         ]);
+
+        $mantenimientos = $equipo->mantenimientos()
+            ->with(['creador:id,name', 'estadoResultante:id,name,color'])
+            ->limit(30)
+            ->get();
 
         $officeIds = $equipo->movimientos
             ->flatMap(fn (Movimiento $movimiento) => [
@@ -149,6 +157,7 @@ class EquipoController extends Controller
 
         return view('equipos.show', [
             'equipo' => $equipo,
+            'mantenimientos' => $mantenimientos,
             'offices' => $offices,
             'instituciones' => $instituciones,
             'servicios' => $servicios,
@@ -190,6 +199,7 @@ class EquipoController extends Controller
             'modelo' => $validated['modelo'],
             'bien_patrimonial' => $validated['bien_patrimonial'],
             'estado' => $validated['estado'],
+            'equipo_status_id' => $this->resolveStatusIdByEstado($validated['estado']),
             'fecha_ingreso' => $validated['fecha_ingreso'],
             'oficina_id' => $validated['office_id'],
             'tipo' => $tipoEquipo->nombre,
@@ -240,6 +250,15 @@ class EquipoController extends Controller
             'servicio_id' => $office?->service?->id,
             'oficina_id' => $office?->id,
         ];
+    }
+
+    private function resolveStatusIdByEstado(string $estado): int
+    {
+        return match ($estado) {
+            Equipo::ESTADO_BAJA => (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_BAJA)->value('id'),
+            Equipo::ESTADO_MANTENIMIENTO => (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_EN_SERVICIO_TECNICO)->value('id'),
+            default => (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_OPERATIVA)->value('id'),
+        };
     }
 
     private function scopedInstituciones(?User $user)

@@ -5,6 +5,8 @@ namespace App\Providers;
 use App\Models\Acta;
 use App\Models\Document;
 use App\Models\Equipo;
+use App\Models\EquipoStatus;
+use App\Models\Mantenimiento;
 use App\Models\Institution;
 use App\Models\Movimiento;
 use App\Models\Office;
@@ -14,6 +16,8 @@ use App\Models\User;
 use App\Policies\ActaPolicy;
 use App\Policies\DocumentPolicy;
 use App\Policies\EquipoPolicy;
+use App\Policies\EquipoStatusPolicy;
+use App\Policies\MantenimientoPolicy;
 use App\Policies\InstitutionPolicy;
 use App\Policies\MovimientoPolicy;
 use App\Policies\OfficePolicy;
@@ -33,6 +37,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(Equipo::class, EquipoPolicy::class);
+        Gate::policy(EquipoStatus::class, EquipoStatusPolicy::class);
+        Gate::policy(Mantenimiento::class, MantenimientoPolicy::class);
         Gate::policy(Institution::class, InstitutionPolicy::class);
         Gate::policy(Service::class, ServicePolicy::class);
         Gate::policy(Office::class, OfficePolicy::class);
