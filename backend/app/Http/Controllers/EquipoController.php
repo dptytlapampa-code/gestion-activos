@@ -121,6 +121,8 @@ class EquipoController extends Controller
             'oficina.service.institution',
             'tipoEquipo',
             'movimientos.user',
+            'movimientos.documents',
+            'documents.uploadedBy',
         ]);
 
         $officeIds = $equipo->movimientos
