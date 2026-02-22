@@ -9,19 +9,26 @@ trait Auditable
 {
     protected static function bootAuditable(): void
     {
+        /** @var array<int, array<string,mixed>> $beforeStates */
+        $beforeStates = [];
+
         static::created(function (Model $model): void {
             $model->writeAudit('create', null, $model->getAttributes());
         });
 
-        static::updating(function (Model $model): void {
-            $model->setAttribute('_audit_before', $model->getOriginal());
+        static::updating(function (Model $model) use (&$beforeStates): void {
+            $beforeStates[spl_object_id($model)] = $model->getOriginal();
         });
 
-        static::updated(function (Model $model): void {
+        static::updated(function (Model $model) use (&$beforeStates): void {
+            $modelId = spl_object_id($model);
+
             /** @var array<string,mixed>|null $before */
-            $before = $model->getAttribute('_audit_before');
+            $before = $beforeStates[$modelId] ?? $model->getOriginal();
+
             $model->writeAudit('update', $before, $model->getAttributes());
-            $model->offsetUnset('_audit_before');
+
+            unset($beforeStates[$modelId]);
         });
 
         static::deleted(function (Model $model): void {

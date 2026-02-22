@@ -206,6 +206,10 @@ class EquipoController extends Controller
             'numero_serie' => $validated['numero_serie'],
         ];
 
+        if ($equipo->offsetExists('_audit_before')) {
+            $equipo->offsetUnset('_audit_before');
+        }
+
         $equipo->update($data);
 
         if ($equipo->wasChanged('oficina_id')) {
