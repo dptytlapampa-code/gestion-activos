@@ -12,7 +12,7 @@
     }
 
     body {
-        @apply bg-surface-100 text-surface-900 antialiased;
+        @apply bg-[#F3F4F6] text-[#374151] antialiased;
     }
 
     .dark body {
@@ -25,15 +25,115 @@
 }
 
 @layer components {
+    .hospital-body {
+        @apply bg-[#F3F4F6];
+    }
+
+    .hospital-layout {
+        @apply bg-[#F3F4F6];
+    }
+
+    .hospital-sidebar {
+        @apply border-r border-blue-900/50 bg-[#1E3A8A] text-white shadow-xl;
+    }
+
+    .hospital-header {
+        @apply border-b border-slate-200 bg-white/95 backdrop-blur;
+    }
+
     .card {
-        @apply rounded-2xl bg-surface-50/90 p-6 shadow-sm backdrop-blur dark:bg-surface-800/80;
+        @apply rounded-xl bg-white p-6 shadow-sm;
     }
 
     .nav-link {
-        @apply flex items-center gap-3 rounded-xl px-4 py-2 text-sm font-medium text-surface-600 transition hover:bg-surface-200/70 hover:text-surface-900 dark:text-surface-300 dark:hover:bg-surface-700/70 dark:hover:text-white;
+        @apply flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-white/90 transition-all duration-200 hover:bg-[#3B82F6]/35 hover:text-white;
     }
 
     .nav-link-active {
-        @apply bg-primary-100 text-primary-700 dark:bg-primary-700/30 dark:text-primary-200;
+        @apply bg-[#3B82F6] text-white shadow;
+    }
+
+    .btn {
+        @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold shadow-sm transition-all duration-200 hover:-translate-y-px;
+    }
+
+    .btn-primary {
+        @apply bg-[#1E3A8A] text-white hover:bg-[#1e40af];
+    }
+
+    .btn-info {
+        @apply bg-[#3B82F6] text-white hover:bg-[#2563eb];
+    }
+
+    .btn-danger {
+        @apply bg-[#EF4444] text-white hover:bg-red-600;
+    }
+
+    .btn-neutral {
+        @apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-100;
+    }
+
+    .app-alert {
+        @apply flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm shadow-sm;
+    }
+
+    .app-alert-icon {
+        @apply inline-flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold;
+    }
+
+    .app-alert-success {
+        @apply border-emerald-200 bg-emerald-50 text-emerald-800;
+    }
+
+    .app-alert-success .app-alert-icon {
+        @apply bg-emerald-100 text-emerald-700;
+    }
+
+    .app-table {
+        @apply min-w-full text-[0.95rem];
+    }
+
+    .app-table thead {
+        @apply bg-slate-100 text-left text-xs uppercase tracking-wide text-slate-600;
+    }
+
+    .app-table th {
+        @apply px-5 py-3.5;
+    }
+
+    .app-table td {
+        @apply px-5 py-4;
+    }
+
+    .app-table tbody tr {
+        @apply border-t border-slate-100;
+    }
+
+    .app-table tbody tr:nth-child(even) {
+        @apply bg-slate-50/70;
+    }
+
+    .app-table tbody tr:hover {
+        @apply bg-blue-50/50;
+    }
+
+    .status-badge {
+        @apply inline-flex rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide;
+    }
+
+    .status-operativo {
+        @apply bg-emerald-100 text-emerald-700;
+    }
+
+    .status-mantenimiento {
+        @apply bg-amber-100 text-amber-700;
+    }
+
+    .status-baja {
+        @apply bg-red-100 text-red-700;
+    }
+
+    .app-input {
+        @apply rounded-lg border-slate-300 text-sm shadow-sm focus:border-[#3B82F6] focus:ring-[#3B82F6];
     }
 }
