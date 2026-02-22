@@ -141,6 +141,10 @@ class MovimientoController extends Controller
                 $equipo->oficina_id = (int) $validated['oficina_destino_id'];
             }
 
+            if ($equipo->offsetExists('_audit_before')) {
+                $equipo->offsetUnset('_audit_before');
+            }
+
             $equipo->save();
         });
 
