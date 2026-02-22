@@ -5,21 +5,19 @@
 - Docker Engine + Docker Compose (plugin `docker compose`)
 - Git
 
-## Quickstart
+## Inicio rápido (desde clone limpio)
 
 ```bash
-git clone git@github.com:dptytlapampa-code/gestion-activos.git
+git clone https://github.com/dptytlapampa-code/gestion-activos.git
 cd gestion-activos
-docker compose up -d --build
+docker compose build --no-cache
+docker compose up -d
+docker compose exec app composer install
+docker compose exec app php artisan migrate --force
+docker compose exec app php artisan test
 ```
 
 La aplicación queda disponible en `http://localhost:8080`.
-
-## Cómo cambiar puertos/DB por variables
-
-- **Puerto HTTP**: ajustá el mapeo en `docker-compose.yml` (servicio `web`).
-- **Base de datos**: cambiá las variables `DB_*` en `backend/.env`.
-- **Ejecución de migraciones/seeders**: seteá `RUN_MIGRATIONS=true` en `backend/.env`.
 
 ## Acceso inicial
 
@@ -28,8 +26,6 @@ Si activás `RUN_MIGRATIONS=true`, el seeder crea un usuario inicial para autent
 - **Email**: `admin@gestion-activos.local`
 - **Password**: `password`
 
-La llave `APP_KEY` se genera automáticamente en el primer arranque del contenedor.
-
 ## Comandos útiles
 
 ```bash
@@ -37,11 +33,4 @@ docker compose ps
 docker compose logs -f --tail=200
 docker compose exec app php -v
 docker compose exec app php artisan --version
-```
-
-Para resetear todo:
-
-```bash
-docker compose down -v
-docker compose up -d --build
 ```
