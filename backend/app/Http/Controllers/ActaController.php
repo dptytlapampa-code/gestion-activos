@@ -154,7 +154,7 @@ class ActaController extends Controller
 
             $acta->load(['institution', 'creator', 'equipos.tipoEquipo']);
 
-            $pdfBinary = Pdf::loadView('actas.pdf', ['acta' => $acta])
+            $pdfBinary = Pdf::loadView("actas.pdf.$acta->tipo", compact('acta'))
                 ->setPaper('a4')
                 ->output();
 
@@ -197,7 +197,7 @@ class ActaController extends Controller
         $acta = Acta::with(['institution', 'equipos.tipoEquipo', 'creator'])->findOrFail($id);
         $this->authorize('view', $acta);
 
-        $pdf = Pdf::loadView('actas.pdf', compact('acta'))
+        $pdf = Pdf::loadView("actas.pdf.$acta->tipo", compact('acta'))
             ->setPaper('a4');
 
         return $pdf->download($acta->codigo.'.pdf');

@@ -1,0 +1,1 @@
+@include('actas.pdf._template', ['clausula' => 'Por la presente se documenta la devolución del equipamiento, verificándose su reintegro a la institución y condición funcional al momento de recepción.'])

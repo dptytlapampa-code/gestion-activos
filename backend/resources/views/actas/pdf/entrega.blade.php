@@ -1,0 +1,1 @@
+@include('actas.pdf._template', ['clausula' => 'Se deja constancia de la entrega institucional del equipamiento biomédico y/o informático detallado, sujeto a uso conforme a normativa hospitalaria vigente.'])

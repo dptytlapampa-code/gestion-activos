@@ -15,12 +15,18 @@ class Movimiento extends Model
     protected $fillable = [
         'equipo_id', 'user_id', 'tipo_movimiento', 'fecha',
         'institucion_origen_id', 'servicio_origen_id', 'oficina_origen_id',
-        'institucion_destino_id', 'servicio_destino_id', 'oficina_destino_id', 'observacion',
+        'institucion_destino_id', 'servicio_destino_id', 'oficina_destino_id',
+        'receptor_nombre', 'receptor_dni', 'receptor_cargo', 'fecha_inicio_prestamo', 'fecha_estimada_devolucion',
+        'observacion',
     ];
 
     protected function casts(): array
     {
-        return ['fecha' => 'datetime'];
+        return [
+            'fecha' => 'datetime',
+            'fecha_inicio_prestamo' => 'date',
+            'fecha_estimada_devolucion' => 'date',
+        ];
     }
 
     public function equipo(): BelongsTo

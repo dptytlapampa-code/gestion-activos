@@ -1,0 +1,1 @@
+@include('actas.pdf._template', ['clausula' => 'El receptor asume custodia temporal del equipamiento en carácter de préstamo, comprometiéndose a su restitución en tiempo y forma, sin alteraciones ni daños.'])
