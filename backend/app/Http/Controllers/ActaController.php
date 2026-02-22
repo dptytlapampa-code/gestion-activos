@@ -4,17 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\Acta;
 use App\Models\AuditLog;
-use App\Models\Document;
 use App\Models\Equipo;
 use App\Models\Institution;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ActaController extends Controller
 {
@@ -37,8 +37,8 @@ class ActaController extends Controller
                 fn (Builder $query) => $query->where('institution_id', $user->institution_id)
             )
             ->when($validated['tipo'] ?? null, fn (Builder $query, string $tipo) => $query->where('tipo', $tipo))
-            ->when($validated['fecha_desde'] ?? null, fn (Builder $query, string $fechaDesde) => $query->whereDate('fecha', '>=', $fechaDesde))
-            ->when($validated['fecha_hasta'] ?? null, fn (Builder $query, string $fechaHasta) => $query->whereDate('fecha', '<=', $fechaHasta))
+            ->when($validated['fecha_desde'] ?? null, fn (Builder $query, string $fecha_desde) => $query->whereDate('fecha', '>=', $fecha_desde))
+            ->when($validated['fecha_hasta'] ?? null, fn (Builder $query, string $fecha_hasta) => $query->whereDate('fecha', '<=', $fecha_hasta))
             ->latest('fecha')
             ->paginate(15)
             ->withQueryString();
@@ -152,9 +152,12 @@ class ActaController extends Controller
                 'user_agent' => request()->userAgent(),
             ]);
 
-            $acta->load(['creator']);
+            $acta->load(['institution', 'creator', 'equipos.tipoEquipo']);
 
-            $pdfBinary = $this->renderPdf($acta);
+            $pdfBinary = Pdf::loadView('actas.pdf', ['acta' => $acta])
+                ->setPaper('a4')
+                ->output();
+
             $path = sprintf('documents/%s/%s.pdf', now()->format('Y/m'), strtolower($acta->codigo));
             Storage::put($path, $pdfBinary);
 
@@ -189,40 +192,14 @@ class ActaController extends Controller
         return view('actas.show', ['acta' => $acta]);
     }
 
-    public function download(Acta $acta): StreamedResponse
+    public function descargar($id): BinaryFileResponse
     {
+        $acta = Acta::with(['institution', 'equipos.tipoEquipo', 'creator'])->findOrFail($id);
         $this->authorize('view', $acta);
 
-        $document = $acta->documents()->where('type', 'acta')->latest()->firstOrFail();
-        $this->authorize('view', $document);
+        $pdf = Pdf::loadView('actas.pdf', compact('acta'))
+            ->setPaper('a4');
 
-        return Storage::download($document->file_path, $document->original_name);
-    }
-
-    private function renderPdf(Acta $acta): string
-    {
-        $lineas = [
-            $acta->codigo,
-            'Tipo: '.strtoupper($acta->tipo),
-            'Fecha: '.$acta->fecha?->format('d/m/Y'),
-            'Receptor: '.$acta->receptor_nombre,
-            'Dependencia: '.($acta->receptor_dependencia ?: '-'),
-            'Generado por: '.($acta->creator?->name ?? 'Sistema'),
-        ];
-
-        $contenido = implode("\n", $lineas);
-        $contenido = str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $contenido);
-
-        $stream = 'BT /F1 12 Tf 40 780 Td ('.str_replace("\n", ') Tj T* (', $contenido).') Tj ET';
-        $length = strlen($stream);
-
-        return "%PDF-1.4\n"
-            ."1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj\n"
-            ."2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj\n"
-            ."3 0 obj<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>endobj\n"
-            ."4 0 obj<< /Length {$length} >>stream\n{$stream}\nendstream endobj\n"
-            ."5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>endobj\n"
-            ."xref\n0 6\n0000000000 65535 f \n0000000010 00000 n \n0000000060 00000 n \n0000000117 00000 n \n0000000243 00000 n \n0000000338 00000 n \n"
-            ."trailer<< /Root 1 0 R /Size 6 >>\nstartxref\n406\n%%EOF";
+        return $pdf->download($acta->codigo.'.pdf');
     }
 }
