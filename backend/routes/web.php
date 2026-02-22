@@ -29,6 +29,7 @@ Route::middleware('auth')->group(function (): void {
     Route::resource('tipos-equipos', TipoEquipoController::class)->parameters(['tipos-equipos' => 'tipo_equipo']);
 
     Route::resource('equipos', EquipoController::class);
+    Route::get('movimientos/create', [MovimientoController::class, 'create'])->name('movimientos.create');
     Route::post('equipos/{equipo}/movimientos', [MovimientoController::class, 'store'])->name('equipos.movimientos.store');
 
     Route::get('mantenimientos', [MantenimientoController::class, 'index'])->name('mantenimientos.index');
