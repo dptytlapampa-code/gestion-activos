@@ -6,65 +6,31 @@
     <title>{{ config('app.name') }} - @yield('title', 'Panel')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen">
-    <div class="flex min-h-screen bg-surface-100">
-        <aside class="w-72 border-r border-surface-200/70 bg-surface-50/90 px-6 py-8">
-            <div class="mb-10">
-                <h1 class="text-lg font-semibold text-surface-800 dark:text-surface-100">{{ config('app.name') }}</h1>
-                <p class="text-xs text-surface-500 dark:text-surface-400">Base administrativa</p>
+<body class="min-h-screen bg-surface-100">
+    <div class="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
+        <header class="mb-6 flex items-center justify-between rounded-2xl border border-surface-200 bg-white px-6 py-4">
+            <div>
+                <h1 class="text-lg font-semibold text-surface-800">{{ config('app.name') }}</h1>
+                <p class="text-sm text-surface-500">Infraestructura inicial</p>
             </div>
-            <nav class="space-y-2">
-                <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'nav-link-active' : '' }}">Panel</a>
-                @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN))
-                    <a href="{{ route('institutions.index') }}" class="nav-link {{ request()->routeIs('institutions.*') ? 'nav-link-active' : '' }}">Instituciones</a>
-                @endif
-                @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO))
-                    <a href="{{ route('services.index') }}" class="nav-link {{ request()->routeIs('services.*') ? 'nav-link-active' : '' }}">Servicios</a>
-                @endif
-                @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO))
-                    <a href="{{ route('offices.index') }}" class="nav-link {{ request()->routeIs('offices.*') ? 'nav-link-active' : '' }}">Oficinas</a>
-                @endif
-                @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO, \App\Models\User::ROLE_VIEWER))
-                    <a href="{{ route('tipos-equipos.index') }}" class="nav-link {{ request()->routeIs('tipos-equipos.*') ? 'nav-link-active' : '' }}">Tipos de equipo</a>
-                @endif
-                @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO, \App\Models\User::ROLE_VIEWER))
-                    <a href="{{ route('equipos.index') }}" class="nav-link {{ request()->routeIs('equipos.*') ? 'nav-link-active' : '' }}">Equipos</a>
-                @endif
-                @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO, \App\Models\User::ROLE_VIEWER))
-                    <a href="{{ route('actas.index') }}" class="nav-link {{ request()->routeIs('actas.*') ? 'nav-link-active' : '' }}">Actas</a>
-                @endif
-                @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN))
-                    <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'nav-link-active' : '' }}">Usuarios</a>
-                    <a href="{{ route('admin.audit.index') }}" class="nav-link {{ request()->routeIs('admin.audit.*') ? 'nav-link-active' : '' }}">Auditoría</a>
-                @endif
-            </nav>
-        </aside>
+            <div class="flex items-center gap-4">
+                <span class="text-sm text-surface-500">{{ auth()->user()->name }}</span>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-700 hover:border-surface-300">Cerrar sesión</button>
+                </form>
+            </div>
+        </header>
 
-        <div class="flex flex-1 flex-col">
-            <header class="flex items-center justify-between border-b border-surface-200/70 bg-surface-50/80 px-8 py-4 backdrop-blur">
-                <div>
-                    <h2 class="text-lg font-semibold text-surface-800">@yield('header', 'Panel')</h2>
-                    <p class="text-sm text-surface-500">{{ now()->translatedFormat('l, j \\d\\e F Y') }}</p>
+        <main class="flex-1">
+            @if (session('status'))
+                <div class="mb-6 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-700">
+                    {{ session('status') }}
                 </div>
-                <div class="flex items-center gap-4">
-                    <span class="text-sm text-surface-500">{{ auth()->user()->name }}</span>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="rounded-xl border border-surface-200/70 px-4 py-2 text-sm text-surface-600 transition hover:border-surface-300 hover:text-surface-900">Cerrar sesión</button>
-                    </form>
-                </div>
-            </header>
+            @endif
 
-            <main class="flex-1 p-8">
-                @if (session('status'))
-                    <div class="mb-6 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-700">
-                        {{ session('status') }}
-                    </div>
-                @endif
-
-                @yield('content')
-            </main>
-        </div>
+            @yield('content')
+        </main>
     </div>
 </body>
 </html>

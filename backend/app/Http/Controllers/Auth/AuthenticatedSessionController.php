@@ -3,16 +3,16 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\AuditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
-    public function create(): \Illuminate\View\View
+    public function create(): View
     {
         return view('auth.login');
     }
@@ -32,22 +32,8 @@ class AuthenticatedSessionController extends Controller
             throw ValidationException::withMessages(['email' => __('auth.failed')]);
         }
 
-        if (! (bool) auth()->user()?->is_active) {
-            Auth::logout();
-            throw ValidationException::withMessages(['email' => 'Usuario inactivo.']);
-        }
-
         RateLimiter::clear($this->throttleKey($request));
         $request->session()->regenerate();
-
-        AuditLog::query()->create([
-            'user_id' => auth()->id(),
-            'action' => 'login',
-            'auditable_type' => 'auth',
-            'auditable_id' => auth()->id(),
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ]);
 
         return redirect()->intended(route('dashboard'));
     }

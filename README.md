@@ -1,47 +1,47 @@
-# Gestion Activos
+# gestion-activos
 
-## Requisitos
+Infraestructura base de **Inventario Salud** con stack fijo:
 
-- Docker Engine + Docker Compose (plugin `docker compose`)
-- Git
+- Laravel **11.48.0**
+- PHP **8.3.0**
+- PostgreSQL **16.2**
+- Blade + Tailwind CSS + Alpine.js
+- Docker + Docker Compose
 
-## Quickstart
+## Puesta en marcha desde cero
 
 ```bash
-git clone git@github.com:dptytlapampa-code/gestion-activos.git
+git clone <repo>
 cd gestion-activos
-docker compose up -d --build
+docker compose up --build
 ```
 
-La aplicación queda disponible en `http://localhost:8080`.
+Aplicación disponible en `http://localhost:8080`.
 
-## Cómo cambiar puertos/DB por variables
+## Autenticación básica
 
-- **Puerto HTTP**: ajustá el mapeo en `docker-compose.yml` (servicio `web`).
-- **Base de datos**: cambiá las variables `DB_*` en `backend/.env`.
-- **Ejecución de migraciones/seeders**: seteá `RUN_MIGRATIONS=true` en `backend/.env`.
+Para inicializar usuario administrador, activar migraciones y seeders:
 
-## Acceso inicial
+1. Configurar `RUN_MIGRATIONS=true` en `.env` del root (o variable de entorno al ejecutar compose).
+2. Levantar contenedores con `docker compose up --build`.
 
-Si activás `RUN_MIGRATIONS=true`, el seeder crea un usuario inicial para autenticación.
+Credenciales iniciales:
 
-- **Email**: `admin@gestion-activos.local`
-- **Password**: `password`
+- Email: `admin@gestion-activos.local`
+- Password: `password`
 
-La llave `APP_KEY` se genera automáticamente en el primer arranque del contenedor.
+## Servicios Docker
+
+- `app`: PHP-FPM 8.3 + Laravel
+- `web`: Nginx 1.25 (sirve la app en puerto 8080)
+- `db`: PostgreSQL 16.2
 
 ## Comandos útiles
 
 ```bash
 docker compose ps
 docker compose logs -f --tail=200
-docker compose exec app php -v
 docker compose exec app php artisan --version
-```
-
-Para resetear todo:
-
-```bash
-docker compose down -v
-docker compose up -d --build
+docker compose exec app php -v
+docker compose exec app php artisan test
 ```
