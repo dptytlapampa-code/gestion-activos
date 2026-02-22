@@ -33,7 +33,7 @@
             <thead class="bg-slate-50 text-left text-xs uppercase text-slate-600">
                 <tr>
                     <th class="px-4 py-3">Tipo</th><th class="px-4 py-3">Marca</th><th class="px-4 py-3">Modelo</th>
-                    <th class="px-4 py-3">Estado</th><th class="px-4 py-3">N° serie</th><th class="px-4 py-3">Oficina</th><th class="px-4 py-3">Acciones</th>
+                    <th class="px-4 py-3">Estado</th><th class="px-4 py-3">N° serie</th><th class="px-4 py-3">Ubicación</th><th class="px-4 py-3">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -44,7 +44,13 @@
                     <td class="px-4 py-3">{{ $equipo->modelo }}</td>
                     <td class="px-4 py-3">{{ ucfirst($equipo->estado) }}</td>
                     <td class="px-4 py-3">{{ $equipo->numero_serie }}</td>
-                    <td class="px-4 py-3">{{ $equipo->oficina?->nombre }}</td>
+                    <td class="px-4 py-3">
+                        <div class="space-y-0.5">
+                            <div class="font-semibold text-slate-900">{{ $equipo->oficina?->service?->institution?->nombre }}</div>
+                            <div class="text-slate-700">{{ $equipo->oficina?->service?->nombre }}</div>
+                            <div class="text-xs text-slate-500">{{ $equipo->oficina?->nombre }}</div>
+                        </div>
+                    </td>
                     <td class="px-4 py-3">
                         <div class="flex gap-3">
                             @can('view', $equipo)<a class="text-indigo-600" href="{{ route('equipos.show',$equipo) }}">Ver</a>@endcan
