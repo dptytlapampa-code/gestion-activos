@@ -41,7 +41,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('actas/create', [ActaController::class, 'create'])->name('actas.create');
     Route::post('actas', [ActaController::class, 'store'])->name('actas.store');
     Route::get('actas/{acta}', [ActaController::class, 'show'])->name('actas.show');
-    Route::get('actas/{acta}/pdf', [ActaController::class, 'download'])->name('actas.download');
+    Route::get('actas/{acta}/pdf', [ActaController::class, 'descargar'])->name('actas.download');
 
     Route::post('equipos/{equipo}/documents', [DocumentController::class, 'storeForEquipo'])->name('equipos.documents.store');
     Route::post('movimientos/{movimiento}/documents', [DocumentController::class, 'storeForMovimiento'])->name('movimientos.documents.store');
