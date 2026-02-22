@@ -17,8 +17,9 @@ class Equipo extends Model
     public const ESTADO_OPERATIVO = 'operativo';
     public const ESTADO_MANTENIMIENTO = 'mantenimiento';
     public const ESTADO_BAJA = 'baja';
+    public const ESTADO_PRESTAMO = 'prestamo';
 
-    public const ESTADOS = [self::ESTADO_OPERATIVO, self::ESTADO_MANTENIMIENTO, self::ESTADO_BAJA];
+    public const ESTADOS = [self::ESTADO_OPERATIVO, self::ESTADO_MANTENIMIENTO, self::ESTADO_BAJA, self::ESTADO_PRESTAMO];
 
     protected $fillable = ['tipo', 'tipo_equipo_id', 'marca', 'modelo', 'numero_serie', 'bien_patrimonial', 'estado', 'equipo_status_id', 'fecha_ingreso', 'oficina_id'];
 
@@ -72,6 +73,30 @@ class Equipo extends Model
         return $this->morphMany(Document::class, 'documentable')->latest();
     }
 
+
+
+    public function tienePrestamoActivo(): bool
+    {
+        return Movimiento::query()
+            ->where('equipo_id', $this->id)
+            ->where('tipo_movimiento', Movimiento::TIPO_PRESTAMO)
+            ->whereNull('fecha_devolucion_real')
+            ->exists();
+    }
+
+    /**
+     * @return array{institucion_id:int|null,servicio_id:int|null,oficina_id:int|null}
+     */
+    public function ubicacionActual(): array
+    {
+        $this->loadMissing('oficina.service.institution');
+
+        return [
+            'institucion_id' => $this->oficina?->service?->institution?->id,
+            'servicio_id' => $this->oficina?->service?->id,
+            'oficina_id' => $this->oficina?->id,
+        ];
+    }
     public function isOperativa(): bool
     {
         return $this->equipoStatus?->code === EquipoStatus::CODE_OPERATIVA;
