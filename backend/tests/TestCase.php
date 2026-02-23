@@ -14,6 +14,8 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
+        $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
+
         $this->seed(EquipoStatusSeeder::class);
     }
 }
