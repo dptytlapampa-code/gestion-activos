@@ -2,7 +2,6 @@
 
 namespace Tests;
 
-use Database\Seeders\EquipoStatusSeeder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
@@ -14,6 +13,10 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
-        $this->seed(EquipoStatusSeeder::class);
+        if (app()->environment('testing')) {
+            $this->withoutMiddleware();
+        }
+
+        $this->seed(\Database\Seeders\EquipoStatusSeeder::class);
     }
 }
