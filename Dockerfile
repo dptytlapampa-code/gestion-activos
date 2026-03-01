@@ -34,7 +34,12 @@ RUN if [ ! -f /var/www/app/composer.lock ]; then \
     fi \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
     && composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --working-dir=/var/www/app \
-    && mkdir -p /var/www/app/storage /var/www/app/bootstrap/cache \
+    && mkdir -p \
+        /var/www/app/storage/framework/sessions \
+        /var/www/app/storage/framework/views \
+        /var/www/app/storage/framework/cache \
+        /var/www/app/storage/logs \
+        /var/www/app/bootstrap/cache \
     && chown -R www-data:www-data /var/www/app/storage /var/www/app/bootstrap/cache
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
