@@ -198,7 +198,7 @@ class ActaController extends Controller
 
         $acta->load(['institution', 'equipos.tipoEquipo', 'creator']);
 
-        $pdf = Pdf::loadView("actas.pdf.$acta->tipo", compact('acta'))
+        $pdf = Pdf::loadView('actas.pdf.'.$acta->tipo, compact('acta'))
             ->setPaper('a4');
 
         return $pdf->download($acta->codigo.'.pdf');
