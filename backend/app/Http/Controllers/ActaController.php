@@ -11,10 +11,10 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ActaController extends Controller
 {
@@ -192,10 +192,11 @@ class ActaController extends Controller
         return view('actas.show', ['acta' => $acta]);
     }
 
-    public function descargar($id): BinaryFileResponse
+    public function descargar(Acta $acta): Response
     {
-        $acta = Acta::with(['institution', 'equipos.tipoEquipo', 'creator'])->findOrFail($id);
         $this->authorize('view', $acta);
+
+        $acta->load(['institution', 'equipos.tipoEquipo', 'creator']);
 
         $pdf = Pdf::loadView("actas.pdf.$acta->tipo", compact('acta'))
             ->setPaper('a4');
