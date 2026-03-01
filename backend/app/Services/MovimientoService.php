@@ -64,7 +64,6 @@ class MovimientoService
             }
 
             if ($tipo === Movimiento::TIPO_PRESTAMO) {
-                $estadoNuevo = Equipo::ESTADO_PRESTAMO;
                 $prestamoData = [
                     'receptor_nombre' => $data['receptor_nombre'],
                     'receptor_dni' => $data['receptor_dni'],

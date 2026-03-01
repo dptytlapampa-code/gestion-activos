@@ -17,13 +17,17 @@ class Equipo extends Model
     public const ESTADO_OPERATIVO = 'operativo';
     public const ESTADO_MANTENIMIENTO = 'mantenimiento';
     public const ESTADO_BAJA = 'baja';
-    public const ESTADO_PRESTAMO = 'prestamo';
 
-    public const ESTADOS = [self::ESTADO_OPERATIVO, self::ESTADO_MANTENIMIENTO, self::ESTADO_BAJA, self::ESTADO_PRESTAMO];
+    public const ESTADOS = [
+        self::ESTADO_OPERATIVO,
+        self::ESTADO_MANTENIMIENTO,
+        self::ESTADO_BAJA,
+    ];
 
     protected $fillable = ['tipo', 'tipo_equipo_id', 'marca', 'modelo', 'numero_serie', 'bien_patrimonial', 'estado', 'equipo_status_id', 'fecha_ingreso', 'oficina_id'];
 
     protected $guarded = ['id', 'created_at', 'updated_at'];
+
     protected static function booted(): void
     {
         static::creating(function (Equipo $equipo): void {
@@ -73,8 +77,6 @@ class Equipo extends Model
         return $this->morphMany(Document::class, 'documentable')->latest();
     }
 
-
-
     public function tienePrestamoActivo(): bool
     {
         return Movimiento::query()
@@ -97,6 +99,7 @@ class Equipo extends Model
             'oficina_id' => $this->oficina?->id,
         ];
     }
+
     public function isOperativa(): bool
     {
         return $this->equipoStatus?->code === EquipoStatus::CODE_OPERATIVA;
