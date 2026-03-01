@@ -128,6 +128,62 @@ class EquipoModuleTest extends TestCase
         $this->actingAs($admin)->delete(route('equipos.destroy', $equipoB))->assertForbidden();
     }
 
+
+    public function test_creacion_acepta_estado_valido(): void
+    {
+        $institution = Institution::create(['nombre' => 'Hospital Valido']);
+        $service = Service::create(['nombre' => 'Servicio Valido', 'institution_id' => $institution->id]);
+        $office = Office::create(['nombre' => 'Oficina Valida', 'service_id' => $service->id]);
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Bomba de infusion']);
+
+        $superadmin = $this->crearUsuario(User::ROLE_SUPERADMIN);
+
+        $this->actingAs($superadmin)->post(route('equipos.store'), [
+            'institution_id' => $institution->id,
+            'service_id' => $service->id,
+            'oficina_id' => $office->id,
+            'tipo_equipo_id' => $tipoEquipo->id,
+            'marca' => 'Mindray',
+            'modelo' => 'IP-100',
+            'numero_serie' => 'SER-VALIDO-1',
+            'bien_patrimonial' => 'BP-VALIDO-1',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => '2025-02-10',
+        ])->assertRedirect(route('equipos.index'));
+
+        $this->assertDatabaseHas('equipos', [
+            'numero_serie' => 'SER-VALIDO-1',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+        ]);
+    }
+
+    public function test_creacion_rechaza_estado_invalido(): void
+    {
+        $institution = Institution::create(['nombre' => 'Hospital Invalido']);
+        $service = Service::create(['nombre' => 'Servicio Invalido', 'institution_id' => $institution->id]);
+        $office = Office::create(['nombre' => 'Oficina Invalida', 'service_id' => $service->id]);
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Monitor multiparametrico']);
+
+        $superadmin = $this->crearUsuario(User::ROLE_SUPERADMIN);
+
+        $this->actingAs($superadmin)->post(route('equipos.store'), [
+            'institution_id' => $institution->id,
+            'service_id' => $service->id,
+            'oficina_id' => $office->id,
+            'tipo_equipo_id' => $tipoEquipo->id,
+            'marca' => 'Philips',
+            'modelo' => 'V60',
+            'numero_serie' => 'SER-INVALIDO-1',
+            'bien_patrimonial' => 'BP-INVALIDO-1',
+            'estado' => 'prestamo',
+            'fecha_ingreso' => '2025-02-10',
+        ])->assertSessionHasErrors(['estado']);
+
+        $this->assertDatabaseMissing('equipos', [
+            'numero_serie' => 'SER-INVALIDO-1',
+        ]);
+    }
+
     private function crearUsuario(string $role): User
     {
         return User::create([

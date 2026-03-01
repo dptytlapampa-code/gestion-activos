@@ -42,6 +42,7 @@ RUN if [ ! -f /var/www/app/composer.lock ]; then \
         /var/www/app/bootstrap/cache \
     && chown -R www-data:www-data /var/www/app/storage /var/www/app/bootstrap/cache
 
+COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 

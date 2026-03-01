@@ -32,6 +32,25 @@ class DocumentModuleTest extends TestCase
         $this->assertDatabaseHas('documents', ['documentable_type' => Equipo::class, 'documentable_id' => $equipo->id]);
     }
 
+
+    public function test_admin_puede_subir_imagen_jpg(): void
+    {
+        Storage::fake();
+        [$admin, $equipo] = $this->crearEscenario(User::ROLE_ADMIN, true);
+
+        $this->actingAs($admin)->post(route('equipos.documents.store', $equipo), [
+            'type' => 'nota',
+            'note' => 'Foto del equipo',
+            'file' => UploadedFile::fake()->image('equipo.jpg')->size(3000),
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('documents', [
+            'documentable_type' => Equipo::class,
+            'documentable_id' => $equipo->id,
+            'original_name' => 'equipo.jpg',
+        ]);
+    }
+
     public function test_subida_fuera_de_alcance_da_403(): void
     {
         Storage::fake();
