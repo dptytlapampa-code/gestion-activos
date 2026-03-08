@@ -11,7 +11,7 @@
             <p class="text-sm text-slate-500">Gestión visual de activos biomédicos y tecnológicos.</p>
         </div>
         @can('create', \App\Models\Equipo::class)
-            <a href="{{ route('equipos.create') }}" class="btn btn-primary">Nuevo equipo</a>
+            <a href="{{ route('equipos.create') }}" class="btn btn-primary">Crear equipo</a>
         @endcan
     </div>
 
