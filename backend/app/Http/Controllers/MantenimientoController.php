@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Throwable;
 
 class MantenimientoController extends Controller
 {
@@ -58,10 +59,14 @@ class MantenimientoController extends Controller
             'override_rules' => ['nullable', 'boolean'],
         ]);
 
-        DB::transaction(function () use ($equipo, $validated, $user, $institutionId): void {
-            $equipo->refresh()->load('equipoStatus');
-            $this->applyRulesAndCreate($equipo, $validated, $user, $institutionId);
-        });
+        try {
+            DB::transaction(function () use ($equipo, $validated, $user, $institutionId): void {
+                $equipo->refresh()->load('equipoStatus');
+                $this->applyRulesAndCreate($equipo, $validated, $user, $institutionId);
+            });
+        } catch (Throwable $exception) {
+            return $this->friendlyErrorRedirect($exception);
+        }
 
         return back()->with('status', 'Mantenimiento registrado correctamente.');
     }

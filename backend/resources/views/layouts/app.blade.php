@@ -36,7 +36,7 @@
                 @endif
                 @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN))
                     <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'nav-link-active' : '' }}">Usuarios</a>
-                    <a href="{{ route('admin.audit.index') }}" class="nav-link {{ request()->routeIs('admin.audit.*') ? 'nav-link-active' : '' }}">Auditoría</a>
+                    <a href="{{ route('admin.audit.index') }}" class="nav-link {{ request()->routeIs('admin.audit.*') ? 'nav-link-active' : '' }}">Auditoria</a>
                 @endif
             </nav>
         </aside>
@@ -51,18 +51,13 @@
                     <span class="rounded-lg bg-white px-3 py-2 text-sm font-medium text-slate-600 shadow-sm">{{ auth()->user()->name }}</span>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="btn btn-neutral">Cerrar sesión</button>
+                        <button type="submit" class="btn btn-neutral">Cerrar sesion</button>
                     </form>
                 </div>
             </header>
 
             <main class="flex-1 space-y-6 p-8">
-                @if (session('status'))
-                    <div class="app-alert app-alert-success" role="status" aria-live="polite">
-                        <span class="app-alert-icon" aria-hidden="true">✓</span>
-                        <span>{{ session('status') }}</span>
-                    </div>
-                @endif
+                <x-flash-alerts />
 
                 @yield('content')
             </main>

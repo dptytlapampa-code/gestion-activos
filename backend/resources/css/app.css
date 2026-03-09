@@ -89,6 +89,34 @@
         @apply bg-emerald-100 text-emerald-700;
     }
 
+    .app-alert-warning {
+        @apply border-amber-200 bg-amber-50 text-amber-800;
+    }
+
+    .app-alert-warning .app-alert-icon {
+        @apply bg-amber-100 text-amber-700;
+    }
+
+    .app-alert-error {
+        @apply border-red-200 bg-red-50 text-red-800;
+    }
+
+    .app-alert-error .app-alert-icon {
+        @apply bg-red-100 text-red-700;
+    }
+
+    .form-control {
+        @apply mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200;
+    }
+
+    .form-control-error {
+        @apply border-red-300 focus:border-red-500 focus:ring-red-100;
+    }
+
+    .form-error {
+        @apply mt-1 text-xs text-red-600;
+    }
+
     .app-table {
         @apply min-w-full text-[0.95rem];
     }

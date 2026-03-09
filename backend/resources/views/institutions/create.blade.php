@@ -33,10 +33,11 @@
                         name="codigo_institucional"
                         value="{{ old('codigo_institucional') }}"
                         maxlength="20"
-                        class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                        class="form-control @error('codigo_institucional') form-control-error @enderror"
                         required
                     />
                     <p class="mt-2 text-xs text-surface-500">Debe ser unico y no se podra modificar luego.</p>
+                    @error('codigo_institucional') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -47,9 +48,10 @@
                         name="nombre"
                         value="{{ old('nombre') }}"
                         maxlength="255"
-                        class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                        class="form-control @error('nombre') form-control-error @enderror"
                         required
                     />
+                    @error('nombre') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -57,7 +59,7 @@
                     <select
                         id="tipo"
                         name="tipo"
-                        class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                        class="form-control @error('tipo') form-control-error @enderror"
                         required
                     >
                         <option value="">Seleccione un tipo</option>
@@ -67,6 +69,7 @@
                             </option>
                         @endforeach
                     </select>
+                    @error('tipo') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -74,7 +77,7 @@
                     <select
                         id="estado"
                         name="estado"
-                        class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                        class="form-control @error('estado') form-control-error @enderror"
                     >
                         @foreach ($estados as $estado)
                             <option value="{{ $estado }}" @selected(old('estado', 'activo') === $estado)>
@@ -82,6 +85,7 @@
                             </option>
                         @endforeach
                     </select>
+                    @error('estado') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="md:col-span-2">
@@ -92,8 +96,9 @@
                         name="direccion"
                         value="{{ old('direccion') }}"
                         maxlength="255"
-                        class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                        class="form-control @error('direccion') form-control-error @enderror"
                     />
+                    @error('direccion') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -104,8 +109,9 @@
                         name="localidad"
                         value="{{ old('localidad') }}"
                         maxlength="150"
-                        class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                        class="form-control @error('localidad') form-control-error @enderror"
                     />
+                    @error('localidad') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -116,8 +122,9 @@
                         name="provincia"
                         value="{{ old('provincia') }}"
                         maxlength="150"
-                        class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                        class="form-control @error('provincia') form-control-error @enderror"
                     />
+                    @error('provincia') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -128,8 +135,9 @@
                         name="telefono"
                         value="{{ old('telefono') }}"
                         maxlength="50"
-                        class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                        class="form-control @error('telefono') form-control-error @enderror"
                     />
+                    @error('telefono') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -140,8 +148,9 @@
                         name="email"
                         value="{{ old('email') }}"
                         maxlength="255"
-                        class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                        class="form-control @error('email') form-control-error @enderror"
                     />
+                    @error('email') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="md:col-span-2">
@@ -152,8 +161,9 @@
                         name="responsable"
                         value="{{ old('responsable') }}"
                         maxlength="255"
-                        class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                        class="form-control @error('responsable') form-control-error @enderror"
                     />
+                    @error('responsable') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="md:col-span-2">
@@ -163,8 +173,9 @@
                         name="descripcion"
                         rows="4"
                         maxlength="2000"
-                        class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                        class="form-control @error('descripcion') form-control-error @enderror"
                     >{{ old('descripcion') }}</textarea>
+                    @error('descripcion') <p class="form-error">{{ $message }}</p> @enderror
                 </div>
             </div>
 
