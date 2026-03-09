@@ -152,52 +152,23 @@
                 </div>
             </div>
 
-            <div x-show="tipo === 'entrega'" x-cloak class="grid gap-4 md:grid-cols-3">
-                <div>
-                    <label class="block text-sm font-medium text-slate-700">Institucion destino</label>
-                    <select name="institution_destino_id" x-model="institution_destino_id" @change="onEntregaInstitutionChange()" class="mt-1 w-full rounded-xl border-slate-300">
-                        <option value="">Seleccionar</option>
-                        @foreach ($institutions as $institution)
-                            <option value="{{ $institution->id }}">{{ $institution->nombre }}</option>
-                        @endforeach
-                    </select>
-                    @error('institution_destino_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700">Servicio destino</label>
-                    <select name="service_destino_id" x-model="service_destino_id" @change="onDestinoServiceChange('destino')" :disabled="!institution_destino_id || isLoadingServices.destino" class="mt-1 w-full rounded-xl border-slate-300 disabled:bg-slate-100 disabled:text-slate-500">
-                        <option value="">Seleccionar</option>
-                        <template x-for="service in serviceOptions.destino" :key="`sd-${service.id}`">
-                            <option :value="String(service.id)" x-text="service.label"></option>
-                        </template>
-                    </select>
-                    @error('service_destino_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-700">Oficina destino</label>
-                    <select name="office_destino_id" x-model="office_destino_id" :disabled="!institution_destino_id || !service_destino_id || isLoadingOffices.destino" class="mt-1 w-full rounded-xl border-slate-300 disabled:bg-slate-100 disabled:text-slate-500">
-                        <option value="">Seleccionar</option>
-                        <template x-for="office in officeOptions.destino" :key="`od-${office.id}`">
-                            <option :value="String(office.id)" x-text="office.label"></option>
-                        </template>
-                    </select>
-                    @error('office_destino_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                </div>
-            </div>
-
-            <div x-show="tipo === 'traslado'" x-cloak class="space-y-4">
-                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                    <p class="font-semibold text-slate-900">Institucion origen detectada</p>
-                    <p class="mt-1" x-text="selected.length ? (getSelectedInstitutionName() || 'Sin institucion') : 'Agregue equipos para detectar la institucion.'"></p>
-                    <p class="mt-1 text-xs text-slate-500">Regla: el traslado no permite cambiar de institucion.</p>
-                </div>
-
-                <div class="grid gap-4 md:grid-cols-2">
+            <template x-if="tipo === 'entrega'">
+                <div class="grid gap-4 md:grid-cols-3">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Institucion destino</label>
+                        <select name="institution_destino_id" x-model="institution_destino_id" @change="onEntregaInstitutionChange()" class="mt-1 w-full rounded-xl border-slate-300">
+                            <option value="">Seleccionar</option>
+                            @foreach ($institutions as $institution)
+                                <option value="{{ $institution->id }}">{{ $institution->nombre }}</option>
+                            @endforeach
+                        </select>
+                        @error('institution_destino_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                    </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700">Servicio destino</label>
-                        <select name="service_destino_id" x-model="service_destino_id" @change="onDestinoServiceChange('traslado')" :disabled="!getSelectedInstitutionId() || isLoadingServices.traslado" class="mt-1 w-full rounded-xl border-slate-300 disabled:bg-slate-100 disabled:text-slate-500">
+                        <select name="service_destino_id" x-model="service_destino_id" @change="onDestinoServiceChange('destino')" :disabled="!institution_destino_id || isLoadingServices.destino" class="mt-1 w-full rounded-xl border-slate-300 disabled:bg-slate-100 disabled:text-slate-500">
                             <option value="">Seleccionar</option>
-                            <template x-for="service in serviceOptions.traslado" :key="`st-${service.id}`">
+                            <template x-for="service in serviceOptions.destino" :key="`sd-${service.id}`">
                                 <option :value="String(service.id)" x-text="service.label"></option>
                             </template>
                         </select>
@@ -205,16 +176,49 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700">Oficina destino</label>
-                        <select name="office_destino_id" x-model="office_destino_id" :disabled="!service_destino_id || isLoadingOffices.traslado" class="mt-1 w-full rounded-xl border-slate-300 disabled:bg-slate-100 disabled:text-slate-500">
+                        <select name="office_destino_id" x-model="office_destino_id" :disabled="!institution_destino_id || !service_destino_id || isLoadingOffices.destino" class="mt-1 w-full rounded-xl border-slate-300 disabled:bg-slate-100 disabled:text-slate-500">
                             <option value="">Seleccionar</option>
-                            <template x-for="office in officeOptions.traslado" :key="`ot-${office.id}`">
+                            <template x-for="office in officeOptions.destino" :key="`od-${office.id}`">
                                 <option :value="String(office.id)" x-text="office.label"></option>
                             </template>
                         </select>
                         @error('office_destino_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                 </div>
-            </div>
+            </template>
+
+            <template x-if="tipo === 'traslado'">
+                <div class="space-y-4">
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                        <p class="font-semibold text-slate-900">Institucion origen detectada</p>
+                        <p class="mt-1" x-text="selected.length ? (getSelectedInstitutionName() || 'Sin institucion') : 'Agregue equipos para detectar la institucion.'"></p>
+                        <p class="mt-1 text-xs text-slate-500">Regla: el traslado no permite cambiar de institucion.</p>
+                    </div>
+
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700">Servicio destino</label>
+                            <select name="service_destino_id" x-model="service_destino_id" @change="onDestinoServiceChange('traslado')" :disabled="!getSelectedInstitutionId() || isLoadingServices.traslado" class="mt-1 w-full rounded-xl border-slate-300 disabled:bg-slate-100 disabled:text-slate-500">
+                                <option value="">Seleccionar</option>
+                                <template x-for="service in serviceOptions.traslado" :key="`st-${service.id}`">
+                                    <option :value="String(service.id)" x-text="service.label"></option>
+                                </template>
+                            </select>
+                            @error('service_destino_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700">Oficina destino</label>
+                            <select name="office_destino_id" x-model="office_destino_id" :disabled="!service_destino_id || isLoadingOffices.traslado" class="mt-1 w-full rounded-xl border-slate-300 disabled:bg-slate-100 disabled:text-slate-500">
+                                <option value="">Seleccionar</option>
+                                <template x-for="office in officeOptions.traslado" :key="`ot-${office.id}`">
+                                    <option :value="String(office.id)" x-text="office.label"></option>
+                                </template>
+                            </select>
+                            @error('office_destino_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
+                </div>
+            </template>
 
             <div x-show="['entrega','prestamo'].includes(tipo)" x-cloak class="grid gap-4 md:grid-cols-3">
                 <div>
