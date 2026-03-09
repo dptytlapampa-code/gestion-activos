@@ -41,7 +41,7 @@ class UserController extends Controller
         User::query()->create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'password' => $validated['password'],
+            'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
             'institution_id' => $validated['role'] === User::ROLE_SUPERADMIN ? null : $validated['institution_id'],
             'is_active' => true,
@@ -80,6 +80,6 @@ class UserController extends Controller
     {
         $user->update(['password' => Hash::make('123456')]);
 
-        return back()->with('status', 'Contraseña reseteada a 123456.');
+        return back()->with('status', 'Contrasena reseteada a 123456.');
     }
 }

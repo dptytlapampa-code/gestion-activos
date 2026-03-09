@@ -17,7 +17,7 @@ use App\Http\Controllers\TipoEquipoController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->middleware('guest')->name('login');
-Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware('guest')->name('login.store');
+Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware(['guest', 'throttle:5,1'])->name('login.store');
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::middleware('auth')->group(function (): void {
@@ -65,3 +65,4 @@ Route::middleware('auth')->group(function (): void {
 });
 
 Route::get('/api/search/tipos-equipos', [SearchController::class, 'tiposEquipos'])->middleware('auth');
+

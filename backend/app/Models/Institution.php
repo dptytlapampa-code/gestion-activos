@@ -11,7 +11,32 @@ class Institution extends Model
 {
     use Auditable, HasFactory;
 
-    protected $fillable = ['codigo', 'nombre', 'descripcion'];
+    public const TIPOS = [
+        'hospital',
+        'centro_salud',
+        'administrativo',
+        'deposito',
+        'otro',
+    ];
+
+    public const ESTADOS = [
+        'activo',
+        'inactivo',
+    ];
+
+    protected $fillable = [
+        'codigo',
+        'nombre',
+        'descripcion',
+        'localidad',
+        'provincia',
+        'direccion',
+        'telefono',
+        'email',
+        'responsable',
+        'tipo',
+        'estado',
+    ];
 
     protected static function booted(): void
     {

@@ -3,7 +3,7 @@
 return [
     'name' => env('APP_NAME', 'Gestion Activos'),
     'env' => env('APP_ENV', 'local'),
-    'debug' => (bool) env('APP_DEBUG', true),
+    'debug' => (bool) env('APP_DEBUG', false),
     'url' => env('APP_URL', 'http://localhost:8080'),
     'timezone' => env('APP_TIMEZONE', 'UTC'),
     'locale' => env('APP_LOCALE', 'es'),
