@@ -179,17 +179,19 @@ class SearchController extends Controller
 
     public function tiposEquipos(Request $request): JsonResponse
     {
-        $q = $request->get('q');
+        $q = (string) $request->validate([
+            'q' => ['required', 'string', 'min:2'],
+        ])['q'];
+        $listAll = $this->isListAllQuery($q);
 
         return response()->json(
             TipoEquipo::query()
-                ->where('nombre', 'ILIKE', "%{$q}%")
+                ->when(! $listAll, fn ($query) => $query->where('nombre', 'ilike', "%{$q}%"))
                 ->orderBy('nombre')
-                ->limit(20)
+                ->limit(50)
                 ->get(['id', 'nombre as label'])
         );
     }
-
     private function validatedQuery(Request $request): string
     {
         return (string) $request->validate([
@@ -202,3 +204,4 @@ class SearchController extends Controller
         return trim($query) === '...';
     }
 }
+

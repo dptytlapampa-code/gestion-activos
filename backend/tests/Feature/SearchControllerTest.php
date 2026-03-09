@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Institution;
 use App\Models\Office;
 use App\Models\Service;
+use App\Models\TipoEquipo;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -116,6 +117,40 @@ class SearchControllerTest extends TestCase
         $labels = collect($response->json())->pluck('label')->all();
 
         $this->assertSame(['Cardiologia'], $labels);
+    }
+
+    public function test_tipos_equipo_returns_full_list_when_query_is_three_dots_with_limit_fifty(): void
+    {
+        for ($i = 1; $i <= 60; $i++) {
+            TipoEquipo::create([
+                'nombre' => 'Tipo '.str_pad((string) $i, 2, '0', STR_PAD_LEFT),
+            ]);
+        }
+
+        $response = $this->actingAs($this->createUser(User::ROLE_SUPERADMIN))
+            ->get('/api/search/tipos-equipos?q=...');
+
+        $response->assertOk();
+
+        $payload = collect($response->json());
+
+        $this->assertCount(50, $payload);
+        $this->assertSame('Tipo 01', $payload->first()['label']);
+    }
+
+    public function test_tipos_equipo_text_search_keeps_working(): void
+    {
+        TipoEquipo::create(['nombre' => 'Monitor']);
+        TipoEquipo::create(['nombre' => 'Notebook']);
+
+        $response = $this->actingAs($this->createUser(User::ROLE_SUPERADMIN))
+            ->get('/api/search/tipos-equipos?q=mon');
+
+        $response->assertOk();
+
+        $labels = collect($response->json())->pluck('label')->all();
+
+        $this->assertSame(['Monitor'], $labels);
     }
 
     private function createUser(string $role): User
