@@ -184,6 +184,37 @@ class EquipoModuleTest extends TestCase
         ]);
     }
 
+
+    public function test_creacion_permite_mac_address_y_codigo_interno_opcionales(): void
+    {
+        $institution = Institution::create(['nombre' => 'Hospital MAC']);
+        $service = Service::create(['nombre' => 'Ingenieria Clinica', 'institution_id' => $institution->id]);
+        $office = Office::create(['nombre' => 'Deposito BIOMED', 'service_id' => $service->id]);
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'CPU']);
+
+        $superadmin = $this->crearUsuario(User::ROLE_SUPERADMIN);
+
+        $this->actingAs($superadmin)->post(route('equipos.store'), [
+            'institution_id' => $institution->id,
+            'service_id' => $service->id,
+            'oficina_id' => $office->id,
+            'tipo_equipo_id' => $tipoEquipo->id,
+            'marca' => 'Dell',
+            'modelo' => 'Optiplex',
+            'numero_serie' => 'SER-MAC-001',
+            'bien_patrimonial' => 'BP-MAC-001',
+            'mac_address' => 'AA:BB:CC:DD:EE:FF',
+            'codigo_interno' => 'CI-MAC-001',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => '2025-02-11',
+        ])->assertRedirect(route('equipos.index'));
+
+        $this->assertDatabaseHas('equipos', [
+            'numero_serie' => 'SER-MAC-001',
+            'mac_address' => 'AA:BB:CC:DD:EE:FF',
+            'codigo_interno' => 'CI-MAC-001',
+        ]);
+    }
     private function crearUsuario(string $role): User
     {
         return User::create([

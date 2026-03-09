@@ -219,6 +219,53 @@ class SearchControllerTest extends TestCase
         $this->assertCount(1, $codigoResponse->json());
     }
 
+
+    public function test_search_equipos_excluye_baja_por_defecto_y_permite_incluirla(): void
+    {
+        $institution = Institution::create(['nombre' => 'Hospital Estado']);
+        $service = Service::create(['nombre' => 'Soporte', 'institution_id' => $institution->id]);
+        $office = Office::create(['nombre' => 'Oficina Estado', 'service_id' => $service->id]);
+        $tipo = TipoEquipo::create(['nombre' => 'PC']);
+
+        Equipo::create([
+            'tipo' => $tipo->nombre,
+            'tipo_equipo_id' => $tipo->id,
+            'marca' => 'Lenovo',
+            'modelo' => 'M70',
+            'numero_serie' => 'SER-EST-01',
+            'bien_patrimonial' => 'BP-EST-01',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => now()->toDateString(),
+            'oficina_id' => $office->id,
+        ]);
+
+        Equipo::create([
+            'tipo' => $tipo->nombre,
+            'tipo_equipo_id' => $tipo->id,
+            'marca' => 'Lenovo',
+            'modelo' => 'M80',
+            'numero_serie' => 'SER-EST-02',
+            'bien_patrimonial' => 'BP-EST-02',
+            'estado' => Equipo::ESTADO_BAJA,
+            'fecha_ingreso' => now()->toDateString(),
+            'oficina_id' => $office->id,
+        ]);
+
+        $user = $this->createUser(User::ROLE_SUPERADMIN);
+
+        $defaultResponse = $this->actingAs($user)
+            ->get('/api/search/equipos?q=...&institution_id='.$institution->id);
+
+        $defaultResponse->assertOk();
+        $this->assertCount(1, $defaultResponse->json());
+        $this->assertSame('SER-EST-01', $defaultResponse->json()[0]['numero_serie']);
+
+        $includeBajaResponse = $this->actingAs($user)
+            ->get('/api/search/equipos?q=...&institution_id='.$institution->id.'&include_baja=1');
+
+        $includeBajaResponse->assertOk();
+        $this->assertCount(2, $includeBajaResponse->json());
+    }
     private function createUser(string $role): User
     {
         return User::create([

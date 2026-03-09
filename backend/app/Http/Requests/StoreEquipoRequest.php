@@ -55,7 +55,7 @@ class StoreEquipoRequest extends FormRequest
             'modelo' => ['required', 'string', 'max:100'],
             'numero_serie' => ['required', 'string', 'max:120', 'unique:equipos,numero_serie'],
             'bien_patrimonial' => ['required', 'string', 'max:120', 'unique:equipos,bien_patrimonial'],
-            'mac_address' => ['nullable', 'string', 'max:64'],
+            'mac_address' => ['nullable', 'string', 'max:50'],
             'codigo_interno' => ['nullable', 'string', 'max:120'],
             'estado' => ['required', Rule::in(Equipo::ESTADOS)],
             'fecha_ingreso' => ['required', 'date'],
@@ -79,6 +79,8 @@ class StoreEquipoRequest extends FormRequest
             'numero_serie.unique' => 'Ya existe un equipo con ese numero de serie.',
             'bien_patrimonial.required' => 'El bien patrimonial es obligatorio.',
             'bien_patrimonial.unique' => 'Ya existe un equipo con ese bien patrimonial.',
+            'mac_address.max' => 'La direccion MAC no puede superar los 50 caracteres.',
+            'codigo_interno.max' => 'El codigo interno no puede superar los 120 caracteres.',
             'estado.required' => 'Debe seleccionar un estado.',
             'estado.in' => 'El estado seleccionado no es valido.',
             'fecha_ingreso.required' => 'La fecha de ingreso es obligatoria.',
@@ -86,3 +88,4 @@ class StoreEquipoRequest extends FormRequest
         ];
     }
 }
+

@@ -64,7 +64,7 @@ class ActaTraceabilityService
                 'office_destino_id' => $this->nullableInt($data['office_destino_id'] ?? null),
                 'tipo' => $data['tipo'],
                 'fecha' => $data['fecha'],
-                'receptor_nombre' => $data['receptor_nombre'] ?? null,
+                'receptor_nombre' => $this->nullableString($data['receptor_nombre'] ?? null),
                 'receptor_dni' => $data['receptor_dni'] ?? null,
                 'receptor_cargo' => $data['receptor_cargo'] ?? null,
                 'receptor_dependencia' => $data['receptor_dependencia'] ?? null,
@@ -157,6 +157,8 @@ class ActaTraceabilityService
                     'equipos' => 'Todos los equipos deben pertenecer a la institucion origen del acta.',
                 ]);
             }
+
+            $this->assertTransitionAllowed($equipo, $tipo);
 
             if ($tipo === Acta::TIPO_TRASLADO) {
                 $serviceOrigenId = $this->nullableInt($data['service_origen_id'] ?? null);
@@ -269,6 +271,33 @@ class ActaTraceabilityService
         return (int) EquipoStatus::query()->where('code', $code)->value('id');
     }
 
+    private function assertTransitionAllowed(Equipo $equipo, string $tipo): void
+    {
+        $estado = (string) $equipo->estado;
+        $identificador = $equipo->numero_serie ?: ('ID '.$equipo->id);
+
+        if ($estado === Equipo::ESTADO_BAJA) {
+            throw ValidationException::withMessages([
+                'equipos' => "El equipo {$identificador} esta en BAJA y no admite nuevos eventos.",
+            ]);
+        }
+
+        $allowed = match ($tipo) {
+            Acta::TIPO_PRESTAMO, Acta::TIPO_TRASLADO => [Equipo::ESTADO_OPERATIVO],
+            Acta::TIPO_MANTENIMIENTO => [Equipo::ESTADO_OPERATIVO, Equipo::ESTADO_PRESTADO],
+            Acta::TIPO_BAJA => [Equipo::ESTADO_OPERATIVO, Equipo::ESTADO_EN_MANTENIMIENTO],
+            Acta::TIPO_DEVOLUCION => [Equipo::ESTADO_PRESTADO],
+            Acta::TIPO_ENTREGA => [Equipo::ESTADO_PRESTADO, Equipo::ESTADO_EN_MANTENIMIENTO],
+            default => [],
+        };
+
+        if (! in_array($estado, $allowed, true)) {
+            throw ValidationException::withMessages([
+                'equipos' => "Transicion no permitida para el equipo {$identificador} desde estado {$estado} con evento {$tipo}.",
+            ]);
+        }
+    }
+
     private function payload(array $data): array
     {
         return [
@@ -299,7 +328,16 @@ class ActaTraceabilityService
 
         return $cast > 0 ? $cast : null;
     }
+
+    private function nullableString(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $trimmed = trim((string) $value);
+
+        return $trimmed === '' ? null : $trimmed;
+    }
 }
-
-
 
