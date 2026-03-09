@@ -53,6 +53,7 @@
                     name: 'oficina_id',
                     params: {
                         service_id: this.selectedServiceId,
+                        institution_id: this.selectedInstitutionId,
                     },
                 },
             }));
@@ -167,7 +168,7 @@
                         placeholder="Buscar oficina..."
                         :value="$officeSelected"
                         :label="$officeLabelSelected"
-                        :params="['service_id' => $serviceSelected]"
+                        :params="['service_id' => $serviceSelected, 'institution_id' => $institutionSelected]"
                     />
                     <input type="hidden" name="office_id" x-model="selectedOfficeId" />
                     @if ($errors->has('office_id'))
@@ -283,3 +284,4 @@
         </div>
     </form>
 </div>
+
