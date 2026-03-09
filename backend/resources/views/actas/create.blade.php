@@ -155,7 +155,7 @@
             <div x-show="tipo === 'entrega'" x-cloak class="grid gap-4 md:grid-cols-3">
                 <div>
                     <label class="block text-sm font-medium text-slate-700">Institucion destino</label>
-                    <select name="institution_destino_id" x-model="institution_destino_id" @change="onEntregaInstitutionChange" class="mt-1 w-full rounded-xl border-slate-300">
+                    <select name="institution_destino_id" x-model="institution_destino_id" @change="onEntregaInstitutionChange()" class="mt-1 w-full rounded-xl border-slate-300">
                         <option value="">Seleccionar</option>
                         @foreach ($institutions as $institution)
                             <option value="{{ $institution->id }}">{{ $institution->nombre }}</option>
@@ -165,7 +165,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700">Servicio destino</label>
-                    <select name="service_destino_id" x-model="service_destino_id" @change="onDestinoServiceChange('destino')" class="mt-1 w-full rounded-xl border-slate-300">
+                    <select name="service_destino_id" x-model="service_destino_id" @change="onDestinoServiceChange('destino')" :disabled="!institution_destino_id || isLoadingServices.destino" class="mt-1 w-full rounded-xl border-slate-300 disabled:bg-slate-100 disabled:text-slate-500">
                         <option value="">Seleccionar</option>
                         <template x-for="service in serviceOptions.destino" :key="`sd-${service.id}`">
                             <option :value="service.id" x-text="service.label"></option>
@@ -175,7 +175,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-slate-700">Oficina destino</label>
-                    <select name="office_destino_id" x-model="office_destino_id" class="mt-1 w-full rounded-xl border-slate-300">
+                    <select name="office_destino_id" x-model="office_destino_id" :disabled="!institution_destino_id || !service_destino_id || isLoadingOffices.destino" class="mt-1 w-full rounded-xl border-slate-300 disabled:bg-slate-100 disabled:text-slate-500">
                         <option value="">Seleccionar</option>
                         <template x-for="office in officeOptions.destino" :key="`od-${office.id}`">
                             <option :value="office.id" x-text="office.label"></option>
@@ -195,7 +195,7 @@
                 <div class="grid gap-4 md:grid-cols-2">
                     <div>
                         <label class="block text-sm font-medium text-slate-700">Servicio destino</label>
-                        <select name="service_destino_id" x-model="service_destino_id" @change="onDestinoServiceChange('traslado')" class="mt-1 w-full rounded-xl border-slate-300">
+                        <select name="service_destino_id" x-model="service_destino_id" @change="onDestinoServiceChange('traslado')" :disabled="!getSelectedInstitutionId() || isLoadingServices.traslado" class="mt-1 w-full rounded-xl border-slate-300 disabled:bg-slate-100 disabled:text-slate-500">
                             <option value="">Seleccionar</option>
                             <template x-for="service in serviceOptions.traslado" :key="`st-${service.id}`">
                                 <option :value="service.id" x-text="service.label"></option>
@@ -205,7 +205,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700">Oficina destino</label>
-                        <select name="office_destino_id" x-model="office_destino_id" class="mt-1 w-full rounded-xl border-slate-300">
+                        <select name="office_destino_id" x-model="office_destino_id" :disabled="!service_destino_id || isLoadingOffices.traslado" class="mt-1 w-full rounded-xl border-slate-300 disabled:bg-slate-100 disabled:text-slate-500">
                             <option value="">Seleccionar</option>
                             <template x-for="office in officeOptions.traslado" :key="`ot-${office.id}`">
                                 <option :value="office.id" x-text="office.label"></option>
@@ -286,20 +286,22 @@
             errorBusqueda: '',
             serviceOptions: { destino: [], traslado: [] },
             officeOptions: { destino: [], traslado: [] },
+            isLoadingServices: { destino: false, traslado: false },
+            isLoadingOffices: { destino: false, traslado: false },
             currentTrasladoInstitutionId: '',
             isSuperadmin,
             userInstitutionId,
 
-            init() {
+            async init() {
                 if (this.tipo === 'entrega' && this.institution_destino_id) {
-                    this.loadServices('destino', this.institution_destino_id, false);
+                    await this.loadServices('destino', this.institution_destino_id, false);
                 }
 
                 if (this.tipo === 'entrega' && this.institution_destino_id && this.service_destino_id) {
-                    this.loadOffices('destino', this.institution_destino_id, this.service_destino_id);
+                    await this.loadOffices('destino', this.institution_destino_id, this.service_destino_id);
                 }
 
-                this.refreshTrasladoContext(false);
+                await this.refreshTrasladoContext(false);
             },
 
             selectTipo(tipo) {
@@ -337,6 +339,7 @@
             },
 
             async onEntregaInstitutionChange() {
+                this.errorBusqueda = '';
                 this.service_destino_id = '';
                 this.office_destino_id = '';
                 this.serviceOptions.destino = [];
@@ -409,15 +412,18 @@
                     await this.loadOffices('traslado', institutionId, this.service_destino_id);
                 }
             },
-
             async loadServices(scope, institutionId, clearOnError) {
                 if (!institutionId) {
                     return;
                 }
 
                 try {
+                    this.isLoadingServices[scope] = true;
                     const params = new URLSearchParams({ q: '...', institution_id: institutionId, acta_context: '1' });
                     const response = await fetch(`/api/search/services?${params.toString()}`);
+                    if (!response.ok) {
+                        throw new Error(`services_http_${response.status}`);
+                    }
                     const payload = await response.json();
                     this.serviceOptions[scope] = Array.isArray(payload) ? payload : [];
                 } catch (e) {
@@ -425,6 +431,8 @@
                     if (clearOnError) {
                         this.errorBusqueda = 'No fue posible cargar servicios para la institucion seleccionada.';
                     }
+                } finally {
+                    this.isLoadingServices[scope] = false;
                 }
             },
 
@@ -434,13 +442,19 @@
                 }
 
                 try {
+                    this.isLoadingOffices[scope] = true;
                     const params = new URLSearchParams({ q: '...', institution_id: institutionId, service_id: serviceId, acta_context: '1' });
                     const response = await fetch(`/api/search/offices?${params.toString()}`);
+                    if (!response.ok) {
+                        throw new Error(`offices_http_${response.status}`);
+                    }
                     const payload = await response.json();
                     this.officeOptions[scope] = Array.isArray(payload) ? payload : [];
                 } catch (e) {
                     this.officeOptions[scope] = [];
                     this.errorBusqueda = 'No fue posible cargar oficinas para el servicio seleccionado.';
+                } finally {
+                    this.isLoadingOffices[scope] = false;
                 }
             },
 
@@ -511,5 +525,4 @@
     }
 </script>
 @endsection
-
 

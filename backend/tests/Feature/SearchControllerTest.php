@@ -266,14 +266,66 @@ class SearchControllerTest extends TestCase
         $includeBajaResponse->assertOk();
         $this->assertCount(2, $includeBajaResponse->json());
     }
-    private function createUser(string $role): User
+
+    public function test_admin_actas_context_puede_buscar_servicios_de_otra_institucion_para_entrega(): void
+    {
+        $institutionA = Institution::create(['nombre' => 'Hospital Origen']);
+        $institutionB = Institution::create(['nombre' => 'Hospital Destino']);
+
+        Service::create(['nombre' => 'Servicio A', 'institution_id' => $institutionA->id]);
+        Service::create(['nombre' => 'Servicio B', 'institution_id' => $institutionB->id]);
+
+        $admin = $this->createUser(User::ROLE_ADMIN, $institutionA->id);
+
+        $this->actingAs($admin)
+            ->get('/api/search/services?q=...&institution_id='.$institutionB->id)
+            ->assertOk()
+            ->assertExactJson([]);
+
+        $response = $this->actingAs($admin)
+            ->get('/api/search/services?q=...&institution_id='.$institutionB->id.'&acta_context=1');
+
+        $response->assertOk();
+        $labels = collect($response->json())->pluck('label')->all();
+        $this->assertSame(['Servicio B'], $labels);
+    }
+
+    public function test_admin_actas_context_puede_buscar_oficinas_de_otra_institucion_para_entrega(): void
+    {
+        $institutionA = Institution::create(['nombre' => 'Hospital Origen']);
+        $institutionB = Institution::create(['nombre' => 'Hospital Destino']);
+
+        $serviceA = Service::create(['nombre' => 'Servicio A', 'institution_id' => $institutionA->id]);
+        $serviceB = Service::create(['nombre' => 'Servicio B', 'institution_id' => $institutionB->id]);
+
+        Office::create(['nombre' => 'Oficina A1', 'service_id' => $serviceA->id]);
+        Office::create(['nombre' => 'Oficina B1', 'service_id' => $serviceB->id]);
+
+        $admin = $this->createUser(User::ROLE_ADMIN, $institutionA->id);
+
+        $this->actingAs($admin)
+            ->get('/api/search/offices?q=...&institution_id='.$institutionB->id.'&service_id='.$serviceB->id)
+            ->assertOk()
+            ->assertExactJson([]);
+
+        $response = $this->actingAs($admin)
+            ->get('/api/search/offices?q=...&institution_id='.$institutionB->id.'&service_id='.$serviceB->id.'&acta_context=1');
+
+        $response->assertOk();
+        $labels = collect($response->json())->pluck('label')->all();
+        $this->assertSame(['Oficina B1'], $labels);
+    }
+
+    private function createUser(string $role, ?int $institutionId = null): User
     {
         return User::create([
             'name' => 'Search User',
             'email' => strtolower($role).'-'.uniqid().'@test.com',
             'password' => 'password',
             'role' => $role,
+            'institution_id' => $institutionId,
             'is_active' => true,
         ]);
     }
 }
+
