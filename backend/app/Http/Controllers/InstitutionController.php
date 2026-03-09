@@ -47,20 +47,20 @@ class InstitutionController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'codigo' => ['required', 'string', 'max:20', Rule::unique('institutions', 'codigo')],
-            'nombre' => ['required', 'string', 'max:255', Rule::unique('institutions', 'nombre')],
+            'codigo_institucional' => ['required', 'string', 'max:20', Rule::unique('institutions', 'codigo')],
+            'nombre' => ['required', 'string', 'max:255'],
             'tipo' => ['required', Rule::in(Institution::TIPOS)],
-            'direccion' => ['nullable', 'string', 'max:255'],
-            'localidad' => ['nullable', 'string', 'max:150'],
+            'estado' => ['required', Rule::in(Institution::ESTADOS)],
             'provincia' => ['nullable', 'string', 'max:150'],
+            'localidad' => ['nullable', 'string', 'max:150'],
+            'direccion' => ['nullable', 'string', 'max:255'],
             'telefono' => ['nullable', 'string', 'max:50'],
             'email' => ['nullable', 'email', 'max:255'],
             'responsable' => ['nullable', 'string', 'max:255'],
-            'estado' => ['required', Rule::in(Institution::ESTADOS)],
             'descripcion' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        Institution::create($validated);
+        Institution::create($this->mapToDatabaseFields($validated));
 
         return redirect()
             ->route('institutions.index')
@@ -79,34 +79,31 @@ class InstitutionController extends Controller
     public function update(Request $request, Institution $institution): RedirectResponse
     {
         $validated = $request->validate([
-            'codigo' => [
+            'codigo_institucional' => [
                 'required',
                 'string',
                 'max:20',
                 Rule::unique('institutions', 'codigo')->ignore($institution->id),
             ],
-            'nombre' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('institutions', 'nombre')->ignore($institution->id),
-            ],
+            'nombre' => ['required', 'string', 'max:255'],
             'tipo' => ['required', Rule::in(Institution::TIPOS)],
-            'direccion' => ['nullable', 'string', 'max:255'],
-            'localidad' => ['nullable', 'string', 'max:150'],
+            'estado' => ['required', Rule::in(Institution::ESTADOS)],
             'provincia' => ['nullable', 'string', 'max:150'],
+            'localidad' => ['nullable', 'string', 'max:150'],
+            'direccion' => ['nullable', 'string', 'max:255'],
             'telefono' => ['nullable', 'string', 'max:50'],
             'email' => ['nullable', 'email', 'max:255'],
             'responsable' => ['nullable', 'string', 'max:255'],
-            'estado' => ['required', Rule::in(Institution::ESTADOS)],
             'descripcion' => ['nullable', 'string', 'max:2000'],
         ]);
 
+        $payload = $this->mapToDatabaseFields($validated);
+
         if ($institution->codigo !== null) {
-            $validated['codigo'] = $institution->codigo;
+            $payload['codigo'] = $institution->codigo;
         }
 
-        $institution->update($validated);
+        $institution->update($payload);
 
         return redirect()
             ->route('institutions.index')
@@ -120,5 +117,26 @@ class InstitutionController extends Controller
         return redirect()
             ->route('institutions.index')
             ->with('status', 'Institucion eliminada correctamente.');
+    }
+
+    /**
+     * @param array<string, mixed> $validated
+     * @return array<string, mixed>
+     */
+    private function mapToDatabaseFields(array $validated): array
+    {
+        return [
+            'codigo' => $validated['codigo_institucional'],
+            'nombre' => $validated['nombre'],
+            'provincia' => $validated['provincia'] ?? null,
+            'localidad' => $validated['localidad'] ?? null,
+            'direccion' => $validated['direccion'] ?? null,
+            'telefono' => $validated['telefono'] ?? null,
+            'email' => $validated['email'] ?? null,
+            'responsable' => $validated['responsable'] ?? null,
+            'tipo' => $validated['tipo'],
+            'estado' => $validated['estado'],
+            'descripcion' => $validated['descripcion'] ?? null,
+        ];
     }
 }

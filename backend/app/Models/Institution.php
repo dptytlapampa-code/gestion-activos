@@ -13,9 +13,8 @@ class Institution extends Model
 
     public const TIPOS = [
         'hospital',
+        'clinica',
         'centro_salud',
-        'administrativo',
-        'deposito',
         'otro',
     ];
 
