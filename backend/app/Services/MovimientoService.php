@@ -64,6 +64,8 @@ class MovimientoService
             }
 
             if ($tipo === Movimiento::TIPO_PRESTAMO) {
+                $equipo->equipo_status_id = (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_PRESTADA)->value('id');
+                $estadoNuevo = Equipo::ESTADO_PRESTADO;
                 $prestamoData = [
                     'receptor_nombre' => $data['receptor_nombre'],
                     'receptor_dni' => $data['receptor_dni'],
@@ -84,6 +86,7 @@ class MovimientoService
                 ];
 
                 $prestamo->update(['fecha_devolucion_real' => now()]);
+                $equipo->equipo_status_id = (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_OPERATIVA)->value('id');
                 $estadoNuevo = Equipo::ESTADO_OPERATIVO;
             }
 
@@ -196,3 +199,4 @@ class MovimientoService
         return $prestamo;
     }
 }
+

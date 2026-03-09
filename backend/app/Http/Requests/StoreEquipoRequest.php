@@ -55,6 +55,8 @@ class StoreEquipoRequest extends FormRequest
             'modelo' => ['required', 'string', 'max:100'],
             'numero_serie' => ['required', 'string', 'max:120', 'unique:equipos,numero_serie'],
             'bien_patrimonial' => ['required', 'string', 'max:120', 'unique:equipos,bien_patrimonial'],
+            'mac_address' => ['nullable', 'string', 'max:64'],
+            'codigo_interno' => ['nullable', 'string', 'max:120'],
             'estado' => ['required', Rule::in(Equipo::ESTADOS)],
             'fecha_ingreso' => ['required', 'date'],
         ];
@@ -63,24 +65,24 @@ class StoreEquipoRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'institution_id.required' => 'Debe seleccionar una institución.',
-            'institution_id.exists' => 'La institución seleccionada no es válida.',
+            'institution_id.required' => 'Debe seleccionar una institucion.',
+            'institution_id.exists' => 'La institucion seleccionada no es valida.',
             'service_id.required' => 'Debe seleccionar un servicio.',
-            'service_id.exists' => 'El servicio seleccionado no corresponde a la institución.',
+            'service_id.exists' => 'El servicio seleccionado no corresponde a la institucion.',
             'office_id.required' => 'Debe seleccionar una oficina.',
             'office_id.exists' => 'La oficina seleccionada no corresponde al servicio.',
             'tipo_equipo_id.required' => 'Debe seleccionar un tipo de equipo.',
-            'tipo_equipo_id.exists' => 'El tipo de equipo seleccionado no es válido.',
+            'tipo_equipo_id.exists' => 'El tipo de equipo seleccionado no es valido.',
             'marca.required' => 'El campo marca es obligatorio.',
             'modelo.required' => 'El campo modelo es obligatorio.',
-            'numero_serie.required' => 'El número de serie es obligatorio.',
-            'numero_serie.unique' => 'Ya existe un equipo con ese número de serie.',
+            'numero_serie.required' => 'El numero de serie es obligatorio.',
+            'numero_serie.unique' => 'Ya existe un equipo con ese numero de serie.',
             'bien_patrimonial.required' => 'El bien patrimonial es obligatorio.',
             'bien_patrimonial.unique' => 'Ya existe un equipo con ese bien patrimonial.',
             'estado.required' => 'Debe seleccionar un estado.',
-            'estado.in' => 'El estado seleccionado no es válido.',
+            'estado.in' => 'El estado seleccionado no es valido.',
             'fecha_ingreso.required' => 'La fecha de ingreso es obligatoria.',
-            'fecha_ingreso.date' => 'La fecha de ingreso debe tener un formato válido.',
+            'fecha_ingreso.date' => 'La fecha de ingreso debe tener un formato valido.',
         ];
     }
 }

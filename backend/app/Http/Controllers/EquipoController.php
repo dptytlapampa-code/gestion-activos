@@ -85,6 +85,8 @@ class EquipoController extends Controller
             'marca' => $validated['marca'],
             'modelo' => $validated['modelo'],
             'bien_patrimonial' => $validated['bien_patrimonial'],
+            'mac_address' => $validated['mac_address'] ?? null,
+            'codigo_interno' => $validated['codigo_interno'] ?? null,
             'estado' => $validated['estado'],
             'equipo_status_id' => $this->resolveStatusIdByEstado($validated['estado']),
             'fecha_ingreso' => $validated['fecha_ingreso'],
@@ -198,6 +200,8 @@ class EquipoController extends Controller
             'marca' => $validated['marca'],
             'modelo' => $validated['modelo'],
             'bien_patrimonial' => $validated['bien_patrimonial'],
+            'mac_address' => $validated['mac_address'] ?? null,
+            'codigo_interno' => $validated['codigo_interno'] ?? null,
             'estado' => $validated['estado'],
             'equipo_status_id' => $this->resolveStatusIdByEstado($validated['estado']),
             'fecha_ingreso' => $validated['fecha_ingreso'],
@@ -259,8 +263,10 @@ class EquipoController extends Controller
     private function resolveStatusIdByEstado(string $estado): int
     {
         return match ($estado) {
-            Equipo::ESTADO_BAJA => (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_BAJA)->value('id'),
+            Equipo::ESTADO_PRESTADO => (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_PRESTADA)->value('id'),
             Equipo::ESTADO_MANTENIMIENTO => (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_EN_SERVICIO_TECNICO)->value('id'),
+            Equipo::ESTADO_FUERA_DE_SERVICIO => (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_FUERA_DE_SERVICIO)->value('id'),
+            Equipo::ESTADO_BAJA => (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_BAJA)->value('id'),
             default => (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_OPERATIVA)->value('id'),
         };
     }
@@ -316,3 +322,5 @@ class EquipoController extends Controller
         return null;
     }
 }
+
+

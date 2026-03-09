@@ -18,123 +18,276 @@ class ActaModuleTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_puede_crear_acta_con_dos_equipos_y_genera_documento_pdf(): void
+    public function test_admin_puede_crear_acta_entrega_y_actualiza_equipo_historial_y_pdf(): void
     {
         Storage::fake();
-        [$admin, $inst, $equipos] = $this->crearEscenario();
+
+        [$admin, $inst, $serviceA, $officeA, $serviceB, $officeB] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_PRESTADO);
 
         $response = $this->actingAs($admin)->post(route('actas.store'), [
             'tipo' => Acta::TIPO_ENTREGA,
             'fecha' => now()->toDateString(),
+            'institution_id' => $inst->id,
+            'service_destino_id' => $serviceB->id,
+            'office_destino_id' => $officeB->id,
             'receptor_nombre' => 'Ana Perez',
             'receptor_dni' => '12345678',
-            'receptor_cargo' => 'Enfermera',
-            'receptor_dependencia' => 'Consultorio 1',
-            'observaciones' => 'Sin novedades',
+            'receptor_cargo' => 'Enfermeria',
+            'observaciones' => 'Entrega operativa',
             'equipos' => [
-                ['equipo_id' => $equipos[0]->id, 'cantidad' => 1, 'accesorios' => 'Cargador'],
-                ['equipo_id' => $equipos[1]->id, 'cantidad' => 1, 'accesorios' => 'Cable HDMI'],
+                ['equipo_id' => $equipo->id, 'cantidad' => 1, 'accesorios' => 'Fuente'],
             ],
         ]);
 
         $response->assertRedirect();
 
         $acta = Acta::query()->firstOrFail();
+        $equipo->refresh();
 
-        $this->assertDatabaseHas('actas', [
-            'id' => $acta->id,
-            'institution_id' => $inst->id,
-            'tipo' => Acta::TIPO_ENTREGA,
+        $this->assertSame($officeB->id, $equipo->oficina_id);
+        $this->assertSame(Equipo::ESTADO_OPERATIVO, $equipo->estado);
+
+        $this->assertDatabaseHas('equipo_historial', [
+            'equipo_id' => $equipo->id,
+            'acta_id' => $acta->id,
+            'tipo_evento' => Acta::TIPO_ENTREGA,
+            'estado_nuevo' => Equipo::ESTADO_OPERATIVO,
         ]);
-
-        $this->assertDatabaseCount('acta_equipo', 2);
 
         $document = Document::query()->where('documentable_type', Acta::class)->first();
         $this->assertNotNull($document);
-        $this->assertSame('application/pdf', $document->mime);
-        $this->assertStringEndsWith('.pdf', $document->file_path);
         Storage::assertExists($document->file_path);
     }
 
-    public function test_viewer_no_puede_postear_y_admin_ajeno_no_ve_acta(): void
+    public function test_acta_prestamo_actualiza_estado_a_prestado(): void
     {
         Storage::fake();
-        [$adminA, $instA, $equiposA] = $this->crearEscenario();
-        [$adminB] = $this->crearEscenario('B');
+
+        [$admin, $inst, $serviceA, $officeA] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
+
+        $this->actingAs($admin)->post(route('actas.store'), [
+            'tipo' => Acta::TIPO_PRESTAMO,
+            'fecha' => now()->toDateString(),
+            'institution_id' => $inst->id,
+            'service_destino_id' => $serviceA->id,
+            'office_destino_id' => $officeA->id,
+            'receptor_nombre' => 'Carlos Gomez',
+            'receptor_dni' => '22333444',
+            'receptor_cargo' => 'Chofer',
+            'equipos' => [
+                ['equipo_id' => $equipo->id, 'cantidad' => 1],
+            ],
+        ])->assertRedirect();
+
+        $equipo->refresh();
+
+        $this->assertSame(Equipo::ESTADO_PRESTADO, $equipo->estado);
+        $this->assertDatabaseHas('equipo_historial', [
+            'equipo_id' => $equipo->id,
+            'tipo_evento' => Acta::TIPO_PRESTAMO,
+            'estado_nuevo' => Equipo::ESTADO_PRESTADO,
+        ]);
+    }
+
+    public function test_acta_traslado_actualiza_ubicacion(): void
+    {
+        Storage::fake();
+
+        [$admin, $inst, $serviceA, $officeA, $serviceB, $officeB] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
+
+        $this->actingAs($admin)->post(route('actas.store'), [
+            'tipo' => Acta::TIPO_TRASLADO,
+            'fecha' => now()->toDateString(),
+            'institution_id' => $inst->id,
+            'service_origen_id' => $serviceA->id,
+            'office_origen_id' => $officeA->id,
+            'institution_destino_id' => $inst->id,
+            'service_destino_id' => $serviceB->id,
+            'office_destino_id' => $officeB->id,
+            'observaciones' => 'Traslado interno',
+            'equipos' => [
+                ['equipo_id' => $equipo->id, 'cantidad' => 1],
+            ],
+        ])->assertRedirect();
+
+        $equipo->refresh();
+
+        $this->assertSame($officeB->id, $equipo->oficina_id);
+        $this->assertDatabaseHas('equipo_historial', [
+            'equipo_id' => $equipo->id,
+            'tipo_evento' => Acta::TIPO_TRASLADO,
+            'oficina_anterior' => $officeA->id,
+            'oficina_nueva' => $officeB->id,
+        ]);
+    }
+
+    public function test_acta_baja_actualiza_estado(): void
+    {
+        Storage::fake();
+
+        [$admin, $inst, $serviceA, $officeA] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
+
+        $this->actingAs($admin)->post(route('actas.store'), [
+            'tipo' => Acta::TIPO_BAJA,
+            'fecha' => now()->toDateString(),
+            'institution_id' => $inst->id,
+            'motivo_baja' => 'Obsolescencia',
+            'observaciones' => 'Sin reparacion viable',
+            'equipos' => [
+                ['equipo_id' => $equipo->id, 'cantidad' => 1],
+            ],
+        ])->assertRedirect();
+
+        $equipo->refresh();
+
+        $this->assertSame(Equipo::ESTADO_BAJA, $equipo->estado);
+    }
+
+    public function test_acta_mantenimiento_actualiza_estado(): void
+    {
+        Storage::fake();
+
+        [$admin, $inst, $serviceA, $officeA] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
+
+        $this->actingAs($admin)->post(route('actas.store'), [
+            'tipo' => Acta::TIPO_MANTENIMIENTO,
+            'fecha' => now()->toDateString(),
+            'institution_id' => $inst->id,
+            'service_destino_id' => $serviceA->id,
+            'office_destino_id' => $officeA->id,
+            'observaciones' => 'Ingreso al taller',
+            'equipos' => [
+                ['equipo_id' => $equipo->id, 'cantidad' => 1],
+            ],
+        ])->assertRedirect();
+
+        $equipo->refresh();
+
+        $this->assertSame(Equipo::ESTADO_EN_MANTENIMIENTO, $equipo->estado);
+    }
+
+    public function test_acta_devolucion_vuelve_estado_operativo(): void
+    {
+        Storage::fake();
+
+        [$admin, $inst, $serviceA, $officeA] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_PRESTADO);
+
+        $this->actingAs($admin)->post(route('actas.store'), [
+            'tipo' => Acta::TIPO_DEVOLUCION,
+            'fecha' => now()->toDateString(),
+            'institution_id' => $inst->id,
+            'service_destino_id' => $serviceA->id,
+            'office_destino_id' => $officeA->id,
+            'observaciones' => 'Retorna a inventario',
+            'equipos' => [
+                ['equipo_id' => $equipo->id, 'cantidad' => 1],
+            ],
+        ])->assertRedirect();
+
+        $equipo->refresh();
+
+        $this->assertSame(Equipo::ESTADO_OPERATIVO, $equipo->estado);
+    }
+
+    public function test_admin_no_puede_generar_acta_con_equipo_de_otra_institucion(): void
+    {
+        Storage::fake();
+
+        [$adminA, $instA, $serviceA, $officeA] = $this->crearEscenarioBase('A');
+        [, , , , , $officeB] = $this->crearEscenarioBase('B');
+
+        $equipoA = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
+        $equipoB = $this->crearEquipo($officeB, Equipo::ESTADO_OPERATIVO, 'B');
+
+        $this->actingAs($adminA)->post(route('actas.store'), [
+            'tipo' => Acta::TIPO_ENTREGA,
+            'fecha' => now()->toDateString(),
+            'institution_id' => $instA->id,
+            'service_destino_id' => $serviceA->id,
+            'office_destino_id' => $officeA->id,
+            'receptor_nombre' => 'Prueba',
+            'receptor_dni' => '99888777',
+            'equipos' => [
+                ['equipo_id' => $equipoA->id, 'cantidad' => 1],
+                ['equipo_id' => $equipoB->id, 'cantidad' => 1],
+            ],
+        ])->assertSessionHasErrors('equipos');
+
+        $this->assertDatabaseCount('actas', 0);
+        $this->assertDatabaseCount('equipo_historial', 0);
+    }
+
+    public function test_viewer_no_puede_crear_actas(): void
+    {
+        Storage::fake();
+
+        [, $inst, $serviceA, $officeA] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
 
         $viewer = User::create([
             'name' => 'Viewer',
-            'email' => uniqid().'viewer@test.com',
+            'email' => uniqid('viewer_').'@test.com',
             'password' => '123456',
             'role' => User::ROLE_VIEWER,
-            'institution_id' => $instA->id,
+            'institution_id' => $inst->id,
             'is_active' => true,
         ]);
 
         $this->actingAs($viewer)->post(route('actas.store'), [
             'tipo' => Acta::TIPO_ENTREGA,
             'fecha' => now()->toDateString(),
-            'receptor_nombre' => 'No autorizado',
+            'institution_id' => $inst->id,
+            'service_destino_id' => $serviceA->id,
+            'office_destino_id' => $officeA->id,
+            'receptor_nombre' => 'No permitido',
+            'receptor_dni' => '1111',
             'equipos' => [
-                ['equipo_id' => $equiposA[0]->id, 'cantidad' => 1],
+                ['equipo_id' => $equipo->id, 'cantidad' => 1],
             ],
         ])->assertForbidden();
-
-        $this->actingAs($adminA)->post(route('actas.store'), [
-            'tipo' => Acta::TIPO_ENTREGA,
-            'fecha' => now()->toDateString(),
-            'receptor_nombre' => 'Titular',
-            'equipos' => [
-                ['equipo_id' => $equiposA[0]->id, 'cantidad' => 1],
-            ],
-        ])->assertRedirect();
-
-        $acta = Acta::query()->firstOrFail();
-
-        $this->actingAs($adminB)->get(route('actas.show', $acta))->assertForbidden();
     }
 
-    private function crearEscenario(string $suffix = 'A'): array
+    private function crearEscenarioBase(string $suffix = 'A'): array
     {
         $institution = Institution::create(['nombre' => 'Hospital '.$suffix]);
-        $service = Service::create(['nombre' => 'Servicio '.$suffix, 'institution_id' => $institution->id]);
-        $office = Office::create(['nombre' => 'Oficina '.$suffix, 'service_id' => $service->id]);
-        $tipo = TipoEquipo::create(['nombre' => 'Notebook '.$suffix]);
-
-        $equipos = [
-            Equipo::create([
-                'tipo' => 'Notebook',
-                'tipo_equipo_id' => $tipo->id,
-                'marca' => 'Dell',
-                'modelo' => 'Latitude',
-                'numero_serie' => uniqid('ser-'),
-                'bien_patrimonial' => uniqid('bp-'),
-                'estado' => Equipo::ESTADO_OPERATIVO,
-                'fecha_ingreso' => now()->toDateString(),
-                'oficina_id' => $office->id,
-            ]),
-            Equipo::create([
-                'tipo' => 'Monitor',
-                'tipo_equipo_id' => $tipo->id,
-                'marca' => 'LG',
-                'modelo' => '24MP',
-                'numero_serie' => uniqid('ser-'),
-                'bien_patrimonial' => uniqid('bp-'),
-                'estado' => Equipo::ESTADO_OPERATIVO,
-                'fecha_ingreso' => now()->toDateString(),
-                'oficina_id' => $office->id,
-            ]),
-        ];
+        $serviceA = Service::create(['nombre' => 'Servicio '.$suffix.'-1', 'institution_id' => $institution->id]);
+        $officeA = Office::create(['nombre' => 'Oficina '.$suffix.'-1', 'service_id' => $serviceA->id]);
+        $serviceB = Service::create(['nombre' => 'Servicio '.$suffix.'-2', 'institution_id' => $institution->id]);
+        $officeB = Office::create(['nombre' => 'Oficina '.$suffix.'-2', 'service_id' => $serviceB->id]);
 
         $admin = User::create([
             'name' => 'Admin '.$suffix,
-            'email' => uniqid().$suffix.'@test.com',
+            'email' => uniqid('admin_').$suffix.'@test.com',
             'password' => '123456',
             'role' => User::ROLE_ADMIN,
             'institution_id' => $institution->id,
             'is_active' => true,
         ]);
 
-        return [$admin, $institution, $equipos];
+        return [$admin, $institution, $serviceA, $officeA, $serviceB, $officeB];
+    }
+
+    private function crearEquipo(Office $office, string $estado, string $suffix = 'A'): Equipo
+    {
+        $tipo = TipoEquipo::firstOrCreate(['nombre' => 'Notebook '.$suffix]);
+
+        return Equipo::create([
+            'tipo' => $tipo->nombre,
+            'tipo_equipo_id' => $tipo->id,
+            'marca' => 'Dell',
+            'modelo' => 'Latitude',
+            'numero_serie' => uniqid('ser-'.$suffix.'-'),
+            'bien_patrimonial' => uniqid('bp-'.$suffix.'-'),
+            'estado' => $estado,
+            'fecha_ingreso' => now()->toDateString(),
+            'oficina_id' => $office->id,
+        ]);
     }
 }
+

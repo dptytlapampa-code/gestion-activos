@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Equipo;
 use App\Models\Institution;
 use App\Models\Office;
 use App\Models\Service;
@@ -151,6 +152,71 @@ class SearchControllerTest extends TestCase
         $labels = collect($response->json())->pluck('label')->all();
 
         $this->assertSame(['Monitor'], $labels);
+    }
+
+    public function test_search_equipos_permite_listar_todos_con_tres_puntos(): void
+    {
+        $institution = Institution::create(['nombre' => 'Hospital Equipos']);
+        $service = Service::create(['nombre' => 'Clinica', 'institution_id' => $institution->id]);
+        $office = Office::create(['nombre' => 'Oficina 1', 'service_id' => $service->id]);
+        $tipo = TipoEquipo::create(['nombre' => 'CPU']);
+
+        Equipo::create([
+            'tipo' => $tipo->nombre,
+            'tipo_equipo_id' => $tipo->id,
+            'marca' => 'Dell',
+            'modelo' => 'Optiplex',
+            'numero_serie' => 'SER-ALL-1',
+            'bien_patrimonial' => 'BP-ALL-1',
+            'mac_address' => 'AA:BB:CC:DD:EE:11',
+            'codigo_interno' => 'CI-ALL-1',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => now()->toDateString(),
+            'oficina_id' => $office->id,
+        ]);
+
+        $response = $this->actingAs($this->createUser(User::ROLE_SUPERADMIN))
+            ->get('/api/search/equipos?q=...&institution_id='.$institution->id);
+
+        $response->assertOk();
+        $payload = collect($response->json());
+
+        $this->assertCount(1, $payload);
+        $this->assertSame('SER-ALL-1', $payload->first()['numero_serie']);
+    }
+
+    public function test_search_equipos_filtra_por_mac_y_codigo_interno(): void
+    {
+        $institution = Institution::create(['nombre' => 'Hospital Busqueda']);
+        $service = Service::create(['nombre' => 'Laboratorio', 'institution_id' => $institution->id]);
+        $office = Office::create(['nombre' => 'Deposito', 'service_id' => $service->id]);
+        $tipo = TipoEquipo::create(['nombre' => 'Notebook']);
+
+        Equipo::create([
+            'tipo' => $tipo->nombre,
+            'tipo_equipo_id' => $tipo->id,
+            'marca' => 'HP',
+            'modelo' => 'Elitebook',
+            'numero_serie' => 'SER-BUS-1',
+            'bien_patrimonial' => 'BP-BUS-1',
+            'mac_address' => 'AA:AA:AA:AA:AA:01',
+            'codigo_interno' => 'COD-INT-001',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => now()->toDateString(),
+            'oficina_id' => $office->id,
+        ]);
+
+        $macResponse = $this->actingAs($this->createUser(User::ROLE_SUPERADMIN))
+            ->get('/api/search/equipos?q=AA:AA:AA:AA:AA:01&institution_id='.$institution->id);
+
+        $macResponse->assertOk();
+        $this->assertCount(1, $macResponse->json());
+
+        $codigoResponse = $this->actingAs($this->createUser(User::ROLE_SUPERADMIN))
+            ->get('/api/search/equipos?q=COD-INT-001&institution_id='.$institution->id);
+
+        $codigoResponse->assertOk();
+        $this->assertCount(1, $codigoResponse->json());
     }
 
     private function createUser(string $role): User

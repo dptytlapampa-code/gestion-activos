@@ -30,11 +30,13 @@
                 <span class="inline-flex items-center rounded-full px-4 py-2 text-sm font-bold uppercase"
                       @class([
                         'bg-green-100 text-green-800' => $equipo->estado === 'operativo',
+                        'bg-blue-100 text-blue-800' => $equipo->estado === 'prestado',
                         'bg-yellow-100 text-yellow-800' => $equipo->estado === 'mantenimiento',
+                        'bg-orange-100 text-orange-800' => $equipo->estado === 'fuera_de_servicio',
                         'bg-red-100 text-red-800' => $equipo->estado === 'baja',
-                        'bg-slate-100 text-slate-700' => ! in_array($equipo->estado, ['operativo', 'mantenimiento', 'baja']),
+                        'bg-slate-100 text-slate-700' => ! in_array($equipo->estado, ['operativo', 'prestado', 'mantenimiento', 'fuera_de_servicio', 'baja']),
                       ])>
-                    Estado: {{ ucfirst($equipo->estado) }}
+                    Estado: {{ strtoupper(str_replace('_', ' ', $equipo->estado)) }}
                 </span>
 
                 <a href="{{ route('equipos.edit', $equipo) }}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100">
@@ -334,3 +336,5 @@
     </div>
 </div>
 @endsection
+
+

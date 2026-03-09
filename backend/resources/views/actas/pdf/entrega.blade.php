@@ -1,1 +1,4 @@
-@include('actas.pdf._template', ['clausula' => 'Se deja constancia de la entrega institucional del equipamiento biomédico y/o informático detallado, sujeto a uso conforme a normativa hospitalaria vigente.'])
+@include('actas.pdf._template', [
+    'titulo' => 'Acta de entrega de activos',
+    'clausula' => 'Se registra la entrega institucional del equipamiento detallado y su asignacion operativa en destino.'
+])
