@@ -8,10 +8,7 @@
     x-data="actaWizard(@js([
         'tipo' => old('tipo'),
         'fecha' => old('fecha', now()->toDateString()),
-        'institution_id' => old('institution_id', $isSuperadmin ? null : $userInstitutionId),
         'institution_destino_id' => old('institution_destino_id'),
-        'service_origen_id' => old('service_origen_id'),
-        'office_origen_id' => old('office_origen_id'),
         'service_destino_id' => old('service_destino_id'),
         'office_destino_id' => old('office_destino_id'),
         'receptor_nombre' => old('receptor_nombre'),
@@ -50,114 +47,172 @@
         </section>
 
         <section class="card space-y-4">
-            <h3 class="text-lg font-semibold text-slate-900">Paso 2 - Datos del acta</h3>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h3 class="text-lg font-semibold text-slate-900">Paso 2 - Seleccion de equipos</h3>
+                <button type="button" class="min-h-[48px] rounded-xl border border-dashed border-slate-300 px-4 text-sm font-semibold text-slate-500" disabled>
+                    ESCANEAR QR (proximamente)
+                </button>
+            </div>
+
+            <div class="grid gap-2 md:grid-cols-[1fr_auto]">
+                <input
+                    type="text"
+                    x-model="query"
+                    class="min-h-[48px] rounded-xl border-slate-300"
+                    placeholder="Buscar por serie, patrimonial, modelo, mac o codigo interno. Use ... para listar todos"
+                >
+                <button type="button" @click="buscarEquipos" class="min-h-[48px] rounded-xl bg-primary-600 px-5 text-sm font-semibold text-white">
+                    Buscar
+                </button>
+            </div>
+
+            <template x-if="errorBusqueda">
+                <p class="text-sm text-red-600" x-text="errorBusqueda"></p>
+            </template>
+
+            <div class="grid gap-3 md:grid-cols-2" x-show="results.length" x-cloak>
+                <template x-for="item in results" :key="item.id">
+                    <article class="rounded-2xl border border-slate-200 p-4 shadow-sm">
+                        <p class="text-base font-semibold text-slate-900" x-text="item.label"></p>
+                        <p class="mt-1 text-sm text-slate-600">Serie: <span x-text="item.numero_serie || '-'" class="font-medium"></span></p>
+                        <p class="text-sm text-slate-600">Patrimonial: <span x-text="item.bien_patrimonial || '-'" class="font-medium"></span></p>
+                        <p class="text-sm text-slate-600">Institucion actual: <span x-text="item.institucion || '-'" class="font-medium"></span></p>
+                        <p class="text-sm text-slate-600">Servicio actual: <span x-text="item.servicio || '-'" class="font-medium"></span></p>
+                        <p class="text-sm text-slate-600">Oficina actual: <span x-text="item.oficina || '-'" class="font-medium"></span></p>
+                        <button type="button" @click="agregar(item)" class="mt-3 min-h-[48px] w-full rounded-xl border border-primary-500 bg-primary-50 text-sm font-semibold text-primary-700">
+                            AGREGAR
+                        </button>
+                    </article>
+                </template>
+            </div>
+        </section>
+
+        <section class="card space-y-4">
+            <h3 class="text-lg font-semibold text-slate-900">Paso 3 - Equipos seleccionados y origen</h3>
+
+            <template x-if="!selected.length">
+                <p class="text-sm text-slate-500">Todavia no agrego equipos al acta.</p>
+            </template>
+
+            <div class="space-y-3" x-show="selected.length" x-cloak>
+                <template x-for="(item, index) in selected" :key="`sel-${item.id}`">
+                    <div class="rounded-2xl border border-slate-200 p-4">
+                        <div class="flex flex-wrap items-start justify-between gap-2">
+                            <div>
+                                <p class="font-semibold text-slate-900" x-text="item.label"></p>
+                                <p class="text-sm text-slate-500">Serie: <span x-text="item.numero_serie || '-'" class="font-medium"></span> | Patrimonial: <span x-text="item.bien_patrimonial || '-'" class="font-medium"></span></p>
+                            </div>
+                            <button type="button" @click="remove(index)" class="min-h-[48px] rounded-xl border border-red-200 px-3 text-sm font-semibold text-red-600">
+                                Quitar
+                            </button>
+                        </div>
+
+                        <div class="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                            <p class="font-semibold text-slate-900">Origen</p>
+                            <p class="mt-1" x-text="item.institucion || '-'"></p>
+                            <p x-text="item.servicio || '-'"></p>
+                            <p x-text="item.oficina || '-'"></p>
+                        </div>
+
+                        <div class="mt-3 grid gap-3 md:grid-cols-2">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600">Cantidad</label>
+                                <input type="number" min="1" x-model="item.cantidad" class="mt-1 min-h-[48px] w-full rounded-xl border-slate-300">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600">Accesorios</label>
+                                <input type="text" x-model="item.accesorios" class="mt-1 min-h-[48px] w-full rounded-xl border-slate-300">
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            @error('equipos') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+            @error('equipos.*.equipo_id') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+            @error('equipos.*.cantidad') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+
+            <template x-for="(item, index) in selected" :key="`hidden-${item.id}`">
+                <div>
+                    <input type="hidden" :name="`equipos[${index}][equipo_id]`" :value="item.id">
+                    <input type="hidden" :name="`equipos[${index}][cantidad]`" :value="item.cantidad || 1">
+                    <input type="hidden" :name="`equipos[${index}][accesorios]`" :value="item.accesorios || ''">
+                </div>
+            </template>
+        </section>
+
+        <section class="card space-y-4">
+            <h3 class="text-lg font-semibold text-slate-900">Paso 4 - Datos del acta</h3>
 
             <div class="grid gap-4 md:grid-cols-2">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700">Fecha</label>
+                    <label class="block text-sm font-medium text-slate-700" x-text="tipo === 'prestamo' ? 'Fecha de prestamo' : 'Fecha'"></label>
                     <input type="date" name="fecha" x-model="fecha" class="mt-1 w-full rounded-xl border-slate-300" required>
                     @error('fecha') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
+            </div>
 
-                <div x-show="showMainInstitution()" x-cloak>
-                    <label class="block text-sm font-medium text-slate-700">Institucion</label>
-                    <select name="institution_id" x-model="institution_id" @change="onInstitutionChange('main')" class="mt-1 w-full rounded-xl border-slate-300" :disabled="!isSuperadmin">
-                        <option value="">Seleccionar</option>
-                        @foreach ($institutions as $institution)
-                            <option value="{{ $institution->id }}">{{ $institution->nombre }}</option>
-                        @endforeach
-                    </select>
-                    @error('institution_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                    <input x-show="!isSuperadmin" type="hidden" name="institution_id" :value="institution_id">
-                </div>
-
-                <div x-show="tipo === 'traslado'" x-cloak>
+            <div x-show="tipo === 'entrega'" x-cloak class="grid gap-4 md:grid-cols-3">
+                <div>
                     <label class="block text-sm font-medium text-slate-700">Institucion destino</label>
-                    <select name="institution_destino_id" x-model="institution_destino_id" @change="onInstitutionChange('destino')" class="mt-1 w-full rounded-xl border-slate-300" :disabled="!isSuperadmin">
+                    <select name="institution_destino_id" x-model="institution_destino_id" @change="onEntregaInstitutionChange" class="mt-1 w-full rounded-xl border-slate-300">
                         <option value="">Seleccionar</option>
                         @foreach ($institutions as $institution)
                             <option value="{{ $institution->id }}">{{ $institution->nombre }}</option>
                         @endforeach
                     </select>
                     @error('institution_destino_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                    <input x-show="!isSuperadmin" type="hidden" name="institution_destino_id" :value="institution_destino_id">
                 </div>
-            </div>
-
-            <div x-show="tipo === 'traslado'" x-cloak class="grid gap-4 md:grid-cols-2">
-                <div class="rounded-xl border border-slate-200 p-4">
-                    <h4 class="text-sm font-semibold text-slate-800">Origen</h4>
-                    <div class="mt-3 space-y-3">
-                        <div>
-                            <label class="block text-xs font-medium text-slate-600">Servicio origen</label>
-                            <select name="service_origen_id" x-model="service_origen_id" @change="onServiceChange('origen')" class="mt-1 w-full rounded-xl border-slate-300">
-                                <option value="">Seleccionar</option>
-                                <template x-for="service in serviceOptions.origen" :key="`so-${service.id}`">
-                                    <option :value="service.id" x-text="service.label"></option>
-                                </template>
-                            </select>
-                            @error('service_origen_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-600">Oficina origen</label>
-                            <select name="office_origen_id" x-model="office_origen_id" class="mt-1 w-full rounded-xl border-slate-300">
-                                <option value="">Seleccionar</option>
-                                <template x-for="office in officeOptions.origen" :key="`oo-${office.id}`">
-                                    <option :value="office.id" x-text="office.label"></option>
-                                </template>
-                            </select>
-                            @error('office_origen_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                        </div>
-                    </div>
-                </div>
-
-                <div class="rounded-xl border border-slate-200 p-4">
-                    <h4 class="text-sm font-semibold text-slate-800">Destino</h4>
-                    <div class="mt-3 space-y-3">
-                        <div>
-                            <label class="block text-xs font-medium text-slate-600">Servicio destino</label>
-                            <select name="service_destino_id" x-model="service_destino_id" @change="onServiceChange('destino')" class="mt-1 w-full rounded-xl border-slate-300">
-                                <option value="">Seleccionar</option>
-                                <template x-for="service in serviceOptions.destino" :key="`sd-${service.id}`">
-                                    <option :value="service.id" x-text="service.label"></option>
-                                </template>
-                            </select>
-                            @error('service_destino_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-600">Oficina destino</label>
-                            <select name="office_destino_id" x-model="office_destino_id" class="mt-1 w-full rounded-xl border-slate-300">
-                                <option value="">Seleccionar</option>
-                                <template x-for="office in officeOptions.destino" :key="`od-${office.id}`">
-                                    <option :value="office.id" x-text="office.label"></option>
-                                </template>
-                            </select>
-                            @error('office_destino_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div x-show="tipo !== 'traslado'" x-cloak class="grid gap-4 md:grid-cols-2">
                 <div>
-                    <label class="block text-sm font-medium text-slate-700">Servicio</label>
-                    <select name="service_destino_id" x-model="service_destino_id" @change="onServiceChange('main')" class="mt-1 w-full rounded-xl border-slate-300">
+                    <label class="block text-sm font-medium text-slate-700">Servicio destino</label>
+                    <select name="service_destino_id" x-model="service_destino_id" @change="onDestinoServiceChange('destino')" class="mt-1 w-full rounded-xl border-slate-300">
                         <option value="">Seleccionar</option>
-                        <template x-for="service in serviceOptions.main" :key="`sm-${service.id}`">
+                        <template x-for="service in serviceOptions.destino" :key="`sd-${service.id}`">
                             <option :value="service.id" x-text="service.label"></option>
                         </template>
                     </select>
                     @error('service_destino_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-700">Oficina</label>
+                    <label class="block text-sm font-medium text-slate-700">Oficina destino</label>
                     <select name="office_destino_id" x-model="office_destino_id" class="mt-1 w-full rounded-xl border-slate-300">
                         <option value="">Seleccionar</option>
-                        <template x-for="office in officeOptions.main" :key="`om-${office.id}`">
+                        <template x-for="office in officeOptions.destino" :key="`od-${office.id}`">
                             <option :value="office.id" x-text="office.label"></option>
                         </template>
                     </select>
                     @error('office_destino_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+            </div>
+
+            <div x-show="tipo === 'traslado'" x-cloak class="space-y-4">
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                    <p class="font-semibold text-slate-900">Institucion origen detectada</p>
+                    <p class="mt-1" x-text="selected.length ? (getSelectedInstitutionName() || 'Sin institucion') : 'Agregue equipos para detectar la institucion.'"></p>
+                    <p class="mt-1 text-xs text-slate-500">Regla: el traslado no permite cambiar de institucion.</p>
+                </div>
+
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Servicio destino</label>
+                        <select name="service_destino_id" x-model="service_destino_id" @change="onDestinoServiceChange('traslado')" class="mt-1 w-full rounded-xl border-slate-300">
+                            <option value="">Seleccionar</option>
+                            <template x-for="service in serviceOptions.traslado" :key="`st-${service.id}`">
+                                <option :value="service.id" x-text="service.label"></option>
+                            </template>
+                        </select>
+                        @error('service_destino_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Oficina destino</label>
+                        <select name="office_destino_id" x-model="office_destino_id" class="mt-1 w-full rounded-xl border-slate-300">
+                            <option value="">Seleccionar</option>
+                            <template x-for="office in officeOptions.traslado" :key="`ot-${office.id}`">
+                                <option :value="office.id" x-text="office.label"></option>
+                            </template>
+                        </select>
+                        @error('office_destino_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                    </div>
                 </div>
             </div>
 
@@ -190,91 +245,7 @@
                 <textarea name="observaciones" x-model="observaciones" rows="3" class="mt-1 w-full rounded-xl border-slate-300"></textarea>
                 @error('observaciones') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
-        </section>
 
-        <section class="card space-y-4">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-                <h3 class="text-lg font-semibold text-slate-900">Paso 3 - Seleccion de equipos</h3>
-                <button type="button" class="min-h-[48px] rounded-xl border border-dashed border-slate-300 px-4 text-sm font-semibold text-slate-500" disabled>
-                    ESCANEAR QR (proximamente)
-                </button>
-            </div>
-
-            <div class="grid gap-2 md:grid-cols-[1fr_auto]">
-                <input
-                    type="text"
-                    x-model="query"
-                    class="min-h-[48px] rounded-xl border-slate-300"
-                    placeholder="Buscar por serie, patrimonial, modelo, mac o codigo interno. Use ... para listar todos"
-                >
-                <button type="button" @click="buscarEquipos" class="min-h-[48px] rounded-xl bg-primary-600 px-5 text-sm font-semibold text-white">
-                    Buscar
-                </button>
-            </div>
-
-            <template x-if="errorBusqueda">
-                <p class="text-sm text-red-600" x-text="errorBusqueda"></p>
-            </template>
-
-            <div class="grid gap-3 md:grid-cols-2" x-show="results.length" x-cloak>
-                <template x-for="item in results" :key="item.id">
-                    <article class="rounded-2xl border border-slate-200 p-4 shadow-sm">
-                        <p class="text-base font-semibold text-slate-900" x-text="item.label"></p>
-                        <p class="mt-1 text-sm text-slate-600">Serie: <span x-text="item.numero_serie || '-'" class="font-medium"></span></p>
-                        <p class="text-sm text-slate-600">Patrimonial: <span x-text="item.bien_patrimonial || '-'" class="font-medium"></span></p>
-                        <p class="text-sm text-slate-600">Oficina actual: <span x-text="item.oficina || '-'" class="font-medium"></span></p>
-                        <button type="button" @click="agregar(item)" class="mt-3 min-h-[48px] w-full rounded-xl border border-primary-500 bg-primary-50 text-sm font-semibold text-primary-700">
-                            AGREGAR
-                        </button>
-                    </article>
-                </template>
-            </div>
-        </section>
-
-        <section class="card space-y-4">
-            <h3 class="text-lg font-semibold text-slate-900">Paso 4 - Equipos seleccionados</h3>
-
-            <template x-if="!selected.length">
-                <p class="text-sm text-slate-500">Todavia no agrego equipos al acta.</p>
-            </template>
-
-            <div class="space-y-3" x-show="selected.length" x-cloak>
-                <template x-for="(item, index) in selected" :key="`sel-${item.id}`">
-                    <div class="rounded-2xl border border-slate-200 p-4">
-                        <div class="flex flex-wrap items-start justify-between gap-2">
-                            <div>
-                                <p class="font-semibold text-slate-900" x-text="item.label"></p>
-                                <p class="text-sm text-slate-500">Serie: <span x-text="item.numero_serie || '-'" class="font-medium"></span> | Patrimonial: <span x-text="item.bien_patrimonial || '-'" class="font-medium"></span></p>
-                            </div>
-                            <button type="button" @click="remove(index)" class="min-h-[48px] rounded-xl border border-red-200 px-3 text-sm font-semibold text-red-600">
-                                Quitar
-                            </button>
-                        </div>
-
-                        <div class="mt-3 grid gap-3 md:grid-cols-2">
-                            <div>
-                                <label class="block text-xs font-medium text-slate-600">Cantidad</label>
-                                <input type="number" min="1" x-model="item.cantidad" class="mt-1 min-h-[48px] w-full rounded-xl border-slate-300">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-medium text-slate-600">Accesorios</label>
-                                <input type="text" x-model="item.accesorios" class="mt-1 min-h-[48px] w-full rounded-xl border-slate-300">
-                            </div>
-                        </div>
-                    </div>
-                </template>
-            </div>
-
-            @error('equipos') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
-            @error('equipos.*.equipo_id') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
-
-            <template x-for="(item, index) in selected" :key="`hidden-${item.id}`">
-                <div>
-                    <input type="hidden" :name="`equipos[${index}][equipo_id]`" :value="item.id">
-                    <input type="hidden" :name="`equipos[${index}][cantidad]`" :value="item.cantidad || 1">
-                    <input type="hidden" :name="`equipos[${index}][accesorios]`" :value="item.accesorios || ''">
-                </div>
-            </template>
         </section>
 
         <section class="card">
@@ -291,10 +262,7 @@
         return {
             tipo: initial.tipo || '',
             fecha: initial.fecha,
-            institution_id: initial.institution_id ? String(initial.institution_id) : (isSuperadmin ? '' : String(userInstitutionId || '')),
             institution_destino_id: initial.institution_destino_id ? String(initial.institution_destino_id) : '',
-            service_origen_id: initial.service_origen_id ? String(initial.service_origen_id) : '',
-            office_origen_id: initial.office_origen_id ? String(initial.office_origen_id) : '',
             service_destino_id: initial.service_destino_id ? String(initial.service_destino_id) : '',
             office_destino_id: initial.office_destino_id ? String(initial.office_destino_id) : '',
             receptor_nombre: initial.receptor_nombre || '',
@@ -305,130 +273,179 @@
             observaciones: initial.observaciones || '',
             query: '',
             results: [],
-            selected: Array.isArray(oldSelected) ? oldSelected.map((item) => ({ ...item, cantidad: item.cantidad || 1, accesorios: item.accesorios || '' })) : [],
+            selected: Array.isArray(oldSelected)
+                ? oldSelected.map((item) => ({
+                    ...item,
+                    institucion_id: item.institucion_id ? Number(item.institucion_id) : null,
+                    servicio_id: item.servicio_id ? Number(item.servicio_id) : null,
+                    oficina_id: item.oficina_id ? Number(item.oficina_id) : null,
+                    cantidad: item.cantidad || 1,
+                    accesorios: item.accesorios || '',
+                }))
+                : [],
             errorBusqueda: '',
-            serviceOptions: { main: [], origen: [], destino: [] },
-            officeOptions: { main: [], origen: [], destino: [] },
+            serviceOptions: { destino: [], traslado: [] },
+            officeOptions: { destino: [], traslado: [] },
+            currentTrasladoInstitutionId: '',
             isSuperadmin,
+            userInstitutionId,
 
             init() {
-                if (!this.isSuperadmin && this.tipo === 'traslado' && !this.institution_destino_id) {
-                    this.institution_destino_id = this.institution_id;
+                if (this.tipo === 'entrega' && this.institution_destino_id) {
+                    this.loadServices('destino', this.institution_destino_id, false);
                 }
-                this.bootstrapSelects();
+
+                if (this.tipo === 'entrega' && this.institution_destino_id && this.service_destino_id) {
+                    this.loadOffices('destino', this.institution_destino_id, this.service_destino_id);
+                }
+
+                this.refreshTrasladoContext(false);
             },
 
             selectTipo(tipo) {
                 this.tipo = tipo;
-                if (!this.isSuperadmin && tipo === 'traslado' && !this.institution_destino_id) {
-                    this.institution_destino_id = this.institution_id;
-                }
-                this.results = [];
                 this.errorBusqueda = '';
-            },
 
-            showMainInstitution() {
-                return this.tipo !== 'traslado' || this.isSuperadmin;
-            },
-
-            onInstitutionChange(scope) {
-                if (scope === 'main') {
-                    this.service_destino_id = '';
-                    this.office_destino_id = '';
-                    this.serviceOptions.main = [];
-                    this.officeOptions.main = [];
-                    this.loadServices('main');
-                }
-
-                if (scope === 'destino') {
-                    this.service_destino_id = '';
-                    this.office_destino_id = '';
+                if (tipo !== 'entrega') {
+                    this.institution_destino_id = '';
                     this.serviceOptions.destino = [];
                     this.officeOptions.destino = [];
-                    this.loadServices('destino');
+                    this.service_destino_id = '';
+                    this.office_destino_id = '';
+                }
+
+                if (tipo === 'traslado') {
+                    this.refreshTrasladoContext(true);
                 }
             },
 
-            onServiceChange(scope) {
-                if (scope === 'main') {
-                    this.office_destino_id = '';
-                    this.officeOptions.main = [];
-                    this.loadOffices('main');
+            getSelectedInstitutionId() {
+                const ids = [...new Set(this.selected.map((item) => Number(item.institucion_id || 0)).filter((id) => id > 0))];
+                if (ids.length !== 1) {
+                    return '';
                 }
 
-                if (scope === 'origen') {
-                    this.office_origen_id = '';
-                    this.officeOptions.origen = [];
-                    this.loadOffices('origen');
+                return String(ids[0]);
+            },
+
+            getSelectedInstitutionName() {
+                if (!this.selected.length) {
+                    return '';
                 }
 
+                return this.selected[0].institucion || '';
+            },
+
+            async onEntregaInstitutionChange() {
+                this.service_destino_id = '';
+                this.office_destino_id = '';
+                this.serviceOptions.destino = [];
+                this.officeOptions.destino = [];
+
+                if (!this.institution_destino_id) {
+                    return;
+                }
+
+                await this.loadServices('destino', this.institution_destino_id, true);
+            },
+
+            async onDestinoServiceChange(scope) {
+                this.office_destino_id = '';
+                this.officeOptions[scope] = [];
+
+                if (!this.service_destino_id) {
+                    return;
+                }
+
+                let institutionId = '';
                 if (scope === 'destino') {
-                    this.office_destino_id = '';
-                    this.officeOptions.destino = [];
-                    this.loadOffices('destino');
+                    institutionId = this.institution_destino_id;
+                }
+
+                if (scope === 'traslado') {
+                    institutionId = this.getSelectedInstitutionId();
+                }
+
+                if (!institutionId) {
+                    return;
+                }
+
+                await this.loadOffices(scope, institutionId, this.service_destino_id);
+            },
+
+            async refreshTrasladoContext(resetSelection) {
+                if (this.tipo !== 'traslado') {
+                    return;
+                }
+
+                const institutionId = this.getSelectedInstitutionId();
+
+                if (!institutionId) {
+                    this.currentTrasladoInstitutionId = '';
+                    this.serviceOptions.traslado = [];
+                    this.officeOptions.traslado = [];
+                    if (resetSelection) {
+                        this.service_destino_id = '';
+                        this.office_destino_id = '';
+                    }
+                    return;
+                }
+
+                if (this.currentTrasladoInstitutionId !== institutionId) {
+                    this.currentTrasladoInstitutionId = institutionId;
+                    this.serviceOptions.traslado = [];
+                    this.officeOptions.traslado = [];
+                    if (resetSelection) {
+                        this.service_destino_id = '';
+                        this.office_destino_id = '';
+                    }
+                    await this.loadServices('traslado', institutionId, true);
+                    if (resetSelection) {
+                        return;
+                    }
+                }
+
+                if (this.service_destino_id) {
+                    await this.loadOffices('traslado', institutionId, this.service_destino_id);
                 }
             },
 
-            bootstrapSelects() {
-                this.loadServices('main');
-                this.loadServices('origen');
-                this.loadServices('destino');
-                this.loadOffices('main');
-                this.loadOffices('origen');
-                this.loadOffices('destino');
-            },
-
-            async loadServices(scope) {
-                const institutionId = this.getInstitutionForScope(scope);
-                if (!institutionId) return;
-
-                const params = new URLSearchParams({ q: '...', institution_id: institutionId });
-                const response = await fetch(`/api/search/services?${params.toString()}`);
-                const payload = await response.json();
-                this.serviceOptions[scope] = Array.isArray(payload) ? payload : [];
-            },
-
-            async loadOffices(scope) {
-                const institutionId = this.getInstitutionForScope(scope);
-                const serviceId = this.getServiceForScope(scope);
-                if (!institutionId || !serviceId) return;
-
-                const params = new URLSearchParams({ q: '...', institution_id: institutionId, service_id: serviceId });
-                const response = await fetch(`/api/search/offices?${params.toString()}`);
-                const payload = await response.json();
-                this.officeOptions[scope] = Array.isArray(payload) ? payload : [];
-            },
-
-            getInstitutionForScope(scope) {
-                if (scope === 'main') return this.institution_id;
-                if (scope === 'origen') return this.institution_id;
-                if (scope === 'destino') return this.institution_destino_id;
-                return '';
-            },
-
-            getServiceForScope(scope) {
-                if (scope === 'main') return this.service_destino_id;
-                if (scope === 'origen') return this.service_origen_id;
-                if (scope === 'destino') return this.service_destino_id;
-                return '';
-            },
-
-            getSearchInstitutionId() {
-                if (this.tipo === 'traslado') {
-                    return this.institution_id;
+            async loadServices(scope, institutionId, clearOnError) {
+                if (!institutionId) {
+                    return;
                 }
 
-                return this.institution_id;
+                try {
+                    const params = new URLSearchParams({ q: '...', institution_id: institutionId, acta_context: '1' });
+                    const response = await fetch(`/api/search/services?${params.toString()}`);
+                    const payload = await response.json();
+                    this.serviceOptions[scope] = Array.isArray(payload) ? payload : [];
+                } catch (e) {
+                    this.serviceOptions[scope] = [];
+                    if (clearOnError) {
+                        this.errorBusqueda = 'No fue posible cargar servicios para la institucion seleccionada.';
+                    }
+                }
+            },
+
+            async loadOffices(scope, institutionId, serviceId) {
+                if (!institutionId || !serviceId) {
+                    return;
+                }
+
+                try {
+                    const params = new URLSearchParams({ q: '...', institution_id: institutionId, service_id: serviceId, acta_context: '1' });
+                    const response = await fetch(`/api/search/offices?${params.toString()}`);
+                    const payload = await response.json();
+                    this.officeOptions[scope] = Array.isArray(payload) ? payload : [];
+                } catch (e) {
+                    this.officeOptions[scope] = [];
+                    this.errorBusqueda = 'No fue posible cargar oficinas para el servicio seleccionado.';
+                }
             },
 
             async buscarEquipos() {
                 this.errorBusqueda = '';
-
-                const institutionId = this.getSearchInstitutionId();
-                if (!institutionId) {
-                    this.errorBusqueda = 'Seleccione la institucion del acta antes de buscar equipos.';
-                    return;
-                }
 
                 const q = this.query.trim();
                 if (q.length < 1) {
@@ -436,13 +453,23 @@
                     return;
                 }
 
-                const params = new URLSearchParams({ q, institution_id: institutionId });
-                const response = await fetch(`/api/search/equipos?${params.toString()}`);
-                const payload = await response.json();
-                this.results = Array.isArray(payload) ? payload : [];
+                try {
+                    const params = new URLSearchParams({ q, acta_context: '1' });
+                    const selectedInstitutionId = this.getSelectedInstitutionId();
+                    if (selectedInstitutionId) {
+                        params.set('institution_id', selectedInstitutionId);
+                    }
 
-                if (!this.results.length) {
-                    this.errorBusqueda = 'No se encontraron equipos para los filtros indicados.';
+                    const response = await fetch(`/api/search/equipos?${params.toString()}`);
+                    const payload = await response.json();
+                    this.results = Array.isArray(payload) ? payload : [];
+
+                    if (!this.results.length) {
+                        this.errorBusqueda = 'No se encontraron equipos para los filtros indicados.';
+                    }
+                } catch (e) {
+                    this.results = [];
+                    this.errorBusqueda = 'No fue posible buscar equipos en este momento.';
                 }
             },
 
@@ -451,11 +478,34 @@
                     return;
                 }
 
-                this.selected.push({ ...item, cantidad: 1, accesorios: '' });
+                const selectedInstitutionId = this.getSelectedInstitutionId();
+                const itemInstitutionId = item.institucion_id ? String(item.institucion_id) : '';
+
+                if (selectedInstitutionId && itemInstitutionId && selectedInstitutionId !== itemInstitutionId) {
+                    this.errorBusqueda = 'No se pueden mezclar equipos de instituciones distintas en la misma acta.';
+                    return;
+                }
+
+                this.selected.push({
+                    ...item,
+                    institucion_id: item.institucion_id ? Number(item.institucion_id) : null,
+                    servicio_id: item.servicio_id ? Number(item.servicio_id) : null,
+                    oficina_id: item.oficina_id ? Number(item.oficina_id) : null,
+                    cantidad: 1,
+                    accesorios: '',
+                });
+
+                if (this.tipo === 'traslado') {
+                    this.refreshTrasladoContext(true);
+                }
             },
 
             remove(index) {
                 this.selected.splice(index, 1);
+
+                if (this.tipo === 'traslado') {
+                    this.refreshTrasladoContext(true);
+                }
             },
         };
     }

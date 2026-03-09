@@ -58,9 +58,7 @@ class ActaController extends Controller
         $this->authorize('create', Acta::class);
 
         $user = $request->user();
-        $institutions = $user->hasRole(User::ROLE_SUPERADMIN)
-            ? Institution::query()->orderBy('nombre')->get(['id', 'nombre'])
-            : Institution::query()->where('id', $user->institution_id)->get(['id', 'nombre']);
+        $institutions = Institution::query()->orderBy('nombre')->get(['id', 'nombre']);
 
         $oldEquipoIds = collect(old('equipos', []))
             ->pluck('equipo_id')
@@ -93,6 +91,9 @@ class ActaController extends Controller
                         'institucion' => $equipo->oficina?->service?->institution?->nombre,
                         'servicio' => $equipo->oficina?->service?->nombre,
                         'oficina' => $equipo->oficina?->nombre,
+                        'institucion_id' => $equipo->oficina?->service?->institution?->id,
+                        'servicio_id' => $equipo->oficina?->service?->id,
+                        'oficina_id' => $equipo->oficina?->id,
                         'cantidad' => (int) ($meta['cantidad'] ?? 1),
                         'accesorios' => $meta['accesorios'] ?? '',
                     ];
@@ -159,5 +160,3 @@ class ActaController extends Controller
         return $pdf->download($acta->codigo.'.pdf');
     }
 }
-
-

@@ -7,6 +7,8 @@ use App\Models\AuditLog;
 use App\Models\Equipo;
 use App\Models\EquipoHistorial;
 use App\Models\EquipoStatus;
+use App\Models\Office;
+use App\Models\Service;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Collection;
@@ -30,7 +32,7 @@ class ActaTraceabilityService
 
         return DB::transaction(function () use ($user, $data, $equipoIds): Acta {
             $equipos = Equipo::query()
-                ->with('oficina.service')
+                ->with('oficina.service.institution')
                 ->whereIn('id', $equipoIds)
                 ->lockForUpdate()
                 ->get();
@@ -41,36 +43,28 @@ class ActaTraceabilityService
                 ]);
             }
 
-            $this->validateScope($user, $data, $equipos);
+            $origen = $this->resolveOrigen($equipos);
+            $this->validateScope($user, $data, $equipos, $origen);
 
-            $institutionId = (int) ($data['institution_id'] ?? $user->institution_id);
-            $institutionDestinoId = (int) ($data['institution_destino_id'] ?? 0);
-
-            if (! $user->hasRole(User::ROLE_SUPERADMIN)) {
-                $institutionId = (int) $user->institution_id;
-                if ($institutionDestinoId > 0 && $institutionDestinoId !== (int) $user->institution_id) {
-                    throw ValidationException::withMessages([
-                        'institution_destino_id' => 'No tiene permisos para operar sobre otra institucion.',
-                    ]);
-                }
-            }
+            $tipo = (string) $data['tipo'];
+            $destino = $this->resolveDestino($data, $origen, $tipo);
 
             $acta = Acta::query()->create([
-                'institution_id' => $institutionId,
-                'institution_destino_id' => $institutionDestinoId > 0 ? $institutionDestinoId : null,
-                'service_origen_id' => $this->nullableInt($data['service_origen_id'] ?? null),
-                'office_origen_id' => $this->nullableInt($data['office_origen_id'] ?? null),
-                'service_destino_id' => $this->nullableInt($data['service_destino_id'] ?? null),
-                'office_destino_id' => $this->nullableInt($data['office_destino_id'] ?? null),
-                'tipo' => $data['tipo'],
+                'institution_id' => $origen['institucion_id'],
+                'institution_destino_id' => $destino['institucion_id'] ?? null,
+                'service_origen_id' => $origen['servicio_id'],
+                'office_origen_id' => $origen['oficina_id'],
+                'service_destino_id' => $destino['servicio_id'] ?? null,
+                'office_destino_id' => $destino['oficina_id'] ?? null,
+                'tipo' => $tipo,
                 'fecha' => $data['fecha'],
                 'receptor_nombre' => $this->nullableString($data['receptor_nombre'] ?? null),
-                'receptor_dni' => $data['receptor_dni'] ?? null,
-                'receptor_cargo' => $data['receptor_cargo'] ?? null,
-                'receptor_dependencia' => $data['receptor_dependencia'] ?? null,
-                'motivo_baja' => $data['motivo_baja'] ?? null,
-                'evento_payload' => $this->payload($data),
-                'observaciones' => $data['observaciones'] ?? null,
+                'receptor_dni' => $this->nullableString($data['receptor_dni'] ?? null),
+                'receptor_cargo' => $this->nullableString($data['receptor_cargo'] ?? null),
+                'receptor_dependencia' => $this->nullableString($data['receptor_dependencia'] ?? null),
+                'motivo_baja' => $this->nullableString($data['motivo_baja'] ?? null),
+                'evento_payload' => $this->payload($data, $origen, $destino),
+                'observaciones' => $this->nullableString($data['observaciones'] ?? null),
                 'created_by' => $user->id,
             ]);
 
@@ -85,8 +79,13 @@ class ActaTraceabilityService
 
             $acta->equipos()->sync($pivotPayload);
 
+            $destinoOffice = null;
+            if ($acta->office_destino_id !== null && in_array($tipo, [Acta::TIPO_ENTREGA, Acta::TIPO_TRASLADO], true)) {
+                $destinoOffice = Office::query()->with('service.institution')->find($acta->office_destino_id);
+            }
+
             foreach ($equipos as $equipo) {
-                $this->applyTransition($equipo, $acta, $user, $data);
+                $this->applyTransition($equipo, $acta, $user, $destinoOffice);
             }
 
             AuditLog::query()->create([
@@ -136,56 +135,77 @@ class ActaTraceabilityService
         });
     }
 
-    private function validateScope(User $user, array $data, Collection $equipos): void
+    private function validateScope(User $user, array $data, Collection $equipos, array $origen): void
     {
         $tipo = (string) $data['tipo'];
-        $institutionId = $this->nullableInt($data['institution_id'] ?? $user->institution_id);
-        $institutionDestinoId = $this->nullableInt($data['institution_destino_id'] ?? null);
+        $institutionOrigenId = (int) $origen['institucion_id'];
+
+        if (! $user->hasRole(User::ROLE_SUPERADMIN) && $institutionOrigenId !== (int) $user->institution_id) {
+            throw ValidationException::withMessages([
+                'equipos' => 'No tiene permisos para operar equipos de otra institucion.',
+            ]);
+        }
 
         foreach ($equipos as $equipo) {
-            $ubicacion = $equipo->ubicacionActual();
-            $equipoInstitutionId = (int) ($ubicacion['institucion_id'] ?? 0);
-
-            if (! $user->hasRole(User::ROLE_SUPERADMIN) && $equipoInstitutionId !== (int) $user->institution_id) {
-                throw ValidationException::withMessages([
-                    'equipos' => 'No tiene permisos para operar equipos de otra institucion.',
-                ]);
-            }
-
-            if ($institutionId !== null && $equipoInstitutionId !== $institutionId) {
-                throw ValidationException::withMessages([
-                    'equipos' => 'Todos los equipos deben pertenecer a la institucion origen del acta.',
-                ]);
-            }
-
             $this->assertTransitionAllowed($equipo, $tipo);
+        }
 
-            if ($tipo === Acta::TIPO_TRASLADO) {
-                $serviceOrigenId = $this->nullableInt($data['service_origen_id'] ?? null);
-                $officeOrigenId = $this->nullableInt($data['office_origen_id'] ?? null);
+        $institutionDestinoId = $this->nullableInt($data['institution_destino_id'] ?? null);
+        $serviceDestinoId = $this->nullableInt($data['service_destino_id'] ?? null);
+        $officeDestinoId = $this->nullableInt($data['office_destino_id'] ?? null);
 
-                if ($serviceOrigenId !== null && (int) ($ubicacion['servicio_id'] ?? 0) !== $serviceOrigenId) {
-                    throw ValidationException::withMessages([
-                        'service_origen_id' => 'El servicio origen no coincide con la ubicacion actual del equipo seleccionado.',
-                    ]);
-                }
+        if ($tipo === Acta::TIPO_ENTREGA) {
+            if ($institutionDestinoId === null || $serviceDestinoId === null || $officeDestinoId === null) {
+                throw ValidationException::withMessages([
+                    'service_destino_id' => 'La entrega requiere institucion, servicio y oficina destino.',
+                ]);
+            }
 
-                if ($officeOrigenId !== null && (int) ($ubicacion['oficina_id'] ?? 0) !== $officeOrigenId) {
-                    throw ValidationException::withMessages([
-                        'office_origen_id' => 'La oficina origen no coincide con la ubicacion actual del equipo seleccionado.',
-                    ]);
-                }
+            $service = Service::query()->find($serviceDestinoId);
+            if ($service === null || (int) $service->institution_id !== $institutionDestinoId) {
+                throw ValidationException::withMessages([
+                    'service_destino_id' => 'El servicio destino no pertenece a la institucion destino.',
+                ]);
+            }
 
-                if (! $user->hasRole(User::ROLE_SUPERADMIN) && $institutionDestinoId !== null && $institutionDestinoId !== (int) $user->institution_id) {
-                    throw ValidationException::withMessages([
-                        'institution_destino_id' => 'No tiene permisos para trasladar equipos a otra institucion.',
-                    ]);
-                }
+            $office = Office::query()->find($officeDestinoId);
+            if ($office === null || (int) $office->service_id !== $serviceDestinoId) {
+                throw ValidationException::withMessages([
+                    'office_destino_id' => 'La oficina destino no pertenece al servicio destino.',
+                ]);
+            }
+        }
+
+        if ($tipo === Acta::TIPO_TRASLADO) {
+            if ($institutionDestinoId !== null) {
+                throw ValidationException::withMessages([
+                    'institution_destino_id' => 'El traslado no permite informar institucion destino.',
+                ]);
+            }
+
+            if ($serviceDestinoId === null || $officeDestinoId === null) {
+                throw ValidationException::withMessages([
+                    'service_destino_id' => 'El traslado requiere servicio y oficina destino.',
+                ]);
+            }
+
+            $service = Service::query()->find($serviceDestinoId);
+            if ($service === null || (int) $service->institution_id !== $institutionOrigenId) {
+                throw ValidationException::withMessages([
+                    'service_destino_id' => 'No se permite traslado entre instituciones.',
+                ]);
+            }
+
+            $office = Office::query()->find($officeDestinoId);
+            if ($office === null || (int) $office->service_id !== $serviceDestinoId) {
+                throw ValidationException::withMessages([
+                    'office_destino_id' => 'La oficina destino no pertenece al servicio destino.',
+                ]);
             }
         }
     }
 
-    private function applyTransition(Equipo $equipo, Acta $acta, User $user, array $data): void
+    private function applyTransition(Equipo $equipo, Acta $acta, User $user, ?Office $destinoOffice): void
     {
         $anterior = $equipo->ubicacionActual();
         $estadoAnterior = $equipo->estado;
@@ -199,24 +219,13 @@ class ActaTraceabilityService
             'oficina_id' => $anterior['oficina_id'],
         ];
 
-        if ($tipo === Acta::TIPO_TRASLADO) {
+        if (in_array($tipo, [Acta::TIPO_ENTREGA, Acta::TIPO_TRASLADO], true) && $destinoOffice !== null) {
+            $equipo->oficina_id = $destinoOffice->id;
             $nuevaUbicacion = [
-                'institucion_id' => $this->nullableInt($data['institution_destino_id'] ?? null),
-                'servicio_id' => $this->nullableInt($data['service_destino_id'] ?? null),
-                'oficina_id' => $this->nullableInt($data['office_destino_id'] ?? null),
+                'institucion_id' => $destinoOffice->service?->institution?->id,
+                'servicio_id' => $destinoOffice->service?->id,
+                'oficina_id' => $destinoOffice->id,
             ];
-        }
-
-        if (in_array($tipo, [Acta::TIPO_ENTREGA, Acta::TIPO_PRESTAMO, Acta::TIPO_MANTENIMIENTO, Acta::TIPO_DEVOLUCION], true)) {
-            $nuevaUbicacion = [
-                'institucion_id' => $this->nullableInt($data['institution_id'] ?? null),
-                'servicio_id' => $this->nullableInt($data['service_destino_id'] ?? null),
-                'oficina_id' => $this->nullableInt($data['office_destino_id'] ?? null),
-            ];
-        }
-
-        if ($nuevaUbicacion['oficina_id'] !== null) {
-            $equipo->oficina_id = $nuevaUbicacion['oficina_id'];
         }
 
         $equipo->estado = $estadoNuevo;
@@ -287,7 +296,7 @@ class ActaTraceabilityService
             Acta::TIPO_MANTENIMIENTO => [Equipo::ESTADO_OPERATIVO, Equipo::ESTADO_PRESTADO],
             Acta::TIPO_BAJA => [Equipo::ESTADO_OPERATIVO, Equipo::ESTADO_EN_MANTENIMIENTO],
             Acta::TIPO_DEVOLUCION => [Equipo::ESTADO_PRESTADO],
-            Acta::TIPO_ENTREGA => [Equipo::ESTADO_PRESTADO, Equipo::ESTADO_EN_MANTENIMIENTO],
+            Acta::TIPO_ENTREGA => [Equipo::ESTADO_OPERATIVO, Equipo::ESTADO_PRESTADO, Equipo::ESTADO_EN_MANTENIMIENTO],
             default => [],
         };
 
@@ -298,17 +307,98 @@ class ActaTraceabilityService
         }
     }
 
-    private function payload(array $data): array
+    /**
+     * @return array{institucion_id:int,servicio_id:int|null,oficina_id:int|null}
+     */
+    private function resolveOrigen(Collection $equipos): array
+    {
+        $instituciones = [];
+        $servicios = [];
+        $oficinas = [];
+
+        foreach ($equipos as $equipo) {
+            $ubicacion = $equipo->ubicacionActual();
+            $institucionId = (int) ($ubicacion['institucion_id'] ?? 0);
+            $servicioId = (int) ($ubicacion['servicio_id'] ?? 0);
+            $oficinaId = (int) ($ubicacion['oficina_id'] ?? 0);
+
+            if ($institucionId <= 0 || $servicioId <= 0 || $oficinaId <= 0) {
+                throw ValidationException::withMessages([
+                    'equipos' => 'Todos los equipos deben tener una ubicacion de origen valida.',
+                ]);
+            }
+
+            $instituciones[$institucionId] = true;
+            $servicios[$servicioId] = true;
+            $oficinas[$oficinaId] = true;
+        }
+
+        if (count($instituciones) !== 1) {
+            throw ValidationException::withMessages([
+                'equipos' => 'Todos los equipos seleccionados deben pertenecer a la misma institucion de origen.',
+            ]);
+        }
+
+        $institucionId = (int) array_key_first($instituciones);
+
+        return [
+            'institucion_id' => $institucionId,
+            'servicio_id' => count($servicios) === 1 ? (int) array_key_first($servicios) : null,
+            'oficina_id' => count($oficinas) === 1 ? (int) array_key_first($oficinas) : null,
+        ];
+    }
+
+    /**
+     * @param  array{institucion_id:int,servicio_id:int|null,oficina_id:int|null}  $origen
+     * @return array{institucion_id:int,servicio_id:int,oficina_id:int}|null
+     */
+    private function resolveDestino(array $data, array $origen, string $tipo): ?array
+    {
+        if (! in_array($tipo, [Acta::TIPO_ENTREGA, Acta::TIPO_TRASLADO], true)) {
+            return null;
+        }
+
+        $serviceDestinoId = $this->nullableInt($data['service_destino_id'] ?? null);
+        $officeDestinoId = $this->nullableInt($data['office_destino_id'] ?? null);
+
+        if ($serviceDestinoId === null || $officeDestinoId === null) {
+            throw ValidationException::withMessages([
+                'service_destino_id' => 'Debe completar servicio y oficina destino.',
+            ]);
+        }
+
+        $institucionDestinoId = $tipo === Acta::TIPO_ENTREGA
+            ? $this->nullableInt($data['institution_destino_id'] ?? null)
+            : (int) $origen['institucion_id'];
+
+        if ($institucionDestinoId === null) {
+            throw ValidationException::withMessages([
+                'institution_destino_id' => 'Debe seleccionar la institucion destino.',
+            ]);
+        }
+
+        return [
+            'institucion_id' => $institucionDestinoId,
+            'servicio_id' => $serviceDestinoId,
+            'oficina_id' => $officeDestinoId,
+        ];
+    }
+
+    /**
+     * @param  array{institucion_id:int,servicio_id:int|null,oficina_id:int|null}  $origen
+     * @param  array{institucion_id:int,servicio_id:int,oficina_id:int}|null  $destino
+     */
+    private function payload(array $data, array $origen, ?array $destino): array
     {
         return [
             'tipo' => $data['tipo'] ?? null,
             'fecha' => $data['fecha'] ?? null,
-            'institution_id' => $data['institution_id'] ?? null,
-            'institution_destino_id' => $data['institution_destino_id'] ?? null,
-            'service_origen_id' => $data['service_origen_id'] ?? null,
-            'office_origen_id' => $data['office_origen_id'] ?? null,
-            'service_destino_id' => $data['service_destino_id'] ?? null,
-            'office_destino_id' => $data['office_destino_id'] ?? null,
+            'institution_id' => $origen['institucion_id'],
+            'institution_destino_id' => $destino['institucion_id'] ?? null,
+            'service_origen_id' => $origen['servicio_id'],
+            'office_origen_id' => $origen['oficina_id'],
+            'service_destino_id' => $destino['servicio_id'] ?? null,
+            'office_destino_id' => $destino['oficina_id'] ?? null,
             'receptor_nombre' => $data['receptor_nombre'] ?? null,
             'receptor_dni' => $data['receptor_dni'] ?? null,
             'receptor_cargo' => $data['receptor_cargo'] ?? null,
@@ -340,4 +430,3 @@ class ActaTraceabilityService
         return $trimmed === '' ? null : $trimmed;
     }
 }
-

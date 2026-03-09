@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Acta;
 use App\Models\Equipo;
 use App\Models\Institution;
 use App\Models\Office;
@@ -48,6 +49,7 @@ class SearchController extends Controller
         $validated = $request->validate([
             'q' => ['required', 'string', 'min:2'],
             'institution_id' => ['nullable', 'integer', 'exists:institutions,id'],
+            'acta_context' => ['nullable', 'boolean'],
         ]);
 
         $q = (string) $validated['q'];
@@ -55,13 +57,18 @@ class SearchController extends Controller
         $institutionId = ($validated['institution_id'] ?? null) !== null
             ? (int) $validated['institution_id']
             : null;
+        $actaContext = (bool) ($validated['acta_context'] ?? false);
         $user = $request->user();
 
         if ($institutionId === null) {
             return response()->json([]);
         }
 
-        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && $institutionId !== (int) $user->institution_id) {
+        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && ! $actaContext && $institutionId !== (int) $user->institution_id) {
+            return response()->json([]);
+        }
+
+        if ($user !== null && $actaContext && ! $user->can('create', Acta::class)) {
             return response()->json([]);
         }
 
@@ -91,6 +98,7 @@ class SearchController extends Controller
             'q' => ['required', 'string', 'min:2'],
             'service_id' => ['nullable', 'integer', 'exists:services,id'],
             'institution_id' => ['nullable', 'integer', 'exists:institutions,id'],
+            'acta_context' => ['nullable', 'boolean'],
         ]);
 
         $q = (string) $validated['q'];
@@ -101,6 +109,7 @@ class SearchController extends Controller
         $institutionId = ($validated['institution_id'] ?? null) !== null
             ? (int) $validated['institution_id']
             : null;
+        $actaContext = (bool) ($validated['acta_context'] ?? false);
         $user = $request->user();
 
         if ($serviceId === null || $institutionId === null) {
@@ -116,7 +125,11 @@ class SearchController extends Controller
             return response()->json([]);
         }
 
-        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && $institutionId !== (int) $user->institution_id) {
+        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && ! $actaContext && $institutionId !== (int) $user->institution_id) {
+            return response()->json([]);
+        }
+
+        if ($user !== null && $actaContext && ! $user->can('create', Acta::class)) {
             return response()->json([]);
         }
 
@@ -150,18 +163,24 @@ class SearchController extends Controller
             'q' => ['required', 'string', 'min:1'],
             'institution_id' => ['nullable', 'integer', 'exists:institutions,id'],
             'include_baja' => ['nullable', 'boolean'],
+            'acta_context' => ['nullable', 'boolean'],
         ]);
 
         $q = trim((string) $validated['q']);
         $listAll = $this->isListAllQuery($q);
         $includeBaja = (bool) ($validated['include_baja'] ?? false);
+        $actaContext = (bool) ($validated['acta_context'] ?? false);
         $user = $request->user();
 
         $institutionId = $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN)
             ? (int) $user->institution_id
             : (($validated['institution_id'] ?? null) !== null ? (int) $validated['institution_id'] : null);
 
-        if ($institutionId === null) {
+        if ($institutionId === null && ! $actaContext) {
+            return response()->json([]);
+        }
+
+        if ($user !== null && $actaContext && ! $user->can('create', Acta::class)) {
             return response()->json([]);
         }
 
@@ -176,10 +195,12 @@ class SearchController extends Controller
             'equipos.numero_serie',
             'equipos.bien_patrimonial',
             'equipos.estado',
+            'offices.id as oficina_id',
             'offices.nombre as oficina_nombre',
+            'services.id as servicio_id',
             'services.nombre as servicio_nombre',
-            'institutions.nombre as institucion_nombre',
             'institutions.id as institucion_id',
+            'institutions.nombre as institucion_nombre',
         ];
 
         if ($hasMacAddress) {
@@ -195,7 +216,7 @@ class SearchController extends Controller
             ->join('offices', 'offices.id', '=', 'equipos.oficina_id')
             ->join('services', 'services.id', '=', 'offices.service_id')
             ->join('institutions', 'institutions.id', '=', 'services.institution_id')
-            ->where('institutions.id', $institutionId)
+            ->when($institutionId !== null, fn ($query) => $query->where('institutions.id', $institutionId))
             ->when(! $includeBaja, fn ($query) => $query->where('equipos.estado', '!=', Equipo::ESTADO_BAJA))
             ->when(! $listAll, function ($query) use ($q, $hasMacAddress, $hasCodigoInterno): void {
                 $like = "%{$q}%";
@@ -237,8 +258,11 @@ class SearchController extends Controller
                 'codigo_interno' => $equipo->getAttribute('codigo_interno'),
                 'estado' => $equipo->estado,
                 'institucion' => $equipo->institucion_nombre,
+                'institucion_id' => (int) $equipo->getAttribute('institucion_id'),
                 'servicio' => $equipo->servicio_nombre,
+                'servicio_id' => (int) $equipo->getAttribute('servicio_id'),
                 'oficina' => $equipo->oficina_nombre,
+                'oficina_id' => (int) $equipo->getAttribute('oficina_id'),
             ])
             ->values();
 
@@ -273,4 +297,3 @@ class SearchController extends Controller
         return trim($query) === '...';
     }
 }
-
