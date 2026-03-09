@@ -28,9 +28,9 @@
                 @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO, \App\Models\User::ROLE_VIEWER))
                     <a href="{{ route('tipos-equipos.index') }}" class="nav-link {{ request()->routeIs('tipos-equipos.*') ? 'nav-link-active' : '' }}">Tipos de equipo</a>
                 @endif
-                @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO, \App\Models\User::ROLE_VIEWER))
+                @can('viewAny', \App\Models\Equipo::class)
                     <a href="{{ route('equipos.index') }}" class="nav-link {{ request()->routeIs('equipos.*') ? 'nav-link-active' : '' }}">Equipos</a>
-                @endif
+                @endcan
                 @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO, \App\Models\User::ROLE_VIEWER))
                     <a href="{{ route('actas.index') }}" class="nav-link {{ request()->routeIs('actas.*') ? 'nav-link-active' : '' }}">Actas</a>
                 @endif
