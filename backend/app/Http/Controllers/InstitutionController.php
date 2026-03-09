@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Institution;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -112,11 +113,17 @@ class InstitutionController extends Controller
 
     public function destroy(Institution $institution): RedirectResponse
     {
-        $institution->delete();
+        try {
+            $institution->delete();
 
-        return redirect()
-            ->route('institutions.index')
-            ->with('status', 'Institucion eliminada correctamente.');
+            return redirect()
+                ->route('institutions.index')
+                ->with('status', 'Institucion eliminada correctamente.');
+        } catch (QueryException $e) {
+            return redirect()
+                ->route('institutions.index')
+                ->with('error', 'No se puede eliminar esta institucion porque tiene equipos asociados. Primero reasigne o elimine los equipos.');
+        }
     }
 
     /**
