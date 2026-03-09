@@ -26,12 +26,12 @@
 
             <div class="grid gap-6 md:grid-cols-2">
                 <div>
-                    <label for="codigo" class="text-sm font-semibold text-surface-700">Codigo institucional *</label>
+                    <label for="codigo_institucional" class="text-sm font-semibold text-surface-700">Codigo institucional *</label>
                     <input
                         type="text"
-                        id="codigo"
-                        name="codigo"
-                        value="{{ old('codigo') }}"
+                        id="codigo_institucional"
+                        name="codigo_institucional"
+                        value="{{ old('codigo_institucional') }}"
                         maxlength="20"
                         class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
                         required
