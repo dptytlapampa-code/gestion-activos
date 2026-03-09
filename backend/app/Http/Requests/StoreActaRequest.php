@@ -51,12 +51,32 @@ class StoreActaRequest extends FormRequest
                     $validator->errors()->add('institution_destino_id', 'Debe seleccionar la institucion destino.');
                 }
 
-                if (! $this->filled('service_destino_id')) {
-                    $validator->errors()->add('service_destino_id', 'Debe seleccionar el servicio destino.');
-                }
+                $institutionDestinoId = $this->integer('institution_destino_id');
+                $serviceDestinoId = $this->integer('service_destino_id');
 
-                if (! $this->filled('office_destino_id')) {
-                    $validator->errors()->add('office_destino_id', 'Debe seleccionar la oficina destino.');
+                if ($institutionDestinoId > 0) {
+                    if (! $this->filled('service_destino_id')) {
+                        $hasServices = Service::query()->where('institution_id', $institutionDestinoId)->exists();
+                        $validator->errors()->add(
+                            'service_destino_id',
+                            $hasServices
+                                ? 'Debe seleccionar el servicio destino.'
+                                : 'La institucion destino no tiene servicios disponibles.'
+                        );
+                    }
+
+                    if ($serviceDestinoId > 0 && ! $this->filled('office_destino_id')) {
+                        $hasOffices = $serviceDestinoId > 0
+                            ? Office::query()->where('service_id', $serviceDestinoId)->exists()
+                            : false;
+
+                        $validator->errors()->add(
+                            'office_destino_id',
+                            $hasOffices
+                                ? 'Debe seleccionar la oficina destino.'
+                                : 'El servicio destino no tiene oficinas disponibles.'
+                        );
+                    }
                 }
 
                 if (! $this->filled('receptor_nombre')) {
@@ -111,3 +131,4 @@ class StoreActaRequest extends FormRequest
         }
     }
 }
+
