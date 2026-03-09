@@ -10,6 +10,7 @@ use App\Models\TipoEquipo;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class SearchController extends Controller
 {
@@ -148,10 +149,12 @@ class SearchController extends Controller
         $validated = $request->validate([
             'q' => ['required', 'string', 'min:1'],
             'institution_id' => ['nullable', 'integer', 'exists:institutions,id'],
+            'include_baja' => ['nullable', 'boolean'],
         ]);
 
         $q = trim((string) $validated['q']);
         $listAll = $this->isListAllQuery($q);
+        $includeBaja = (bool) ($validated['include_baja'] ?? false);
         $user = $request->user();
 
         $institutionId = $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN)
@@ -162,38 +165,56 @@ class SearchController extends Controller
             return response()->json([]);
         }
 
+        $hasMacAddress = Schema::hasColumn('equipos', 'mac_address');
+        $hasCodigoInterno = Schema::hasColumn('equipos', 'codigo_interno');
+
+        $select = [
+            'equipos.id',
+            'equipos.tipo',
+            'equipos.marca',
+            'equipos.modelo',
+            'equipos.numero_serie',
+            'equipos.bien_patrimonial',
+            'equipos.estado',
+            'offices.nombre as oficina_nombre',
+            'services.nombre as servicio_nombre',
+            'institutions.nombre as institucion_nombre',
+            'institutions.id as institucion_id',
+        ];
+
+        if ($hasMacAddress) {
+            $select[] = 'equipos.mac_address';
+        }
+
+        if ($hasCodigoInterno) {
+            $select[] = 'equipos.codigo_interno';
+        }
+
         $query = Equipo::query()
-            ->select([
-                'equipos.id',
-                'equipos.tipo',
-                'equipos.marca',
-                'equipos.modelo',
-                'equipos.numero_serie',
-                'equipos.bien_patrimonial',
-                'equipos.mac_address',
-                'equipos.codigo_interno',
-                'equipos.estado',
-                'offices.nombre as oficina_nombre',
-                'services.nombre as servicio_nombre',
-                'institutions.nombre as institucion_nombre',
-                'institutions.id as institucion_id',
-            ])
+            ->select($select)
             ->join('offices', 'offices.id', '=', 'equipos.oficina_id')
             ->join('services', 'services.id', '=', 'offices.service_id')
             ->join('institutions', 'institutions.id', '=', 'services.institution_id')
             ->where('institutions.id', $institutionId)
-            ->when(! $listAll, function ($query) use ($q): void {
+            ->when(! $includeBaja, fn ($query) => $query->where('equipos.estado', '!=', Equipo::ESTADO_BAJA))
+            ->when(! $listAll, function ($query) use ($q, $hasMacAddress, $hasCodigoInterno): void {
                 $like = "%{$q}%";
 
-                $query->where(function ($inner) use ($like): void {
+                $query->where(function ($inner) use ($like, $hasMacAddress, $hasCodigoInterno): void {
                     $inner
                         ->where('equipos.numero_serie', 'ilike', $like)
                         ->orWhere('equipos.bien_patrimonial', 'ilike', $like)
                         ->orWhere('equipos.modelo', 'ilike', $like)
-                        ->orWhere('equipos.mac_address', 'ilike', $like)
-                        ->orWhere('equipos.codigo_interno', 'ilike', $like)
                         ->orWhere('equipos.tipo', 'ilike', $like)
                         ->orWhere('equipos.marca', 'ilike', $like);
+
+                    if ($hasMacAddress) {
+                        $inner->orWhere('equipos.mac_address', 'ilike', $like);
+                    }
+
+                    if ($hasCodigoInterno) {
+                        $inner->orWhere('equipos.codigo_interno', 'ilike', $like);
+                    }
                 });
             })
             ->orderBy('equipos.tipo')
@@ -212,8 +233,8 @@ class SearchController extends Controller
                 'modelo' => $equipo->modelo,
                 'numero_serie' => $equipo->numero_serie,
                 'bien_patrimonial' => $equipo->bien_patrimonial,
-                'mac' => $equipo->mac_address,
-                'codigo_interno' => $equipo->codigo_interno,
+                'mac' => $equipo->getAttribute('mac_address'),
+                'codigo_interno' => $equipo->getAttribute('codigo_interno'),
                 'estado' => $equipo->estado,
                 'institucion' => $equipo->institucion_nombre,
                 'servicio' => $equipo->servicio_nombre,
@@ -252,3 +273,4 @@ class SearchController extends Controller
         return trim($query) === '...';
     }
 }
+

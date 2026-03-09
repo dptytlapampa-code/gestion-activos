@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\Schema;
 
 class Equipo extends Model
 {
@@ -49,6 +50,10 @@ class Equipo extends Model
     protected static function booted(): void
     {
         static::creating(function (Equipo $equipo): void {
+            if (! Schema::hasColumn($equipo->getTable(), 'equipo_status_id')) {
+                return;
+            }
+
             if ($equipo->equipo_status_id === null) {
                 $equipo->equipo_status_id = (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_OPERATIVA)->value('id');
             }
