@@ -8,7 +8,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class EquipoStatus extends Model
 {
     public const CODE_OPERATIVA = 'OPERATIVA';
+    public const CODE_PRESTADA = 'PRESTADA';
     public const CODE_EN_SERVICIO_TECNICO = 'EN_SERVICIO_TECNICO';
+    public const CODE_FUERA_DE_SERVICIO = 'FUERA_DE_SERVICIO';
     public const CODE_BAJA = 'BAJA';
 
     protected $fillable = ['code', 'name', 'color', 'is_terminal'];

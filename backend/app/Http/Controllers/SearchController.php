@@ -146,31 +146,78 @@ class SearchController extends Controller
     public function searchEquipos(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'q' => ['required', 'string', 'min:2'],
+            'q' => ['required', 'string', 'min:1'],
             'institution_id' => ['nullable', 'integer', 'exists:institutions,id'],
         ]);
 
-        $q = (string) $validated['q'];
+        $q = trim((string) $validated['q']);
+        $listAll = $this->isListAllQuery($q);
         $user = $request->user();
+
         $institutionId = $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN)
             ? (int) $user->institution_id
             : (($validated['institution_id'] ?? null) !== null ? (int) $validated['institution_id'] : null);
 
-        $nombreExpression = "trim(concat_ws(' ', tipo, marca, modelo, concat('(', numero_serie, ')'), bien_patrimonial))";
+        if ($institutionId === null) {
+            return response()->json([]);
+        }
 
-        $items = Equipo::query()
-            ->select('equipos.id')
-            ->selectRaw("{$nombreExpression} as nombre")
+        $query = Equipo::query()
+            ->select([
+                'equipos.id',
+                'equipos.tipo',
+                'equipos.marca',
+                'equipos.modelo',
+                'equipos.numero_serie',
+                'equipos.bien_patrimonial',
+                'equipos.mac_address',
+                'equipos.codigo_interno',
+                'equipos.estado',
+                'offices.nombre as oficina_nombre',
+                'services.nombre as servicio_nombre',
+                'institutions.nombre as institucion_nombre',
+                'institutions.id as institucion_id',
+            ])
             ->join('offices', 'offices.id', '=', 'equipos.oficina_id')
             ->join('services', 'services.id', '=', 'offices.service_id')
-            ->when($institutionId !== null, fn ($query) => $query->where('services.institution_id', $institutionId))
-            ->whereRaw("{$nombreExpression} ilike ?", ["%{$q}%"])
-            ->orderByRaw("{$nombreExpression} asc")
-            ->limit(20)
+            ->join('institutions', 'institutions.id', '=', 'services.institution_id')
+            ->where('institutions.id', $institutionId)
+            ->when(! $listAll, function ($query) use ($q): void {
+                $like = "%{$q}%";
+
+                $query->where(function ($inner) use ($like): void {
+                    $inner
+                        ->where('equipos.numero_serie', 'ilike', $like)
+                        ->orWhere('equipos.bien_patrimonial', 'ilike', $like)
+                        ->orWhere('equipos.modelo', 'ilike', $like)
+                        ->orWhere('equipos.mac_address', 'ilike', $like)
+                        ->orWhere('equipos.codigo_interno', 'ilike', $like)
+                        ->orWhere('equipos.tipo', 'ilike', $like)
+                        ->orWhere('equipos.marca', 'ilike', $like);
+                });
+            })
+            ->orderBy('equipos.tipo')
+            ->orderBy('equipos.marca')
+            ->orderBy('equipos.modelo')
+            ->orderBy('equipos.numero_serie')
+            ->limit($listAll ? 80 : 25);
+
+        $items = $query
             ->get()
             ->map(fn (Equipo $equipo): array => [
                 'id' => $equipo->id,
-                'label' => (string) $equipo->nombre,
+                'label' => trim(sprintf('%s %s %s', $equipo->tipo, $equipo->marca, $equipo->modelo)),
+                'tipo' => $equipo->tipo,
+                'marca' => $equipo->marca,
+                'modelo' => $equipo->modelo,
+                'numero_serie' => $equipo->numero_serie,
+                'bien_patrimonial' => $equipo->bien_patrimonial,
+                'mac' => $equipo->mac_address,
+                'codigo_interno' => $equipo->codigo_interno,
+                'estado' => $equipo->estado,
+                'institucion' => $equipo->institucion_nombre,
+                'servicio' => $equipo->servicio_nombre,
+                'oficina' => $equipo->oficina_nombre,
             ])
             ->values();
 
@@ -192,6 +239,7 @@ class SearchController extends Controller
                 ->get(['id', 'nombre as label'])
         );
     }
+
     private function validatedQuery(Request $request): string
     {
         return (string) $request->validate([
@@ -204,4 +252,3 @@ class SearchController extends Controller
         return trim($query) === '...';
     }
 }
-

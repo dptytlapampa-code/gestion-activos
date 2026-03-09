@@ -239,11 +239,29 @@
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
+                    <label for="mac_address" class="block text-sm font-medium text-slate-700">MAC</label>
+                    <input id="mac_address" name="mac_address" type="text" value="{{ old('mac_address', $equipo?->mac_address) }}" class="mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 @error('mac_address') border-red-400 focus:border-red-500 focus:ring-red-100 @else border-slate-300 @enderror" aria-invalid="@error('mac_address') true @else false @enderror" aria-describedby="@error('mac_address') mac_address_error @enderror" />
+                    @error('mac_address')
+                        <p id="mac_address_error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="codigo_interno" class="block text-sm font-medium text-slate-700">Codigo interno</label>
+                    <input id="codigo_interno" name="codigo_interno" type="text" value="{{ old('codigo_interno', $equipo?->codigo_interno) }}" class="mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 @error('codigo_interno') border-red-400 focus:border-red-500 focus:ring-red-100 @else border-slate-300 @enderror" aria-invalid="@error('codigo_interno') true @else false @enderror" aria-describedby="@error('codigo_interno') codigo_interno_error @enderror" />
+                    @error('codigo_interno')
+                        <p id="codigo_interno_error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
                     <label for="estado" class="block text-sm font-medium text-slate-700">Estado <span class="text-red-600" aria-hidden="true">*</span></label>
                     <select id="estado" name="estado" class="mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 @error('estado') border-red-400 focus:border-red-500 focus:ring-red-100 @else border-slate-300 @enderror" aria-invalid="@error('estado') true @else false @enderror" aria-describedby="@error('estado') estado_error @enderror" required>
                         <option value="">Seleccione un estado</option>
                         @foreach ($estados as $estado)
-                            <option value="{{ $estado }}" @selected($estadoSeleccionado === $estado)>{{ ucfirst($estado) }}</option>
+                            <option value="{{ $estado }}" @selected($estadoSeleccionado === $estado)>{{ strtoupper(str_replace('_', ' ', $estado)) }}</option>
                         @endforeach
                     </select>
                     @error('estado')
@@ -284,4 +302,3 @@
         </div>
     </form>
 </div>
-

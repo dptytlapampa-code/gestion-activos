@@ -2,22 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreActaRequest;
 use App\Models\Acta;
-use App\Models\AuditLog;
 use App\Models\Equipo;
 use App\Models\Institution;
 use App\Models\User;
+use App\Services\ActaTraceabilityService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class ActaController extends Controller
 {
+    public function __construct(private readonly ActaTraceabilityService $traceabilityService) {}
+
     public function index(Request $request)
     {
         $this->authorize('viewAny', Acta::class);
@@ -31,21 +32,23 @@ class ActaController extends Controller
 
         $actas = Acta::query()
             ->withCount('equipos')
-            ->with('creator:id,name')
+            ->with(['creator:id,name'])
             ->when(
                 ! $user->hasRole(User::ROLE_SUPERADMIN),
                 fn (Builder $query) => $query->where('institution_id', $user->institution_id)
             )
             ->when($validated['tipo'] ?? null, fn (Builder $query, string $tipo) => $query->where('tipo', $tipo))
-            ->when($validated['fecha_desde'] ?? null, fn (Builder $query, string $fecha_desde) => $query->whereDate('fecha', '>=', $fecha_desde))
-            ->when($validated['fecha_hasta'] ?? null, fn (Builder $query, string $fecha_hasta) => $query->whereDate('fecha', '<=', $fecha_hasta))
+            ->when($validated['fecha_desde'] ?? null, fn (Builder $query, string $fechaDesde) => $query->whereDate('fecha', '>=', $fechaDesde))
+            ->when($validated['fecha_hasta'] ?? null, fn (Builder $query, string $fechaHasta) => $query->whereDate('fecha', '<=', $fechaHasta))
             ->latest('fecha')
+            ->latest('id')
             ->paginate(15)
             ->withQueryString();
 
         return view('actas.index', [
             'actas' => $actas,
             'tipos' => Acta::TIPOS,
+            'tipoLabels' => Acta::LABELS,
             'filters' => $validated,
         ]);
     }
@@ -57,124 +60,61 @@ class ActaController extends Controller
         $user = $request->user();
         $institutions = $user->hasRole(User::ROLE_SUPERADMIN)
             ? Institution::query()->orderBy('nombre')->get(['id', 'nombre'])
-            : collect();
+            : Institution::query()->where('id', $user->institution_id)->get(['id', 'nombre']);
+
+        $oldEquipoIds = collect(old('equipos', []))
+            ->pluck('equipo_id')
+            ->filter()
+            ->map(fn ($id): int => (int) $id)
+            ->values();
+
+        $oldEquipoMeta = collect(old('equipos', []))->keyBy(fn (array $item): int => (int) ($item['equipo_id'] ?? 0));
+
+        $oldSelectedEquipos = $oldEquipoIds->isEmpty()
+            ? collect()
+            : Equipo::query()
+                ->with('oficina.service.institution')
+                ->whereIn('id', $oldEquipoIds)
+                ->get()
+                ->map(function (Equipo $equipo) use ($oldEquipoMeta): array {
+                    $meta = $oldEquipoMeta->get($equipo->id, []);
+
+                    return [
+                        'id' => $equipo->id,
+                        'label' => trim(sprintf('%s %s %s', $equipo->tipo, $equipo->marca, $equipo->modelo)),
+                        'tipo' => $equipo->tipo,
+                        'marca' => $equipo->marca,
+                        'modelo' => $equipo->modelo,
+                        'numero_serie' => $equipo->numero_serie,
+                        'bien_patrimonial' => $equipo->bien_patrimonial,
+                        'mac' => $equipo->mac_address,
+                        'codigo_interno' => $equipo->codigo_interno,
+                        'estado' => $equipo->estado,
+                        'institucion' => $equipo->oficina?->service?->institution?->nombre,
+                        'servicio' => $equipo->oficina?->service?->nombre,
+                        'oficina' => $equipo->oficina?->nombre,
+                        'cantidad' => (int) ($meta['cantidad'] ?? 1),
+                        'accesorios' => $meta['accesorios'] ?? '',
+                    ];
+                });
 
         return view('actas.create', [
             'tipos' => Acta::TIPOS,
+            'tipoLabels' => Acta::LABELS,
             'institutions' => $institutions,
+            'userInstitutionId' => $user->institution_id,
+            'isSuperadmin' => $user->hasRole(User::ROLE_SUPERADMIN),
+            'oldSelectedEquipos' => $oldSelectedEquipos,
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreActaRequest $request): RedirectResponse
     {
         $this->authorize('create', Acta::class);
 
-        $user = $request->user();
-        $validated = $request->validate([
-            'institution_id' => [
-                Rule::requiredIf($user->hasRole(User::ROLE_SUPERADMIN)),
-                'nullable',
-                'integer',
-                'exists:institutions,id',
-            ],
-            'tipo' => ['required', Rule::in(Acta::TIPOS)],
-            'fecha' => ['required', 'date'],
-            'receptor_nombre' => ['required', 'string', 'max:255'],
-            'receptor_dni' => ['nullable', 'string', 'max:50'],
-            'receptor_cargo' => ['nullable', 'string', 'max:255'],
-            'receptor_dependencia' => ['nullable', 'string', 'max:255'],
-            'observaciones' => ['nullable', 'string'],
-            'equipos' => ['required', 'array', 'min:1'],
-            'equipos.*.equipo_id' => ['required', 'integer', 'distinct', 'exists:equipos,id'],
-            'equipos.*.cantidad' => ['required', 'integer', 'min:1', 'max:999'],
-            'equipos.*.accesorios' => ['nullable', 'string'],
-        ]);
+        $acta = $this->traceabilityService->crear($request->user(), $request->validated());
 
-        $institutionId = $user->hasRole(User::ROLE_SUPERADMIN)
-            ? (int) $validated['institution_id']
-            : (int) $user->institution_id;
-
-        if ($institutionId <= 0) {
-            return back()->withErrors(['institution_id' => 'Debe seleccionar una institución válida.'])->withInput();
-        }
-
-        $equipoIds = collect($validated['equipos'])->pluck('equipo_id')->map(fn ($id) => (int) $id);
-
-        $equipos = Equipo::query()
-            ->whereIn('id', $equipoIds)
-            ->with(['oficina.service'])
-            ->get();
-
-        if ($equipos->count() !== $equipoIds->count()) {
-            return back()->withErrors(['equipos' => 'Uno o más equipos seleccionados no existen.'])->withInput();
-        }
-
-        $scopeFail = $equipos->contains(
-            fn (Equipo $equipo): bool => (int) $equipo->oficina?->service?->institution_id !== $institutionId
-        );
-
-        if ($scopeFail) {
-            return back()->withErrors(['equipos' => 'Todos los equipos deben pertenecer a la misma institución del acta.'])->withInput();
-        }
-
-        $acta = DB::transaction(function () use ($validated, $user, $institutionId): Acta {
-            $acta = Acta::query()->create([
-                'institution_id' => $institutionId,
-                'tipo' => $validated['tipo'],
-                'fecha' => $validated['fecha'],
-                'receptor_nombre' => $validated['receptor_nombre'],
-                'receptor_dni' => $validated['receptor_dni'] ?? null,
-                'receptor_cargo' => $validated['receptor_cargo'] ?? null,
-                'receptor_dependencia' => $validated['receptor_dependencia'] ?? null,
-                'observaciones' => $validated['observaciones'] ?? null,
-                'created_by' => $user->id,
-            ]);
-
-            $pivotPayload = collect($validated['equipos'])
-                ->mapWithKeys(fn (array $item): array => [
-                    (int) $item['equipo_id'] => [
-                        'cantidad' => (int) $item['cantidad'],
-                        'accesorios' => $item['accesorios'] ?? null,
-                    ],
-                ])
-                ->all();
-
-            $acta->equipos()->sync($pivotPayload);
-
-            AuditLog::query()->create([
-                'user_id' => $user->id,
-                'action' => 'create',
-                'auditable_type' => 'acta_equipo',
-                'auditable_id' => $acta->id,
-                'before' => null,
-                'after' => ['equipos' => $pivotPayload],
-                'ip' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-            ]);
-
-            $acta->load(['institution', 'creator', 'equipos.tipoEquipo']);
-
-            $pdfBinary = Pdf::loadView("actas.pdf.$acta->tipo", compact('acta'))
-                ->setPaper('a4')
-                ->output();
-
-            $path = sprintf('documents/%s/%s.pdf', now()->format('Y/m'), strtolower($acta->codigo));
-            Storage::put($path, $pdfBinary);
-
-            $acta->documents()->create([
-                'uploaded_by' => $user->id,
-                'type' => 'acta',
-                'note' => sprintf('Acta %s %s', $acta->tipo, $acta->codigo),
-                'file_path' => $path,
-                'original_name' => $acta->codigo.'.pdf',
-                'mime' => 'application/pdf',
-                'size' => strlen($pdfBinary),
-            ]);
-
-            return $acta;
-        });
-
-        return redirect()->route('actas.show', $acta)->with('status', 'Acta generada correctamente.');
+        return redirect()->route('actas.show', $acta)->with('status', 'Acta de trazabilidad generada correctamente.');
     }
 
     public function show(Acta $acta)
@@ -183,24 +123,41 @@ class ActaController extends Controller
 
         $acta->load([
             'institution',
+            'institucionDestino',
+            'servicioOrigen',
+            'oficinaOrigen',
+            'servicioDestino',
+            'oficinaDestino',
             'creator:id,name',
             'equipos.tipoEquipo',
             'equipos.oficina.service',
             'documents.uploadedBy:id,name',
+            'historial.usuario:id,name',
+            'historial.equipo:id,tipo,numero_serie',
         ]);
 
-        return view('actas.show', ['acta' => $acta]);
+        return view('actas.show', ['acta' => $acta, 'tipoLabels' => Acta::LABELS]);
     }
 
     public function descargar(Acta $acta): Response
     {
         $this->authorize('view', $acta);
 
-        $acta->load(['institution', 'equipos.tipoEquipo', 'creator']);
+        $acta->load([
+            'institution',
+            'institucionDestino',
+            'servicioOrigen',
+            'oficinaOrigen',
+            'servicioDestino',
+            'oficinaDestino',
+            'creator',
+            'equipos.tipoEquipo',
+        ]);
 
-        $pdf = Pdf::loadView('actas.pdf.'.$acta->tipo, compact('acta'))
-            ->setPaper('a4');
+        $pdf = Pdf::loadView('actas.pdf.'.$acta->tipo, ['acta' => $acta])->setPaper('a4');
 
         return $pdf->download($acta->codigo.'.pdf');
     }
 }
+
+

@@ -8,7 +8,7 @@
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h2 class="text-2xl font-bold text-slate-900">Listado de equipos</h2>
-            <p class="text-sm text-slate-500">Gestión visual de activos biomédicos y tecnológicos.</p>
+            <p class="text-sm text-slate-500">Gestion visual de activos biomedicos y tecnologicos.</p>
         </div>
         @can('create', \App\Models\Equipo::class)
             <a href="{{ route('equipos.create') }}" class="btn btn-primary">Crear equipo</a>
@@ -22,7 +22,7 @@
         <select name="estado" class="app-input">
             <option value="">Todos los estados</option>
             @foreach($estados as $estado)
-                <option value="{{ $estado }}" @selected(request('estado')===$estado)>{{ ucfirst($estado) }}</option>
+                <option value="{{ $estado }}" @selected(request('estado')===$estado)>{{ strtoupper(str_replace('_', ' ', $estado)) }}</option>
             @endforeach
         </select>
         <div class="flex items-center gap-2">
@@ -39,8 +39,8 @@
                     <th>Marca</th>
                     <th>Modelo</th>
                     <th>Estado</th>
-                    <th>N° serie</th>
-                    <th>Ubicación</th>
+                    <th>N serie</th>
+                    <th>Ubicacion</th>
                     <th>Acciones</th>
                 </tr>
             </thead>
@@ -53,11 +53,13 @@
                     <td>
                         @php($estadoClase = match($equipo->estado) {
                             'operativo' => 'status-operativo',
+                            'prestado' => 'status-prestado',
                             'mantenimiento' => 'status-mantenimiento',
+                            'fuera_de_servicio' => 'status-fuera-de-servicio',
                             'baja' => 'status-baja',
                             default => 'bg-slate-100 text-slate-700'
                         })
-                        <span class="status-badge {{ $estadoClase }}">{{ ucfirst($equipo->estado) }}</span>
+                        <span class="status-badge {{ $estadoClase }}">{{ strtoupper(str_replace('_', ' ', $equipo->estado)) }}</span>
                     </td>
                     <td>{{ $equipo->numero_serie }}</td>
                     <td>
@@ -72,7 +74,7 @@
                             @can('view', $equipo)<a class="btn btn-neutral !px-3 !py-1.5" href="{{ route('equipos.show',$equipo) }}">Ver</a>@endcan
                             @can('update', $equipo)<a class="btn btn-info !px-3 !py-1.5" href="{{ route('equipos.edit',$equipo) }}">Editar</a>@endcan
                             @can('delete', $equipo)
-                                <form method="POST" action="{{ route('equipos.destroy',$equipo) }}" onsubmit="return confirm('¿Eliminar equipo?')">
+                                <form method="POST" action="{{ route('equipos.destroy',$equipo) }}" onsubmit="return confirm('Eliminar equipo?')">
                                     @csrf @method('DELETE')
                                     <button class="btn btn-danger !px-3 !py-1.5">Eliminar</button>
                                 </form>

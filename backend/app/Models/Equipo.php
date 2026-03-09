@@ -15,16 +15,34 @@ class Equipo extends Model
     use Auditable, HasFactory;
 
     public const ESTADO_OPERATIVO = 'operativo';
-    public const ESTADO_MANTENIMIENTO = 'mantenimiento';
+    public const ESTADO_PRESTADO = 'prestado';
+    public const ESTADO_EN_MANTENIMIENTO = 'mantenimiento';
+    public const ESTADO_MANTENIMIENTO = self::ESTADO_EN_MANTENIMIENTO;
+    public const ESTADO_FUERA_DE_SERVICIO = 'fuera_de_servicio';
     public const ESTADO_BAJA = 'baja';
 
     public const ESTADOS = [
         self::ESTADO_OPERATIVO,
-        self::ESTADO_MANTENIMIENTO,
+        self::ESTADO_PRESTADO,
+        self::ESTADO_EN_MANTENIMIENTO,
+        self::ESTADO_FUERA_DE_SERVICIO,
         self::ESTADO_BAJA,
     ];
 
-    protected $fillable = ['tipo', 'tipo_equipo_id', 'marca', 'modelo', 'numero_serie', 'bien_patrimonial', 'estado', 'equipo_status_id', 'fecha_ingreso', 'oficina_id'];
+    protected $fillable = [
+        'tipo',
+        'tipo_equipo_id',
+        'marca',
+        'modelo',
+        'numero_serie',
+        'bien_patrimonial',
+        'mac_address',
+        'codigo_interno',
+        'estado',
+        'equipo_status_id',
+        'fecha_ingreso',
+        'oficina_id',
+    ];
 
     protected $guarded = ['id', 'created_at', 'updated_at'];
 
@@ -70,6 +88,11 @@ class Equipo extends Model
     public function actas(): BelongsToMany
     {
         return $this->belongsToMany(Acta::class, 'acta_equipo')->withPivot(['cantidad', 'accesorios']);
+    }
+
+    public function historial(): HasMany
+    {
+        return $this->hasMany(EquipoHistorial::class)->latest('fecha');
     }
 
     public function documents(): MorphMany

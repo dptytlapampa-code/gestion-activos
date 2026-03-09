@@ -11,7 +11,9 @@ class EquipoStatusSeeder extends Seeder
     {
         $statuses = [
             ['code' => EquipoStatus::CODE_OPERATIVA, 'name' => 'Operativa', 'color' => 'green', 'is_terminal' => false],
-            ['code' => EquipoStatus::CODE_EN_SERVICIO_TECNICO, 'name' => 'En Servicio Técnico', 'color' => 'yellow', 'is_terminal' => false],
+            ['code' => EquipoStatus::CODE_PRESTADA, 'name' => 'Prestada', 'color' => 'blue', 'is_terminal' => false],
+            ['code' => EquipoStatus::CODE_EN_SERVICIO_TECNICO, 'name' => 'En Servicio Tecnico', 'color' => 'yellow', 'is_terminal' => false],
+            ['code' => EquipoStatus::CODE_FUERA_DE_SERVICIO, 'name' => 'Fuera de Servicio', 'color' => 'orange', 'is_terminal' => false],
             ['code' => EquipoStatus::CODE_BAJA, 'name' => 'Baja', 'color' => 'red', 'is_terminal' => true],
         ];
 

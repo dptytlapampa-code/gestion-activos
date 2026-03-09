@@ -14,7 +14,9 @@
             <h3 class="text-sm font-semibold text-surface-700">Estados normalizados</h3>
             <div class="mt-3 space-y-2 text-sm">
                 <p>Operativa: <strong>{{ $equiposPorEstado['OPERATIVA'] ?? 0 }}</strong></p>
-                <p>En Servicio Técnico: <strong>{{ $equiposPorEstado['EN_SERVICIO_TECNICO'] ?? 0 }}</strong></p>
+                <p>Prestada: <strong>{{ $equiposPorEstado['PRESTADA'] ?? 0 }}</strong></p>
+                <p>En Servicio Tecnico: <strong>{{ $equiposPorEstado['EN_SERVICIO_TECNICO'] ?? 0 }}</strong></p>
+                <p>Fuera de Servicio: <strong>{{ $equiposPorEstado['FUERA_DE_SERVICIO'] ?? 0 }}</strong></p>
                 <p>Baja: <strong>{{ $equiposPorEstado['BAJA'] ?? 0 }}</strong></p>
             </div>
         </div>
@@ -81,3 +83,5 @@
         </div>
     </div>
 @endsection
+
+
