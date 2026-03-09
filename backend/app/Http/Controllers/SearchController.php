@@ -16,16 +16,22 @@ class SearchController extends Controller
     public function searchInstitutions(Request $request): JsonResponse
     {
         $q = $this->validatedQuery($request);
+        $listAll = $this->isListAllQuery($q);
         $user = $request->user();
 
-        $items = Institution::query()
+        $query = Institution::query()
             ->when(
                 $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
                 fn ($query) => $query->where('id', $user->institution_id)
             )
-            ->where('nombre', 'ilike', "%{$q}%")
-            ->orderBy('nombre')
-            ->limit(20)
+            ->when(! $listAll, fn ($query) => $query->where('nombre', 'ilike', "%{$q}%"))
+            ->orderBy('nombre');
+
+        if (! $listAll) {
+            $query->limit(20);
+        }
+
+        $items = $query
             ->get(['id', 'nombre'])
             ->map(fn (Institution $institution): array => [
                 'id' => $institution->id,
@@ -40,22 +46,34 @@ class SearchController extends Controller
     {
         $validated = $request->validate([
             'q' => ['required', 'string', 'min:2'],
-            'institution_id' => ['required', 'integer', 'exists:institutions,id'],
+            'institution_id' => ['nullable', 'integer', 'exists:institutions,id'],
         ]);
 
         $q = (string) $validated['q'];
-        $institutionId = (int) $validated['institution_id'];
+        $listAll = $this->isListAllQuery($q);
+        $institutionId = ($validated['institution_id'] ?? null) !== null
+            ? (int) $validated['institution_id']
+            : null;
         $user = $request->user();
+
+        if ($institutionId === null) {
+            return response()->json([]);
+        }
 
         if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && $institutionId !== (int) $user->institution_id) {
             return response()->json([]);
         }
 
-        $items = Service::query()
+        $query = Service::query()
             ->where('institution_id', $institutionId)
-            ->where('nombre', 'ilike', "%{$q}%")
-            ->orderBy('nombre')
-            ->limit(20)
+            ->when(! $listAll, fn ($query) => $query->where('nombre', 'ilike', "%{$q}%"))
+            ->orderBy('nombre');
+
+        if (! $listAll) {
+            $query->limit(20);
+        }
+
+        $items = $query
             ->get(['id', 'nombre'])
             ->map(fn (Service $service): array => [
                 'id' => $service->id,
@@ -70,29 +88,51 @@ class SearchController extends Controller
     {
         $validated = $request->validate([
             'q' => ['required', 'string', 'min:2'],
-            'service_id' => ['required', 'integer', 'exists:services,id'],
+            'service_id' => ['nullable', 'integer', 'exists:services,id'],
+            'institution_id' => ['nullable', 'integer', 'exists:institutions,id'],
         ]);
 
         $q = (string) $validated['q'];
-        $serviceId = (int) $validated['service_id'];
+        $listAll = $this->isListAllQuery($q);
+        $serviceId = ($validated['service_id'] ?? null) !== null
+            ? (int) $validated['service_id']
+            : null;
+        $institutionId = ($validated['institution_id'] ?? null) !== null
+            ? (int) $validated['institution_id']
+            : null;
         $user = $request->user();
 
-        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN)) {
-            $isUserService = Service::query()
-                ->where('id', $serviceId)
-                ->where('institution_id', $user->institution_id)
-                ->exists();
-
-            if (! $isUserService) {
-                return response()->json([]);
-            }
+        if ($serviceId === null || $institutionId === null) {
+            return response()->json([]);
         }
 
-        $items = Office::query()
+        $serviceBelongsToInstitution = Service::query()
+            ->where('id', $serviceId)
+            ->where('institution_id', $institutionId)
+            ->exists();
+
+        if (! $serviceBelongsToInstitution) {
+            return response()->json([]);
+        }
+
+        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && $institutionId !== (int) $user->institution_id) {
+            return response()->json([]);
+        }
+
+        $query = Office::query()
             ->where('service_id', $serviceId)
-            ->where('nombre', 'ilike', "%{$q}%")
-            ->orderBy('nombre')
-            ->limit(20)
+            ->whereHas(
+                'service',
+                fn ($query) => $query->where('institution_id', $institutionId)
+            )
+            ->when(! $listAll, fn ($query) => $query->where('nombre', 'ilike', "%{$q}%"))
+            ->orderBy('nombre');
+
+        if (! $listAll) {
+            $query->limit(20);
+        }
+
+        $items = $query
             ->get(['id', 'nombre'])
             ->map(fn (Office $office): array => [
                 'id' => $office->id,
@@ -155,5 +195,10 @@ class SearchController extends Controller
         return (string) $request->validate([
             'q' => ['required', 'string', 'min:2'],
         ])['q'];
+    }
+
+    private function isListAllQuery(string $query): bool
+    {
+        return trim($query) === '...';
     }
 }
