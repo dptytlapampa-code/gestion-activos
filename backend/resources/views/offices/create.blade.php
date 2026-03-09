@@ -29,7 +29,7 @@
                 <select
                     id="service_id"
                     name="service_id"
-                    class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                    class="form-control @error('service_id') form-control-error @enderror"
                     required
                 >
                     <option value="">Seleccione un servicio</option>
@@ -39,6 +39,7 @@
                         </option>
                     @endforeach
                 </select>
+                @error('service_id') <p class="form-error">{{ $message }}</p> @enderror
                 @if ($services->isEmpty())
                     <p class="mt-2 text-xs text-amber-600">Debe crear un servicio antes de registrar oficinas.</p>
                 @endif
@@ -52,20 +53,22 @@
                     name="nombre"
                     value="{{ old('nombre') }}"
                     maxlength="255"
-                    class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                    class="form-control @error('nombre') form-control-error @enderror"
                     required
                 />
+                @error('nombre') <p class="form-error">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <label for="descripcion" class="text-sm font-semibold text-surface-700">Descripción</label>
+                <label for="descripcion" class="text-sm font-semibold text-surface-700">Descripcion</label>
                 <textarea
                     id="descripcion"
                     name="descripcion"
                     rows="4"
                     maxlength="2000"
-                    class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                    class="form-control @error('descripcion') form-control-error @enderror"
                 >{{ old('descripcion') }}</textarea>
+                @error('descripcion') <p class="form-error">{{ $message }}</p> @enderror
             </div>
 
             <div class="flex items-center gap-3">

@@ -8,7 +8,8 @@
 </head>
 <body class="min-h-screen bg-surface-100 text-surface-900">
     <div class="flex min-h-screen items-center justify-center px-6">
-        <div class="w-full max-w-md">
+        <div class="w-full max-w-md space-y-4">
+            <x-flash-alerts />
             @yield('content')
         </div>
     </div>

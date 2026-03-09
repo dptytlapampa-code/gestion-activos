@@ -7,7 +7,7 @@
     <div class="max-w-3xl">
         <div class="mb-6">
             <h3 class="text-xl font-semibold text-surface-900">Crear tipo de equipo</h3>
-            <p class="text-sm text-surface-500">Registre una categoría reutilizable para el inventario hospitalario.</p>
+            <p class="text-sm text-surface-500">Registre una categoria reutilizable para el inventario hospitalario.</p>
         </div>
 
         @if ($errors->any())
@@ -26,12 +26,14 @@
 
             <div>
                 <label for="nombre" class="text-sm font-semibold text-surface-700">Nombre</label>
-                <input type="text" id="nombre" name="nombre" value="{{ old('nombre') }}" maxlength="100" class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200" required />
+                <input type="text" id="nombre" name="nombre" value="{{ old('nombre') }}" maxlength="100" class="form-control @error('nombre') form-control-error @enderror" required />
+                @error('nombre') <p class="form-error">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <label for="descripcion" class="text-sm font-semibold text-surface-700">Descripción</label>
-                <textarea id="descripcion" name="descripcion" rows="4" class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200">{{ old('descripcion') }}</textarea>
+                <label for="descripcion" class="text-sm font-semibold text-surface-700">Descripcion</label>
+                <textarea id="descripcion" name="descripcion" rows="4" class="form-control @error('descripcion') form-control-error @enderror">{{ old('descripcion') }}</textarea>
+                @error('descripcion') <p class="form-error">{{ $message }}</p> @enderror
             </div>
 
             <div class="flex items-center gap-3">

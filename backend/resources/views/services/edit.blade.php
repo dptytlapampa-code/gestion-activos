@@ -7,7 +7,7 @@
     <div class="max-w-3xl">
         <div class="mb-6">
             <h3 class="text-xl font-semibold text-surface-900">Editar servicio</h3>
-            <p class="text-sm text-surface-500">Actualice la información operativa del servicio.</p>
+            <p class="text-sm text-surface-500">Actualice la informacion operativa del servicio.</p>
         </div>
 
         @if ($errors->any())
@@ -26,20 +26,21 @@
             @method('PUT')
 
             <div>
-                <label for="institution_id" class="text-sm font-semibold text-surface-700">Institución</label>
+                <label for="institution_id" class="text-sm font-semibold text-surface-700">Institucion</label>
                 <select
                     id="institution_id"
                     name="institution_id"
-                    class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                    class="form-control @error('institution_id') form-control-error @enderror"
                     required
                 >
-                    <option value="">Seleccione una institución</option>
+                    <option value="">Seleccione una institucion</option>
                     @foreach ($institutions as $institution)
                         <option value="{{ $institution->id }}" @selected(old('institution_id', $service->institution_id) == $institution->id)>
                             {{ $institution->nombre }}
                         </option>
                     @endforeach
                 </select>
+                @error('institution_id') <p class="form-error">{{ $message }}</p> @enderror
             </div>
 
             <div>
@@ -50,20 +51,22 @@
                     name="nombre"
                     value="{{ old('nombre', $service->nombre) }}"
                     maxlength="255"
-                    class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                    class="form-control @error('nombre') form-control-error @enderror"
                     required
                 />
+                @error('nombre') <p class="form-error">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <label for="descripcion" class="text-sm font-semibold text-surface-700">Descripción</label>
+                <label for="descripcion" class="text-sm font-semibold text-surface-700">Descripcion</label>
                 <textarea
                     id="descripcion"
                     name="descripcion"
                     rows="4"
                     maxlength="2000"
-                    class="mt-2 w-full rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                    class="form-control @error('descripcion') form-control-error @enderror"
                 >{{ old('descripcion', $service->descripcion) }}</textarea>
+                @error('descripcion') <p class="form-error">{{ $message }}</p> @enderror
             </div>
 
             <div class="flex items-center gap-3">
