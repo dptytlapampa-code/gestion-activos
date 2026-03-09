@@ -8,9 +8,9 @@
     x-data="actaWizard(@js([
         'tipo' => old('tipo'),
         'fecha' => old('fecha', now()->toDateString()),
-        'institution_destino_id' => old('institution_destino_id'),
-        'service_destino_id' => old('service_destino_id'),
-        'office_destino_id' => old('office_destino_id'),
+        'institution_destino_id' => old('institution_destino_id', old('institucion_destino')),
+        'service_destino_id' => old('service_destino_id', old('servicio_destino')),
+        'office_destino_id' => old('office_destino_id', old('oficina_destino')),
         'receptor_nombre' => old('receptor_nombre'),
         'receptor_dni' => old('receptor_dni'),
         'receptor_cargo' => old('receptor_cargo'),
@@ -168,7 +168,7 @@
                     <select name="service_destino_id" x-model="service_destino_id" @change="onDestinoServiceChange('destino')" :disabled="!institution_destino_id || isLoadingServices.destino" class="mt-1 w-full rounded-xl border-slate-300 disabled:bg-slate-100 disabled:text-slate-500">
                         <option value="">Seleccionar</option>
                         <template x-for="service in serviceOptions.destino" :key="`sd-${service.id}`">
-                            <option :value="service.id" x-text="service.label"></option>
+                            <option :value="String(service.id)" x-text="service.label"></option>
                         </template>
                     </select>
                     @error('service_destino_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
@@ -178,7 +178,7 @@
                     <select name="office_destino_id" x-model="office_destino_id" :disabled="!institution_destino_id || !service_destino_id || isLoadingOffices.destino" class="mt-1 w-full rounded-xl border-slate-300 disabled:bg-slate-100 disabled:text-slate-500">
                         <option value="">Seleccionar</option>
                         <template x-for="office in officeOptions.destino" :key="`od-${office.id}`">
-                            <option :value="office.id" x-text="office.label"></option>
+                            <option :value="String(office.id)" x-text="office.label"></option>
                         </template>
                     </select>
                     @error('office_destino_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
@@ -198,7 +198,7 @@
                         <select name="service_destino_id" x-model="service_destino_id" @change="onDestinoServiceChange('traslado')" :disabled="!getSelectedInstitutionId() || isLoadingServices.traslado" class="mt-1 w-full rounded-xl border-slate-300 disabled:bg-slate-100 disabled:text-slate-500">
                             <option value="">Seleccionar</option>
                             <template x-for="service in serviceOptions.traslado" :key="`st-${service.id}`">
-                                <option :value="service.id" x-text="service.label"></option>
+                                <option :value="String(service.id)" x-text="service.label"></option>
                             </template>
                         </select>
                         @error('service_destino_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
@@ -208,7 +208,7 @@
                         <select name="office_destino_id" x-model="office_destino_id" :disabled="!service_destino_id || isLoadingOffices.traslado" class="mt-1 w-full rounded-xl border-slate-300 disabled:bg-slate-100 disabled:text-slate-500">
                             <option value="">Seleccionar</option>
                             <template x-for="office in officeOptions.traslado" :key="`ot-${office.id}`">
-                                <option :value="office.id" x-text="office.label"></option>
+                                <option :value="String(office.id)" x-text="office.label"></option>
                             </template>
                         </select>
                         @error('office_destino_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
@@ -293,12 +293,23 @@
             userInstitutionId,
 
             async init() {
+                const initialServiceDestinoId = this.service_destino_id ? String(this.service_destino_id) : '';
+                const initialOfficeDestinoId = this.office_destino_id ? String(this.office_destino_id) : '';
+
                 if (this.tipo === 'entrega' && this.institution_destino_id) {
                     await this.loadServices('destino', this.institution_destino_id, false);
+
+                    if (initialServiceDestinoId) {
+                        const serviceExists = this.serviceOptions.destino.some((service) => String(service.id) === initialServiceDestinoId);
+                        this.service_destino_id = serviceExists ? initialServiceDestinoId : '';
+                    }
                 }
 
-                if (this.tipo === 'entrega' && this.institution_destino_id && this.service_destino_id) {
+                if (this.tipo === 'entrega' && this.institution_destino_id && this.service_destino_id && initialOfficeDestinoId) {
                     await this.loadOffices('destino', this.institution_destino_id, this.service_destino_id);
+
+                    const officeExists = this.officeOptions.destino.some((office) => String(office.id) === initialOfficeDestinoId);
+                    this.office_destino_id = officeExists ? initialOfficeDestinoId : '';
                 }
 
                 await this.refreshTrasladoContext(false);
