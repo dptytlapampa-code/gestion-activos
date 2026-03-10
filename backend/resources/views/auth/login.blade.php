@@ -4,8 +4,8 @@
 
 @section('content')
     @php
-        $siteName = $uiSettings['site_name'] ?? config('app.name');
-        $logoUrl = $uiSettings['logo_url'] ?? null;
+        $siteName = $settings->site_name ?? config('app.name');
+        $logoUrl = $settings->logo_url ?? null;
     @endphp
 
     <div class="card">
@@ -48,3 +48,4 @@
         </form>
     </div>
 @endsection
+

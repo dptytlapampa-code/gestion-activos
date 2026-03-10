@@ -4,11 +4,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @php
-        $siteName = $uiSettings['site_name'] ?? config('app.name');
-        $primaryColor = $uiSettings['primary_color'] ?? '#4F46E5';
-        $sidebarColor = $uiSettings['sidebar_color'] ?? '#4338CA';
-        $primaryRgb = $uiSettings['primary_color_rgb'] ?? '79, 70, 229';
-        $sidebarRgb = $uiSettings['sidebar_color_rgb'] ?? '67, 56, 202';
+        $siteName = $settings->site_name ?? config('app.name');
+        $primaryColor = $settings->primary_color ?? '#4F46E5';
+        $sidebarColor = $settings->sidebar_color ?? '#4338CA';
+        $primaryRgb = $settings->primary_color_rgb ?? '79, 70, 229';
+        $sidebarRgb = $settings->sidebar_color_rgb ?? '67, 56, 202';
     @endphp
     <title>{{ $siteName }} - @yield('title', 'Acceso')</title>
     <style>
@@ -30,3 +30,4 @@
     </div>
 </body>
 </html>
+
