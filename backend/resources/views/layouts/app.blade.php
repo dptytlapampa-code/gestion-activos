@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @php
         $siteName = $settings->site_name ?? config('app.name');
-        $primaryColor = $settings->primary_color ?? '#4F46E5';
-        $sidebarColor = $settings->sidebar_color ?? '#4338CA';
-        $primaryRgb = $settings->primary_color_rgb ?? '79, 70, 229';
-        $sidebarRgb = $settings->sidebar_color_rgb ?? '67, 56, 202';
         $logoUrl = $settings->logo_url ?? null;
         $navItemBase = 'app-sidebar-link';
     @endphp
@@ -19,6 +15,60 @@
             --primary-color-rgb: {{ $settings->primary_color_rgb ?? '79, 70, 229' }};
             --sidebar-color: {{ $settings->sidebar_color ?? '#4338CA' }};
             --sidebar-color-rgb: {{ $settings->sidebar_color_rgb ?? '67, 56, 202' }};
+        }
+        .sidebar-theme {
+            background: var(--sidebar-color);
+        }
+
+        .app-sidebar-link-active {
+            background-color: var(--primary-color);
+            color: #fff;
+        }
+
+        .btn-primary-theme,
+        .bg-primary-theme,
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .text-primary-theme,
+        .app-link-primary {
+            color: var(--primary-color);
+        }
+
+        .tab-active-theme {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .bg-primary-soft-theme {
+            background-color: rgba(var(--primary-color-rgb), 0.08);
+        }
+
+        .border-primary-theme {
+            border-color: var(--primary-color);
+        }
+
+        .border-primary-soft-theme {
+            border-color: rgba(var(--primary-color-rgb), 0.28);
+        }
+
+        .hover-bg-primary-theme:hover {
+            background-color: var(--primary-color);
+            filter: brightness(0.92);
+        }
+
+        .hover-bg-primary-soft-theme:hover {
+            background-color: rgba(var(--primary-color-rgb), 0.12);
+        }
+
+        .focus-border-primary-theme:focus {
+            border-color: var(--primary-color);
+        }
+
+        .focus-ring-primary-theme:focus {
+            box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.2);
         }
     </style>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -114,7 +164,7 @@
                     </a>
 
                     <div class="mt-3 space-y-1.5 border-t border-white/20 pt-3">
-                        <p class="px-4 text-xs font-semibold uppercase tracking-wide text-white/80">Configuracion</p>
+                        <p class="px-4 text-xs font-semibold uppercase tracking-wide text-white/80">Configuración</p>
                         <a href="{{ route('admin.configuracion.general.edit') }}" class="{{ $navItemBase }} {{ request()->routeIs('admin.configuracion.general.*') ? 'app-sidebar-link-active' : '' }}">
                             <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12a7.5 7.5 0 0 1 13.293-4.743m-1.39 14.014A7.5 7.5 0 0 1 4.5 12m0 0H3m1.5 0h1.5m10.5 0H21m-1.5 0h-1.5M12 4.5V3m0 1.5V6m0 12v1.5M12 18v-1.5" />
@@ -136,7 +186,7 @@
                     <span class="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">{{ auth()->user()->name }}</span>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700">Cerrar sesion</button>
+                        <button type="submit" class="btn-primary-theme rounded-lg px-4 py-2 text-sm font-medium text-white transition hover-bg-primary-theme">Cerrar sesion</button>
                     </form>
                 </div>
             </header>
@@ -149,7 +199,4 @@
     </div>
 </body>
 </html>
-
-
-
 
