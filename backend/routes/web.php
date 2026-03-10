@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EquipoController;
+use App\Http\Controllers\EquipoPublicController;
 use App\Http\Controllers\InstitutionController;
 use App\Http\Controllers\MantenimientoController;
 use App\Http\Controllers\MovimientoController;
@@ -20,6 +21,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/login', [AuthenticatedSessionController::class, 'create'])->middleware('guest')->name('login');
 Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware(['guest', 'throttle:5,1'])->name('login.store');
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->middleware('auth')->name('logout');
+
+Route::get('/equipos/public/{uuid}', [EquipoPublicController::class, 'show'])->middleware('web')->name('equipos.public.show');
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/', DashboardController::class)->name('dashboard');
@@ -70,3 +73,5 @@ Route::middleware('auth')->group(function (): void {
 });
 
 Route::get('/api/search/tipos-equipos', [SearchController::class, 'tiposEquipos'])->middleware('auth');
+
+

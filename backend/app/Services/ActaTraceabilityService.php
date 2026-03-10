@@ -18,6 +18,8 @@ use Illuminate\Validation\ValidationException;
 
 class ActaTraceabilityService
 {
+    public function __construct(private readonly ActaPdfDataService $actaPdfDataService) {}
+
     public function crear(User $user, array $data): Acta
     {
         $equipoIds = collect($data['equipos'])
@@ -115,7 +117,9 @@ class ActaTraceabilityService
                 'equipos.oficina.service.institution',
             ]);
 
-            $pdfBinary = Pdf::loadView('actas.pdf.'.$acta->tipo, ['acta' => $acta])
+            $pdfData = array_merge(['acta' => $acta], $this->actaPdfDataService->build($acta));
+
+            $pdfBinary = Pdf::loadView('actas.pdf.'.$acta->tipo, $pdfData)
                 ->setPaper('a4')
                 ->output();
 
@@ -431,3 +435,6 @@ class ActaTraceabilityService
         return $trimmed === '' ? null : $trimmed;
     }
 }
+
+
+

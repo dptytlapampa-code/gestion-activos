@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @php
         $siteName = $settings->site_name ?? config('app.name');
+        $systemLogoUrl = $settings->system_logo_url ?? asset('images/system/logo-sistema.png');
     @endphp
     <title>{{ $siteName }} - @yield('title', 'Acceso')</title>
-    
+    <link rel="icon" type="image/png" href="{{ $systemLogoUrl }}">
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         :root {

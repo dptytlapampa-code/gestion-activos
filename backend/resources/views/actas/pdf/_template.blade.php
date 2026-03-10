@@ -35,12 +35,44 @@
         z-index: 1;
     }
 
-    .title {
+    .document-header {
+        width: 100%;
+        border: 1px solid #374151;
+        margin-bottom: 8px;
+    }
+
+    .document-header td {
+        vertical-align: middle;
+        padding: 6px;
+    }
+
+    .document-logo {
+        width: 28%;
         text-align: center;
-        font-size: 16px;
+        border-right: 1px solid #374151;
+    }
+
+    .document-logo img {
+        max-width: 160px;
+        max-height: 52px;
+    }
+
+    .document-title-wrap {
+        width: 72%;
+        text-align: center;
+    }
+
+    .institution-name {
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+    }
+
+    .title {
+        font-size: 15px;
         font-weight: 700;
         text-transform: uppercase;
-        margin-bottom: 8px;
     }
 
     .section {
@@ -112,6 +144,31 @@
         width: 80%;
     }
 
+    .qr-table td {
+        vertical-align: middle;
+    }
+
+    .qr-code {
+        width: 120px;
+    }
+
+    .qr-code svg {
+        width: 120px;
+        height: 120px;
+    }
+
+    .qr-text {
+        padding-left: 10px;
+        font-size: 11px;
+    }
+
+    .qr-url {
+        margin-top: 4px;
+        font-size: 9px;
+        color: #374151;
+        word-break: break-all;
+    }
+
     .footer {
         margin-top: 6px;
         text-align: center;
@@ -122,25 +179,42 @@
 </head>
 <body>
 <div class="page">
-    @php($isAnulada = ($acta->status ?? \App\Models\Acta::STATUS_ACTIVA) === \App\Models\Acta::STATUS_ANULADA)
+    @php
+        $isAnulada = ($acta->status ?? \App\Models\Acta::STATUS_ACTIVA) === \App\Models\Acta::STATUS_ANULADA;
+        $documentTitle = $pdfDocumentTitle ?? strtoupper((string) ($titulo ?? 'ACTA DE EQUIPAMIENTO INFORMATICO'));
+        $institutionName = $pdfInstitutionName ?? ($acta->institution?->nombre ?: 'Institucion');
+        $clausulaTexto = $clausula ?? 'Se deja constancia institucional del evento de trazabilidad registrado sobre el equipamiento detallado en el presente documento.';
+    @endphp
 
     @if ($isAnulada)
         <div class="watermark">ACTA ANULADA</div>
     @endif
 
     <div class="content">
-        <div class="title">ACTA DE ENTREGA DE ACTIVOS INFORM&Aacute;TICOS</div>
+        <table class="document-header">
+            <tr>
+                <td class="document-logo">
+                    @if (! empty($pdfHeaderLogoPath))
+                        <img src="{{ $pdfHeaderLogoPath }}" alt="Logo PDF">
+                    @endif
+                </td>
+                <td class="document-title-wrap">
+                    <div class="institution-name">{{ $institutionName }}</div>
+                    <div class="title">{{ $documentTitle }}</div>
+                </td>
+            </tr>
+        </table>
 
         <div class="section">
             <table class="meta-table">
                 <tr>
-                    <td><span class="label">C&oacute;digo</span>{{ $acta->codigo }}</td>
+                    <td><span class="label">Codigo</span>{{ $acta->codigo }}</td>
                     <td><span class="label">Tipo</span>{{ strtoupper((string) $acta->tipo) }}</td>
                     <td><span class="label">Fecha</span>{{ $acta->fecha?->format('d/m/Y') ?: '-' }}</td>
                 </tr>
                 <tr>
-                    <td colspan="2"><span class="label">Instituci&oacute;n origen</span>{{ $acta->institution?->nombre ?: '-' }}</td>
-                    <td><span class="label">Instituci&oacute;n destino</span>{{ $acta->institucionDestino?->nombre ?: '-' }}</td>
+                    <td colspan="2"><span class="label">Institucion origen</span>{{ $acta->institution?->nombre ?: '-' }}</td>
+                    <td><span class="label">Institucion destino</span>{{ $acta->institucionDestino?->nombre ?: '-' }}</td>
                 </tr>
             </table>
         </div>
@@ -195,11 +269,11 @@
         </div>
 
         <div class="section">
-            <div class="section-title">Declaraci&oacute;n institucional</div>
+            <div class="section-title">Declaracion institucional</div>
             <div class="block-text">
-                Mediante la presente se deja constancia de la entrega y recepci&oacute;n del equipamiento inform&aacute;tico detallado, perteneciente al patrimonio institucional, con el fin de ser destinado al funcionamiento operativo del &aacute;rea receptora.
+                {{ $clausulaTexto }}
                 <br><br>
-                El responsable receptor declara recibir los bienes en el estado indicado, comprometi&eacute;ndose a su uso adecuado, conservaci&oacute;n y custodia, conforme a las normas institucionales vigentes de administraci&oacute;n de activos tecnol&oacute;gicos.
+                El responsable receptor declara recibir los bienes en el estado indicado, comprometiendose a su uso adecuado, conservacion y custodia, conforme a las normas institucionales vigentes de administracion de activos tecnologicos.
             </div>
         </div>
 
@@ -211,7 +285,7 @@
         <div class="section">
             <div class="section-title">Registro administrativo</div>
             <div class="block-text">
-                El presente documento forma parte del Sistema Institucional de Gesti&oacute;n de Activos Inform&aacute;ticos, quedando registrado para fines de trazabilidad, control patrimonial y auditor&iacute;a administrativa.
+                El presente documento forma parte del Sistema Institucional de Gestion de Activos Informaticos, quedando registrado para fines de trazabilidad, control patrimonial y auditoria administrativa.
             </div>
         </div>
 
@@ -231,8 +305,27 @@
             </table>
         </div>
 
+        <div class="section">
+            <div class="section-title">Validacion de ficha publica</div>
+            @if (! empty($equipoQrSvg))
+                <table class="qr-table">
+                    <tr>
+                        <td class="qr-code">{!! $equipoQrSvg !!}</td>
+                        <td class="qr-text">
+                            Escanee este codigo para ver la ficha del equipo.
+                            @if (! empty($equipoPublicUrl))
+                                <div class="qr-url">{{ $equipoPublicUrl }}</div>
+                            @endif
+                        </td>
+                    </tr>
+                </table>
+            @else
+                <div class="qr-text">No fue posible generar el QR para esta acta.</div>
+            @endif
+        </div>
+
         <div class="footer">
-            Documento generado por el Sistema de Gesti&oacute;n de Activos Inform&aacute;ticos<br>
+            Documento generado por el Sistema de Gestion de Activos Informaticos<br>
             Hospital Dr. Lucio Molas - Ministerio de Salud - Provincia de La Pampa
         </div>
     </div>

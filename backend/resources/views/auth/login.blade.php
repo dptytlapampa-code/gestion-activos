@@ -5,14 +5,12 @@
 @section('content')
     @php
         $siteName = $settings->site_name ?? config('app.name');
-        $logoUrl = $settings->logo_url ?? null;
+        $systemLogoUrl = $settings->system_logo_url ?? asset('images/system/logo-sistema.png');
     @endphp
 
     <div class="card">
         <div class="flex flex-col items-center text-center">
-            @if ($logoUrl)
-                <img src="{{ $logoUrl }}" alt="Logo institucional" class="h-16 w-auto rounded-lg bg-slate-100 p-2">
-            @endif
+            <img src="{{ $systemLogoUrl }}" alt="Logo del sistema" class="h-16 w-auto rounded-lg bg-slate-100 p-2">
             <h1 class="mt-3 text-xl font-semibold text-surface-800">{{ $siteName }}</h1>
             <p class="mt-1 text-sm text-surface-500">Acceso al sistema</p>
             <p class="mt-1 text-sm text-surface-500">Ingresa con tus credenciales institucionales.</p>
@@ -48,4 +46,3 @@
         </form>
     </div>
 @endsection
-

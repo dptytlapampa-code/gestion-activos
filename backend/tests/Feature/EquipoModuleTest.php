@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Acta;
 use App\Models\Equipo;
+use App\Models\EquipoHistorial;
 use App\Models\Institution;
 use App\Models\Office;
 use App\Models\Service;
@@ -18,9 +20,9 @@ class EquipoModuleTest extends TestCase
     public function test_acceso_segun_rol(): void
     {
         $hospital = Institution::create(['nombre' => 'Hospital Norte']);
-        $service = Service::create(['nombre' => 'Clínica', 'institution_id' => $hospital->id]);
+        $service = Service::create(['nombre' => 'Clinica', 'institution_id' => $hospital->id]);
         $office = Office::create(['nombre' => 'Oficina 1', 'service_id' => $service->id]);
-        $tipoEquipo = TipoEquipo::create(['nombre' => 'Laptop clínica']);
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Laptop clinica']);
         $equipo = $this->crearEquipo($office, $tipoEquipo);
 
         $viewer = $this->crearUsuario(User::ROLE_VIEWER);
@@ -74,7 +76,7 @@ class EquipoModuleTest extends TestCase
     public function test_paginacion_y_buscador(): void
     {
         $inst = Institution::create(['nombre' => 'Hospital Sur']);
-        $service = Service::create(['nombre' => 'Imágenes', 'institution_id' => $inst->id]);
+        $service = Service::create(['nombre' => 'Imagenes', 'institution_id' => $inst->id]);
         $office = Office::create(['nombre' => 'Oficina RX', 'service_id' => $service->id]);
         $tipoEquipo = TipoEquipo::create(['nombre' => 'Laptop']);
         $tipoEquipo2 = TipoEquipo::create(['nombre' => 'Impresora']);
@@ -215,6 +217,95 @@ class EquipoModuleTest extends TestCase
             'codigo_interno' => 'CI-MAC-001',
         ]);
     }
+    public function test_uuid_se_genera_automaticamente_al_crear_equipo(): void
+    {
+        $institution = Institution::create(['nombre' => 'Hospital UUID']);
+        $service = Service::create(['nombre' => 'Servicio UUID', 'institution_id' => $institution->id]);
+        $office = Office::create(['nombre' => 'Oficina UUID', 'service_id' => $service->id]);
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Ecografo']);
+
+        $equipo = Equipo::create([
+            'tipo' => $tipoEquipo->nombre,
+            'tipo_equipo_id' => $tipoEquipo->id,
+            'marca' => 'GE',
+            'modelo' => 'Logiq',
+            'numero_serie' => 'SER-UUID-1',
+            'bien_patrimonial' => 'BP-UUID-1',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => now()->toDateString(),
+            'oficina_id' => $office->id,
+        ]);
+
+        $this->assertNotNull($equipo->uuid);
+        $this->assertMatchesRegularExpression('/^[0-9a-fA-F-]{36}$/', (string) $equipo->uuid);
+    }
+
+    public function test_ficha_publica_se_visualiza_sin_login_y_muestra_solo_datos_seguros(): void
+    {
+        $institution = Institution::create(['nombre' => 'Hospital Publico']);
+        $service = Service::create(['nombre' => 'Servicio Publico', 'institution_id' => $institution->id]);
+        $office = Office::create(['nombre' => 'Oficina Publica', 'service_id' => $service->id]);
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Respirador']);
+
+        $user = User::create([
+            'name' => 'Usuario Interno',
+            'email' => uniqid('public_').'@test.com',
+            'password' => '123456',
+            'role' => User::ROLE_ADMIN,
+            'institution_id' => $institution->id,
+            'is_active' => true,
+        ]);
+
+        $equipo = Equipo::create([
+            'tipo' => $tipoEquipo->nombre,
+            'tipo_equipo_id' => $tipoEquipo->id,
+            'marca' => 'Philips',
+            'modelo' => 'V680',
+            'numero_serie' => 'SER-PUBLICO-1',
+            'bien_patrimonial' => 'BP-PUBLICO-1',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => now()->toDateString(),
+            'oficina_id' => $office->id,
+        ]);
+
+        $acta = Acta::create([
+            'institution_id' => $institution->id,
+            'tipo' => Acta::TIPO_ENTREGA,
+            'fecha' => now()->toDateString(),
+            'receptor_nombre' => 'Receptor Publico',
+            'observaciones' => 'Acta publica',
+            'created_by' => $user->id,
+        ]);
+
+        $acta->equipos()->attach($equipo->id, ['cantidad' => 1]);
+
+        EquipoHistorial::create([
+            'equipo_id' => $equipo->id,
+            'usuario_id' => $user->id,
+            'tipo_evento' => Acta::TIPO_ENTREGA,
+            'acta_id' => $acta->id,
+            'estado_anterior' => Equipo::ESTADO_OPERATIVO,
+            'estado_nuevo' => Equipo::ESTADO_OPERATIVO,
+            'institucion_anterior' => $institution->id,
+            'institucion_nueva' => $institution->id,
+            'servicio_anterior' => $service->id,
+            'servicio_nuevo' => $service->id,
+            'oficina_anterior' => $office->id,
+            'oficina_nueva' => $office->id,
+            'fecha' => now(),
+            'observaciones' => 'Evento publico',
+        ]);
+
+        $this->get(route('equipos.public.show', ['uuid' => $equipo->uuid]))
+            ->assertOk()
+            ->assertSee('Ficha publica del equipo')
+            ->assertSee('Respirador')
+            ->assertSee('SER-PUBLICO-1')
+            ->assertSee('Hospital Publico')
+            ->assertSee($acta->codigo)
+            ->assertDontSee($user->email);
+    }
+
     private function crearUsuario(string $role): User
     {
         return User::create([
@@ -240,3 +331,6 @@ class EquipoModuleTest extends TestCase
         ]);
     }
 }
+
+
+

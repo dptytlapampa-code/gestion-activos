@@ -17,6 +17,8 @@ class SystemSettingsService
         'primary_color' => '#4F46E5',
         'sidebar_color' => '#4338CA',
         'logo_path' => null,
+        'logo_institucional' => null,
+        'logo_pdf' => null,
     ];
 
     private ?stdClass $cachedSettings = null;
@@ -28,15 +30,24 @@ class SystemSettingsService
         }
 
         $setting = $this->readSingletonForDisplay();
+        $logoInstitucionalPath = $setting?->logo_institucional ?: $setting?->logo_path;
+        $logoPdfPath = $setting?->logo_pdf;
 
         $settings = [
             'site_name' => $setting?->site_name ?: self::DEFAULTS['site_name'],
             'primary_color' => $this->normalizeColor($setting?->primary_color ?: self::DEFAULTS['primary_color']),
             'sidebar_color' => $this->normalizeColor($setting?->sidebar_color ?: self::DEFAULTS['sidebar_color']),
-            'logo_path' => $setting?->logo_path,
+            'logo_path' => $logoInstitucionalPath,
+            'logo_institucional' => $logoInstitucionalPath,
+            'logo_pdf' => $logoPdfPath,
         ];
 
-        $settings['logo_url'] = $this->resolveLogoUrl($settings['logo_path']);
+        $settings['logo_url'] = $this->resolveLogoUrl($logoInstitucionalPath);
+        $settings['logo_institucional_url'] = $settings['logo_url'];
+        $settings['logo_pdf_url'] = $this->resolveLogoUrl($logoPdfPath);
+        $settings['logo_institucional_file_path'] = $this->resolveLogoFilePath($logoInstitucionalPath);
+        $settings['logo_pdf_file_path'] = $this->resolveLogoFilePath($logoPdfPath);
+        $settings['system_logo_url'] = asset('images/system/logo-sistema.png');
         $settings['primary_color_rgb'] = $this->hexToRgbCsv($settings['primary_color']);
         $settings['sidebar_color_rgb'] = $this->hexToRgbCsv($settings['sidebar_color']);
 
@@ -46,9 +57,9 @@ class SystemSettingsService
     /**
      * @param  array<string, mixed>  $input
      */
-    public function update(array $input, ?UploadedFile $logo = null): stdClass
+    public function update(array $input, ?UploadedFile $logoInstitucional = null, ?UploadedFile $logoPdf = null): stdClass
     {
-        DB::transaction(function () use ($input, $logo): void {
+        DB::transaction(function () use ($input, $logoInstitucional, $logoPdf): void {
             $setting = $this->lockSingletonForUpdate();
 
             $payload = [
@@ -57,25 +68,23 @@ class SystemSettingsService
                 'sidebar_color' => $this->normalizeColor((string) $input['sidebar_color']),
             ];
 
-            if ($logo !== null) {
-                $newLogoPath = $logo->store('system-settings/logos', 'public');
+            if ($logoInstitucional !== null) {
+                $newPath = $this->storeFixedLogo($logoInstitucional, 'institucional.png', 'logo_institucional');
+                $oldPaths = array_filter([$setting->logo_path, $setting->logo_institucional]);
 
-                if (! is_string($newLogoPath) || $newLogoPath === '') {
-                    throw ValidationException::withMessages([
-                        'logo' => 'No fue posible guardar el logo seleccionado.',
-                    ]);
-                }
+                $payload['logo_path'] = $newPath;
+                $payload['logo_institucional'] = $newPath;
 
-                $oldLogoPath = $setting->logo_path;
-                $payload['logo_path'] = $newLogoPath;
+                $this->cleanupOldPaths($oldPaths, $newPath);
+            }
 
-                if (
-                    $oldLogoPath !== null
-                    && $oldLogoPath !== $newLogoPath
-                    && Storage::disk('public')->exists($oldLogoPath)
-                ) {
-                    Storage::disk('public')->delete($oldLogoPath);
-                }
+            if ($logoPdf !== null) {
+                $newPath = $this->storeFixedLogo($logoPdf, 'pdf.png', 'logo_pdf');
+                $oldPaths = array_filter([$setting->logo_pdf]);
+
+                $payload['logo_pdf'] = $newPath;
+
+                $this->cleanupOldPaths($oldPaths, $newPath);
             }
 
             $setting->fill($payload)->save();
@@ -106,6 +115,8 @@ class SystemSettingsService
             'primary_color' => self::DEFAULTS['primary_color'],
             'sidebar_color' => self::DEFAULTS['sidebar_color'],
             'logo_path' => self::DEFAULTS['logo_path'],
+            'logo_institucional' => self::DEFAULTS['logo_institucional'],
+            'logo_pdf' => self::DEFAULTS['logo_pdf'],
         ]);
     }
 
@@ -134,6 +145,35 @@ class SystemSettingsService
             );
     }
 
+    private function storeFixedLogo(UploadedFile $logo, string $filename, string $field): string
+    {
+        $newLogoPath = $logo->storeAs('logos', $filename, 'public');
+
+        if (! is_string($newLogoPath) || $newLogoPath === '') {
+            throw ValidationException::withMessages([
+                $field => 'No fue posible guardar el archivo seleccionado.',
+            ]);
+        }
+
+        return $newLogoPath;
+    }
+
+    /**
+     * @param  array<int, string>  $oldPaths
+     */
+    private function cleanupOldPaths(array $oldPaths, string $newPath): void
+    {
+        foreach (array_unique($oldPaths) as $oldPath) {
+            if ($oldPath === '' || $oldPath === $newPath) {
+                continue;
+            }
+
+            if (Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
+        }
+    }
+
     private function resolveLogoUrl(?string $logoPath): ?string
     {
         if ($logoPath === null || $logoPath === '') {
@@ -145,6 +185,19 @@ class SystemSettingsService
         }
 
         return Storage::disk('public')->url($logoPath);
+    }
+
+    private function resolveLogoFilePath(?string $logoPath): ?string
+    {
+        if ($logoPath === null || $logoPath === '') {
+            return null;
+        }
+
+        if (! Storage::disk('public')->exists($logoPath)) {
+            return null;
+        }
+
+        return Storage::disk('public')->path($logoPath);
     }
 
     private function normalizeColor(string $value): string

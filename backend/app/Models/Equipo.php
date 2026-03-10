@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class Equipo extends Model
 {
@@ -31,6 +32,7 @@ class Equipo extends Model
     ];
 
     protected $fillable = [
+        'uuid',
         'tipo',
         'tipo_equipo_id',
         'marca',
@@ -50,6 +52,10 @@ class Equipo extends Model
     protected static function booted(): void
     {
         static::creating(function (Equipo $equipo): void {
+            if (Schema::hasColumn($equipo->getTable(), 'uuid') && empty($equipo->uuid)) {
+                $equipo->uuid = (string) Str::uuid();
+            }
+
             if (! Schema::hasColumn($equipo->getTable(), 'equipo_status_id')) {
                 return;
             }

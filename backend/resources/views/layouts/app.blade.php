@@ -5,10 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @php
         $siteName = $settings->site_name ?? config('app.name');
-        $logoUrl = $settings->logo_url ?? null;
+        $logoInstitucionalUrl = $settings->logo_institucional_url ?? $settings->logo_url ?? null;
+        $systemLogoUrl = $settings->system_logo_url ?? asset('images/system/logo-sistema.png');
         $navItemBase = 'app-sidebar-link';
     @endphp
     <title>{{ $siteName }} - @yield('title', 'Panel')</title>
+    <link rel="icon" type="image/png" href="{{ $systemLogoUrl }}">
     
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
@@ -24,8 +26,10 @@
     <div class="flex min-h-screen gap-6 p-6">
         <aside class="app-sidebar">
             <div class="space-y-3 px-4 py-3">
-                @if ($logoUrl)
-                    <img src="{{ $logoUrl }}" alt="Logo institucional" class="h-12 w-auto rounded-lg bg-white/90 p-1">
+                @if ($logoInstitucionalUrl)
+                    <img src="{{ $logoInstitucionalUrl }}" alt="Logo institucional" class="h-12 w-auto rounded-lg bg-white/90 p-1">
+                @else
+                    <img src="{{ $systemLogoUrl }}" alt="Logo del sistema" class="h-12 w-auto rounded-lg bg-white/90 p-1">
                 @endif
                 <div>
                     <h1 class="text-lg font-semibold tracking-tight text-white">{{ $siteName }}</h1>
@@ -146,3 +150,5 @@
     </div>
 </body>
 </html>
+
+
