@@ -65,6 +65,7 @@ class ActaTraceabilityService
                 'motivo_baja' => $this->nullableString($data['motivo_baja'] ?? null),
                 'evento_payload' => $this->payload($data, $origen, $destino),
                 'observaciones' => $this->nullableString($data['observaciones'] ?? null),
+                'status' => Acta::STATUS_ACTIVA,
                 'created_by' => $user->id,
             ]);
 

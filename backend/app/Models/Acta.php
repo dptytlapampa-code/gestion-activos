@@ -20,6 +20,9 @@ class Acta extends Model
     public const TIPO_DEVOLUCION = 'devolucion';
     public const TIPO_MANTENIMIENTO = 'mantenimiento';
 
+    public const STATUS_ACTIVA = 'activa';
+    public const STATUS_ANULADA = 'anulada';
+
     public const TIPOS = [
         self::TIPO_ENTREGA,
         self::TIPO_PRESTAMO,
@@ -54,6 +57,10 @@ class Acta extends Model
         'motivo_baja',
         'evento_payload',
         'observaciones',
+        'status',
+        'anulada_por',
+        'anulada_at',
+        'motivo_anulacion',
         'created_by',
     ];
 
@@ -61,6 +68,7 @@ class Acta extends Model
     {
         return [
             'fecha' => 'date',
+            'anulada_at' => 'datetime',
             'evento_payload' => 'array',
         ];
     }
@@ -98,6 +106,11 @@ class Acta extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function annulledBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'anulada_por');
     }
 
     public function equipos(): BelongsToMany

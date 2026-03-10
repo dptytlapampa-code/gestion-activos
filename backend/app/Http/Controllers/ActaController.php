@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreActaRequest;
 use App\Models\Acta;
+use App\Models\AuditLog;
 use App\Models\Equipo;
 use App\Models\Institution;
 use App\Models\User;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class ActaController extends Controller
@@ -118,6 +120,62 @@ class ActaController extends Controller
         return redirect()->route('actas.show', $acta)->with('status', 'Acta de trazabilidad generada correctamente.');
     }
 
+    public function anular(Request $request, Acta $acta): RedirectResponse
+    {
+        $this->authorize('anular', $acta);
+
+        $validated = $request->validate([
+            'motivo_anulacion' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $motivo = trim((string) $validated['motivo_anulacion']);
+
+        if (($acta->status ?? Acta::STATUS_ACTIVA) === Acta::STATUS_ANULADA) {
+            return back()->withErrors(['acta' => 'El acta ya se encuentra anulada.']);
+        }
+
+        $user = $request->user();
+
+        DB::transaction(function () use ($acta, $motivo, $user): void {
+            $acta->refresh();
+
+            if (($acta->status ?? Acta::STATUS_ACTIVA) === Acta::STATUS_ANULADA) {
+                return;
+            }
+
+            $before = [
+                'status' => $acta->status ?? Acta::STATUS_ACTIVA,
+                'anulada_por' => $acta->anulada_por,
+                'anulada_at' => $acta->anulada_at?->toDateTimeString(),
+                'motivo_anulacion' => $acta->motivo_anulacion,
+            ];
+
+            $acta->status = Acta::STATUS_ANULADA;
+            $acta->anulada_por = $user?->id;
+            $acta->anulada_at = now();
+            $acta->motivo_anulacion = $motivo;
+            $acta->save();
+
+            AuditLog::query()->create([
+                'user_id' => $user?->id,
+                'action' => 'acta anulada',
+                'auditable_type' => Acta::class,
+                'auditable_id' => $acta->id,
+                'before' => $before,
+                'after' => [
+                    'status' => $acta->status,
+                    'anulada_por' => $acta->anulada_por,
+                    'anulada_at' => $acta->anulada_at?->toDateTimeString(),
+                    'motivo_anulacion' => $acta->motivo_anulacion,
+                ],
+                'ip' => request()?->ip(),
+                'user_agent' => request()?->userAgent(),
+            ]);
+        });
+
+        return redirect()->route('actas.show', $acta)->with('status', 'Acta anulada correctamente.');
+    }
+
     public function show(Acta $acta)
     {
         $this->authorize('view', $acta);
@@ -130,6 +188,7 @@ class ActaController extends Controller
             'servicioDestino',
             'oficinaDestino',
             'creator:id,name',
+            'annulledBy:id,name',
             'equipos.tipoEquipo',
             'equipos.oficina.service',
             'documents.uploadedBy:id,name',
@@ -152,6 +211,7 @@ class ActaController extends Controller
             'servicioDestino',
             'oficinaDestino',
             'creator',
+            'annulledBy',
             'equipos.tipoEquipo',
         ]);
 

@@ -4,10 +4,18 @@
 @section('header', 'Detalle de acta '.$acta->codigo)
 
 @section('content')
+@php($isAnulada = ($acta->status ?? \App\Models\Acta::STATUS_ACTIVA) === \App\Models\Acta::STATUS_ANULADA)
 <div class="space-y-6">
+    @if ($isAnulada)
+        <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            ACTA ANULADA
+        </div>
+    @endif
+
     <div class="card grid gap-4 md:grid-cols-2">
         <div><span class="text-xs text-slate-500">Codigo</span><p class="font-medium">{{ $acta->codigo }}</p></div>
         <div><span class="text-xs text-slate-500">Tipo</span><p class="font-medium">{{ $tipoLabels[$acta->tipo] ?? strtoupper($acta->tipo) }}</p></div>
+        <div><span class="text-xs text-slate-500">Estado</span><p class="font-medium">{{ $isAnulada ? 'Anulada' : 'Activa' }}</p></div>
         <div><span class="text-xs text-slate-500">Fecha</span><p class="font-medium">{{ $acta->fecha?->format('d/m/Y') }}</p></div>
         <div><span class="text-xs text-slate-500">Generado por</span><p class="font-medium">{{ $acta->creator?->name }}</p></div>
         <div><span class="text-xs text-slate-500">Institucion origen</span><p class="font-medium">{{ $acta->institution?->nombre ?: '-' }}</p></div>
@@ -20,6 +28,12 @@
         <div><span class="text-xs text-slate-500">DNI / Cargo</span><p class="font-medium">{{ $acta->receptor_dni ?: '-' }} {{ $acta->receptor_cargo ? '| '.$acta->receptor_cargo : '' }}</p></div>
         <div><span class="text-xs text-slate-500">Motivo de baja</span><p class="font-medium">{{ $acta->motivo_baja ?: '-' }}</p></div>
         <div class="md:col-span-2"><span class="text-xs text-slate-500">Observaciones</span><p class="font-medium">{{ $acta->observaciones ?: '-' }}</p></div>
+
+        @if ($isAnulada)
+            <div><span class="text-xs text-slate-500">Anulada por</span><p class="font-medium">{{ $acta->annulledBy?->name ?: '-' }}</p></div>
+            <div><span class="text-xs text-slate-500">Fecha anulacion</span><p class="font-medium">{{ $acta->anulada_at?->format('d/m/Y H:i') ?: '-' }}</p></div>
+            <div class="md:col-span-2"><span class="text-xs text-slate-500">Motivo de anulacion</span><p class="font-medium">{{ $acta->motivo_anulacion ?: '-' }}</p></div>
+        @endif
     </div>
 
     <div class="card overflow-x-auto">
@@ -82,8 +96,19 @@
         </table>
     </div>
 
-    <div class="flex justify-end">
-        <a href="{{ route('actas.download', $acta) }}" class="min-h-[48px] rounded-xl bg-primary-600 px-5 py-3 font-semibold text-white">Descargar PDF</a>
+    <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-end">
+        @can('anular', $acta)
+            @if (! $isAnulada)
+                <form method="POST" action="{{ route('actas.anular', $acta) }}" class="flex flex-col gap-2 md:w-[420px]" onsubmit="return confirm('Esta acci\u00f3n no puede deshacerse. \u00bfDesea anular el acta?');">
+                    @csrf
+                    <label for="motivo_anulacion" class="text-xs font-medium text-slate-600">Motivo de anulacion</label>
+                    <textarea id="motivo_anulacion" name="motivo_anulacion" rows="2" required class="rounded-xl border-slate-300 text-sm" placeholder="Detalle el motivo administrativo"></textarea>
+                    <button type="submit" class="min-h-[48px] rounded-xl bg-red-600 px-5 py-3 font-semibold text-white">Anular acta</button>
+                </form>
+            @endif
+        @endcan
+
+        <a href="{{ route('actas.download', $acta) }}" class="min-h-[48px] rounded-xl bg-primary-600 px-5 py-3 font-semibold text-white text-center">Descargar PDF</a>
     </div>
 </div>
 @endsection
