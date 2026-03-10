@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ActaController;
 use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\SystemSettingsController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
@@ -55,6 +56,9 @@ Route::middleware('auth')->group(function (): void {
         Route::patch('users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle_active');
         Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset_password');
         Route::get('auditoria', [AuditLogController::class, 'index'])->name('audit.index');
+
+        Route::get('configuracion/general', [SystemSettingsController::class, 'index'])->name('configuracion.general.edit');
+        Route::match(['put', 'patch'], 'configuracion/general', [SystemSettingsController::class, 'update'])->name('configuracion.general.update');
     });
 
     Route::prefix('api/search')->group(function (): void {
@@ -66,4 +70,3 @@ Route::middleware('auth')->group(function (): void {
 });
 
 Route::get('/api/search/tipos-equipos', [SearchController::class, 'tiposEquipos'])->middleware('auth');
-
