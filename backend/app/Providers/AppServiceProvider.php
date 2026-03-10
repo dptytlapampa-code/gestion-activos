@@ -24,7 +24,6 @@ use App\Policies\OfficePolicy;
 use App\Policies\ServicePolicy;
 use App\Policies\TipoEquipoPolicy;
 use App\Policies\UserPolicy;
-use App\Services\SystemSettingsService;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -33,7 +32,9 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        if (! function_exists('system_config')) {
+            require_once app_path('Helpers/SystemConfig.php');
+        }
     }
 
     public function boot(): void
@@ -54,8 +55,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-system-settings', fn (User $user): bool => $user->hasRole(User::ROLE_SUPERADMIN));
 
         View::composer('*', function ($view): void {
-            $settings = app(SystemSettingsService::class)->getCurrentSettings();
-            $view->with('settings', $settings);
+            $view->with('settings', system_config());
         });
     }
 }

@@ -11,8 +11,8 @@ class SystemSettingsSeeder extends Seeder
     {
         $defaults = [
             'site_name' => 'Gestion de Activos',
-            'primary_color' => '#4F46E5',
-            'sidebar_color' => '#4338CA',
+            'primary_color' => '#1f2937',
+            'sidebar_color' => '#1f2937',
             'logo_path' => null,
             'logo_institucional' => null,
             'logo_pdf' => null,

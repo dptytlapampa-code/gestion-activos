@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\SystemSetting;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -14,8 +15,8 @@ class SystemSettingsService
 {
     private const DEFAULTS = [
         'site_name' => 'Gestion de Activos',
-        'primary_color' => '#4F46E5',
-        'sidebar_color' => '#4338CA',
+        'primary_color' => '#1f2937',
+        'sidebar_color' => '#1f2937',
         'logo_path' => null,
         'logo_institucional' => null,
         'logo_pdf' => null,
@@ -95,6 +96,7 @@ class SystemSettingsService
         });
 
         $this->cachedSettings = null;
+        Cache::forget(system_config_cache_key());
 
         return $this->getCurrentSettings();
     }
