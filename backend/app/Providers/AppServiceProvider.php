@@ -54,15 +54,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-system-settings', fn (User $user): bool => $user->hasRole(User::ROLE_SUPERADMIN));
 
         View::composer('*', function ($view): void {
-            static $settings = null;
-
-            if ($settings === null) {
-                $settings = (object) app(SystemSettingsService::class)->getCurrentSettings();
-            }
-
+            $settings = (object) app(SystemSettingsService::class)->getCurrentSettings();
             $view->with('settings', $settings);
-            $view->with('uiSettings', (array) $settings);
         });
     }
 }
-
