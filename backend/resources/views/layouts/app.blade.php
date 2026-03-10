@@ -6,37 +6,117 @@
     <title>{{ config('app.name') }} - @yield('title', 'Panel')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="hospital-body min-h-screen">
+<body class="hospital-body min-h-screen" x-data="{ sidebarExpanded: false }">
     <div class="hospital-layout flex min-h-screen">
-        <aside class="hospital-sidebar w-72 px-6 py-8">
-            <div class="mb-10">
-                <h1 class="text-xl font-bold tracking-tight text-white">{{ config('app.name') }}</h1>
-                <p class="mt-1 text-xs text-blue-100/90">Base administrativa hospitalaria</p>
+        <aside
+            class="hospital-sidebar shrink-0 overflow-hidden transition-all duration-200"
+            :class="sidebarExpanded ? 'w-[240px] px-6 py-8' : 'w-[70px] px-2 py-8'"
+            @mouseenter="sidebarExpanded = true"
+            @mouseleave="sidebarExpanded = false"
+        >
+            <div class="mb-10 flex items-center" :class="sidebarExpanded ? 'justify-start gap-3' : 'justify-center'">
+                <span class="text-2xl leading-none">&#127973;</span>
+                <div x-show="sidebarExpanded" x-transition.opacity.duration.200ms x-cloak>
+                    <h1 class="text-xl font-bold tracking-tight text-white">{{ config('app.name') }}</h1>
+                    <p class="mt-1 text-xs text-blue-100/90">Base administrativa hospitalaria</p>
+                </div>
             </div>
 
             <nav class="space-y-2.5">
-                <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'nav-link-active' : '' }}">Panel</a>
+                <a
+                    href="{{ route('dashboard') }}"
+                    class="nav-link {{ request()->routeIs('dashboard') ? 'nav-link-active' : '' }}"
+                    :class="sidebarExpanded ? '' : '!justify-center !px-2 !gap-0'"
+                    title="Panel"
+                >
+                    <span class="text-lg leading-none">&#127968;</span>
+                    <span x-show="sidebarExpanded" x-transition.opacity.duration.150ms x-cloak>Panel</span>
+                </a>
                 @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN))
-                    <a href="{{ route('institutions.index') }}" class="nav-link {{ request()->routeIs('institutions.*') ? 'nav-link-active' : '' }}">Instituciones</a>
+                    <a
+                        href="{{ route('institutions.index') }}"
+                        class="nav-link {{ request()->routeIs('institutions.*') ? 'nav-link-active' : '' }}"
+                        :class="sidebarExpanded ? '' : '!justify-center !px-2 !gap-0'"
+                        title="Instituciones"
+                    >
+                        <span class="text-lg leading-none">&#127973;</span>
+                        <span x-show="sidebarExpanded" x-transition.opacity.duration.150ms x-cloak>Instituciones</span>
+                    </a>
                 @endif
                 @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO))
-                    <a href="{{ route('services.index') }}" class="nav-link {{ request()->routeIs('services.*') ? 'nav-link-active' : '' }}">Servicios</a>
+                    <a
+                        href="{{ route('services.index') }}"
+                        class="nav-link {{ request()->routeIs('services.*') ? 'nav-link-active' : '' }}"
+                        :class="sidebarExpanded ? '' : '!justify-center !px-2 !gap-0'"
+                        title="Servicios"
+                    >
+                        <span class="text-lg leading-none">&#128295;</span>
+                        <span x-show="sidebarExpanded" x-transition.opacity.duration.150ms x-cloak>Servicios</span>
+                    </a>
                 @endif
                 @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO))
-                    <a href="{{ route('offices.index') }}" class="nav-link {{ request()->routeIs('offices.*') ? 'nav-link-active' : '' }}">Oficinas</a>
+                    <a
+                        href="{{ route('offices.index') }}"
+                        class="nav-link {{ request()->routeIs('offices.*') ? 'nav-link-active' : '' }}"
+                        :class="sidebarExpanded ? '' : '!justify-center !px-2 !gap-0'"
+                        title="Oficinas"
+                    >
+                        <span class="text-lg leading-none">&#127970;</span>
+                        <span x-show="sidebarExpanded" x-transition.opacity.duration.150ms x-cloak>Oficinas</span>
+                    </a>
                 @endif
                 @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO, \App\Models\User::ROLE_VIEWER))
-                    <a href="{{ route('tipos-equipos.index') }}" class="nav-link {{ request()->routeIs('tipos-equipos.*') ? 'nav-link-active' : '' }}">Tipos de equipo</a>
+                    <a
+                        href="{{ route('tipos-equipos.index') }}"
+                        class="nav-link {{ request()->routeIs('tipos-equipos.*') ? 'nav-link-active' : '' }}"
+                        :class="sidebarExpanded ? '' : '!justify-center !px-2 !gap-0'"
+                        title="Tipos de equipo"
+                    >
+                        <span class="text-lg leading-none">&#129520;</span>
+                        <span x-show="sidebarExpanded" x-transition.opacity.duration.150ms x-cloak>Tipos de equipo</span>
+                    </a>
                 @endif
                 @can('viewAny', \App\Models\Equipo::class)
-                    <a href="{{ route('equipos.index') }}" class="nav-link {{ request()->routeIs('equipos.*') ? 'nav-link-active' : '' }}">Equipos</a>
+                    <a
+                        href="{{ route('equipos.index') }}"
+                        class="nav-link {{ request()->routeIs('equipos.*') ? 'nav-link-active' : '' }}"
+                        :class="sidebarExpanded ? '' : '!justify-center !px-2 !gap-0'"
+                        title="Equipos"
+                    >
+                        <span class="text-lg leading-none">&#128230;</span>
+                        <span x-show="sidebarExpanded" x-transition.opacity.duration.150ms x-cloak>Equipos</span>
+                    </a>
                 @endcan
                 @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO, \App\Models\User::ROLE_VIEWER))
-                    <a href="{{ route('actas.index') }}" class="nav-link {{ request()->routeIs('actas.*') ? 'nav-link-active' : '' }}">Actas</a>
+                    <a
+                        href="{{ route('actas.index') }}"
+                        class="nav-link {{ request()->routeIs('actas.*') ? 'nav-link-active' : '' }}"
+                        :class="sidebarExpanded ? '' : '!justify-center !px-2 !gap-0'"
+                        title="Actas"
+                    >
+                        <span class="text-lg leading-none">&#128196;</span>
+                        <span x-show="sidebarExpanded" x-transition.opacity.duration.150ms x-cloak>Actas</span>
+                    </a>
                 @endif
                 @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN))
-                    <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->routeIs('admin.users.*') ? 'nav-link-active' : '' }}">Usuarios</a>
-                    <a href="{{ route('admin.audit.index') }}" class="nav-link {{ request()->routeIs('admin.audit.*') ? 'nav-link-active' : '' }}">Auditoria</a>
+                    <a
+                        href="{{ route('admin.users.index') }}"
+                        class="nav-link {{ request()->routeIs('admin.users.*') ? 'nav-link-active' : '' }}"
+                        :class="sidebarExpanded ? '' : '!justify-center !px-2 !gap-0'"
+                        title="Usuarios"
+                    >
+                        <span class="text-lg leading-none">&#128100;</span>
+                        <span x-show="sidebarExpanded" x-transition.opacity.duration.150ms x-cloak>Usuarios</span>
+                    </a>
+                    <a
+                        href="{{ route('admin.audit.index') }}"
+                        class="nav-link {{ request()->routeIs('admin.audit.*') ? 'nav-link-active' : '' }}"
+                        :class="sidebarExpanded ? '' : '!justify-center !px-2 !gap-0'"
+                        title="Auditoria"
+                    >
+                        <span class="text-lg leading-none">&#129534;</span>
+                        <span x-show="sidebarExpanded" x-transition.opacity.duration.150ms x-cloak>Auditoria</span>
+                    </a>
                 @endif
             </nav>
         </aside>
