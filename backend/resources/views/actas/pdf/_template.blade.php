@@ -34,31 +34,23 @@
         position: relative;
         z-index: 1;
     }
-
     .document-header {
-        width: 100%;
         border: 1px solid #374151;
         margin-bottom: 8px;
-    }
-
-    .document-header td {
-        vertical-align: middle;
-        padding: 6px;
-    }
-
-    .document-logo {
-        width: 28%;
+        padding: 8px 6px;
         text-align: center;
-        border-right: 1px solid #374151;
     }
 
-    .document-logo img {
-        max-width: 160px;
-        max-height: 52px;
+    .document-top-logo {
+        margin-bottom: 6px;
+    }
+
+    .document-top-logo img {
+        max-width: 180px;
+        max-height: 64px;
     }
 
     .document-title-wrap {
-        width: 72%;
         text-align: center;
     }
 
@@ -191,19 +183,17 @@
     @endif
 
     <div class="content">
-        <table class="document-header">
-            <tr>
-                <td class="document-logo">
-                    @if (! empty($pdfHeaderLogoPath))
-                        <img src="{{ $pdfHeaderLogoPath }}" alt="Logo PDF">
-                    @endif
-                </td>
-                <td class="document-title-wrap">
-                    <div class="institution-name">{{ $institutionName }}</div>
-                    <div class="title">{{ $documentTitle }}</div>
-                </td>
-            </tr>
-        </table>
+        <div class="document-header">
+            @if (! empty($pdfHeaderLogoPath))
+                <div class="document-top-logo">
+                    <img src="{{ $pdfHeaderLogoPath }}" alt="Logo institucional">
+                </div>
+            @endif
+            <div class="document-title-wrap">
+                <div class="institution-name">{{ $institutionName }}</div>
+                <div class="title">{{ $documentTitle }}</div>
+            </div>
+        </div>
 
         <div class="section">
             <table class="meta-table">

@@ -4,13 +4,10 @@ namespace App\Services;
 
 use App\Models\Acta;
 use App\Models\Equipo;
-use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class ActaPdfDataService
 {
-    public function __construct(private readonly SystemSettingsService $systemSettingsService) {}
-
     /**
      * @return array<string, mixed>
      */
@@ -18,8 +15,8 @@ class ActaPdfDataService
     {
         $acta->loadMissing(['institution', 'equipos']);
 
-        $settings = $this->systemSettingsService->getCurrentSettings();
-        $logoPdfPath = $this->resolveLogoPdfPath($settings->logo_pdf ?? null);
+        $settings = system_config();
+        $headerLogoPath = $settings->logo_institucional_file_path ?? $settings->logo_pdf_file_path ?? null;
 
         $equipoQr = $this->resolveEquipoForQr($acta);
         $equipoPublicUrl = $equipoQr !== null
@@ -27,25 +24,12 @@ class ActaPdfDataService
             : null;
 
         return [
-            'pdfInstitutionName' => $acta->institution?->nombre ?: ($settings->site_name ?? config('app.name')),
-            'pdfHeaderLogoPath' => $logoPdfPath,
+            'pdfInstitutionName' => $acta->institution?->nombre ?: ($settings->nombre_sistema ?? config('app.name')),
+            'pdfHeaderLogoPath' => $headerLogoPath,
             'pdfDocumentTitle' => $this->resolveTitle($acta),
             'equipoPublicUrl' => $equipoPublicUrl,
             'equipoQrSvg' => $this->generateQrSvg($equipoPublicUrl),
         ];
-    }
-
-    private function resolveLogoPdfPath(?string $logoPath): ?string
-    {
-        if ($logoPath === null || $logoPath === '') {
-            return null;
-        }
-
-        if (! Storage::disk('public')->exists($logoPath)) {
-            return null;
-        }
-
-        return Storage::disk('public')->path($logoPath);
     }
 
     private function resolveEquipoForQr(Acta $acta): ?Equipo
