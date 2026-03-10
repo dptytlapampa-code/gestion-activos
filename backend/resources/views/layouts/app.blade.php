@@ -4,28 +4,28 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @php
-        $siteName = $uiSettings['site_name'] ?? config('app.name');
-        $primaryColor = $uiSettings['primary_color'] ?? '#4F46E5';
-        $sidebarColor = $uiSettings['sidebar_color'] ?? '#4338CA';
-        $primaryRgb = $uiSettings['primary_color_rgb'] ?? '79, 70, 229';
-        $sidebarRgb = $uiSettings['sidebar_color_rgb'] ?? '67, 56, 202';
-        $logoUrl = $uiSettings['logo_url'] ?? null;
+        $siteName = $settings->site_name ?? config('app.name');
+        $primaryColor = $settings->primary_color ?? '#4F46E5';
+        $sidebarColor = $settings->sidebar_color ?? '#4338CA';
+        $primaryRgb = $settings->primary_color_rgb ?? '79, 70, 229';
+        $sidebarRgb = $settings->sidebar_color_rgb ?? '67, 56, 202';
+        $logoUrl = $settings->logo_url ?? null;
         $navItemBase = 'app-sidebar-link';
     @endphp
     <title>{{ $siteName }} - @yield('title', 'Panel')</title>
     <style>
         :root {
-            --primary-color: {{ $primaryColor }};
-            --primary-color-rgb: {{ $primaryRgb }};
-            --sidebar-color: {{ $sidebarColor }};
-            --sidebar-color-rgb: {{ $sidebarRgb }};
+            --primary-color: {{ $settings->primary_color ?? '#4F46E5' }};
+            --primary-color-rgb: {{ $settings->primary_color_rgb ?? '79, 70, 229' }};
+            --sidebar-color: {{ $settings->sidebar_color ?? '#4338CA' }};
+            --sidebar-color-rgb: {{ $settings->sidebar_color_rgb ?? '67, 56, 202' }};
         }
     </style>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-800">
     <div class="flex min-h-screen gap-6 p-6">
-        <aside class="app-sidebar">
+        <aside class="app-sidebar sidebar-theme">
             <div class="space-y-3 px-4 py-3">
                 @if ($logoUrl)
                     <img src="{{ $logoUrl }}" alt="Logo institucional" class="h-12 w-auto rounded-lg bg-white/90 p-1">
@@ -149,3 +149,7 @@
     </div>
 </body>
 </html>
+
+
+
+

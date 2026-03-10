@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Http\Controllers\Admin;
 
@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateSystemSettingsRequest;
 use App\Services\SystemSettingsService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Throwable;
 
 class SystemSettingsController extends Controller
 {
@@ -17,19 +19,27 @@ class SystemSettingsController extends Controller
 
     public function index(): View
     {
-        return view('admin.configuracion.general', [
-            'settings' => $this->settingsService->getCurrentSettings(),
-        ]);
+        return view('admin.configuracion.general');
     }
 
     public function update(UpdateSystemSettingsRequest $request): RedirectResponse
     {
-        $validated = $request->validated();
+        try {
+            $this->settingsService->update($request->validated(), $request->file('logo'));
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            report($exception);
 
-        $this->settingsService->update($validated, $request->file('logo'));
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'general' => 'No fue posible guardar la configuración en este momento.',
+                ]);
+        }
 
         return redirect()
             ->route('admin.configuracion.general.edit')
-            ->with('status', 'La configuracion general se actualizo correctamente.');
+            ->with('status', 'Configuración actualizada correctamente.');
     }
 }

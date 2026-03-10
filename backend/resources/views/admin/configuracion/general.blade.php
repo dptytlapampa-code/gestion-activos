@@ -1,12 +1,12 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
-@section('title', 'Configuracion general')
-@section('header', 'Configuracion general')
+@section('title', 'Configuración general')
+@section('header', 'Configuración general')
 
 @section('content')
     @php
-        $primaryColorValue = old('primary_color', $settings['primary_color'] ?? '#4F46E5');
-        $sidebarColorValue = old('sidebar_color', $settings['sidebar_color'] ?? '#4338CA');
+        $primaryColorValue = old('primary_color', data_get($settings, 'primary_color', '#4F46E5'));
+        $sidebarColorValue = old('sidebar_color', data_get($settings, 'sidebar_color', '#4338CA'));
 
         if (! preg_match('/^#(?:[A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/', $primaryColorValue)) {
             $primaryColorValue = '#4F46E5';
@@ -25,6 +25,12 @@
             </p>
         </div>
 
+        @if ($errors->has('general'))
+            <div class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {{ $errors->first('general') }}
+            </div>
+        @endif
+
         <form class="mt-6 space-y-6" method="POST" action="{{ route('admin.configuracion.general.update') }}" enctype="multipart/form-data"
               x-data="{ primaryColor: '{{ $primaryColorValue }}', sidebarColor: '{{ $sidebarColorValue }}' }">
             @csrf
@@ -36,7 +42,7 @@
                     id="site_name"
                     name="site_name"
                     type="text"
-                    value="{{ old('site_name', $settings['site_name'] ?? '') }}"
+                    value="{{ old('site_name', data_get($settings, 'site_name', 'Gestión de Activos')) }}"
                     class="form-control @error('site_name') form-control-error @enderror"
                     maxlength="120"
                     required
@@ -92,26 +98,26 @@
                     id="logo"
                     name="logo"
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp,image/svg+xml"
                     class="form-control @error('logo') form-control-error @enderror"
                 >
-                <p class="mt-2 text-xs text-slate-500">Formatos permitidos: JPG, PNG, WEBP o SVG. Tamano maximo: 2 MB.</p>
+                <p class="mt-2 text-xs text-slate-500">Formatos permitidos: JPG, PNG, WEBP o SVG. Tamaño máximo: 2 MB.</p>
                 @error('logo')
                     <p class="form-error">{{ $message }}</p>
                 @enderror
 
                 <div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
                     <p class="text-sm font-medium text-slate-700">Logo actual</p>
-                    @if (! empty($settings['logo_url']))
-                        <img src="{{ $settings['logo_url'] }}" alt="Logo actual" class="mt-3 h-16 w-auto rounded bg-white p-2 shadow-sm">
+                    @if (data_get($settings, 'logo_url'))
+                        <img src="{{ data_get($settings, 'logo_url') }}" alt="Logo actual" class="mt-3 h-16 w-auto rounded bg-white p-2 shadow-sm">
                     @else
-                        <p class="mt-2 text-sm text-slate-500">Todavia no hay un logo configurado.</p>
+                        <p class="mt-2 text-sm text-slate-500">Todavía no hay un logo configurado.</p>
                     @endif
                 </div>
             </div>
 
             <div class="flex justify-end">
-                <button type="submit" class="btn btn-primary">Guardar configuracion</button>
+                <button type="submit" class="btn-primary-theme rounded-lg px-4 py-2 text-sm font-semibold text-white">Guardar configuración</button>
             </div>
         </form>
     </section>

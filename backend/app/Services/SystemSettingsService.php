@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace App\Services;
 
@@ -8,11 +8,12 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class SystemSettingsService
 {
     private const DEFAULTS = [
-        'site_name' => 'Gestion de Activos',
+        'site_name' => 'Gestión de Activos',
         'primary_color' => '#4F46E5',
         'sidebar_color' => '#4338CA',
         'logo_path' => null,
@@ -23,6 +24,9 @@ class SystemSettingsService
      */
     private ?array $cachedSettings = null;
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getCurrentSettings(): array
     {
         if ($this->cachedSettings !== null) {
@@ -33,8 +37,14 @@ class SystemSettingsService
 
         $settings = [
             'site_name' => $setting?->site_name ?: self::DEFAULTS['site_name'],
-            'primary_color' => $this->normalizeColor($setting?->primary_color ?: self::DEFAULTS['primary_color']),
-            'sidebar_color' => $this->normalizeColor($setting?->sidebar_color ?: self::DEFAULTS['sidebar_color']),
+            'primary_color' => $this->normalizeColor(
+                (string) ($setting?->primary_color ?: self::DEFAULTS['primary_color']),
+                self::DEFAULTS['primary_color']
+            ),
+            'sidebar_color' => $this->normalizeColor(
+                (string) ($setting?->sidebar_color ?: self::DEFAULTS['sidebar_color']),
+                self::DEFAULTS['sidebar_color']
+            ),
             'logo_path' => $setting?->logo_path,
         ];
 
@@ -42,11 +52,14 @@ class SystemSettingsService
         $settings['primary_color_rgb'] = $this->hexToRgbCsv($settings['primary_color']);
         $settings['sidebar_color_rgb'] = $this->hexToRgbCsv($settings['sidebar_color']);
 
-        return $this->cachedSettings = $settings;
+        $this->cachedSettings = $settings;
+
+        return $settings;
     }
 
     /**
      * @param  array<string, mixed>  $input
+     * @return array<string, mixed>
      */
     public function update(array $input, ?UploadedFile $logo = null): array
     {
@@ -55,12 +68,18 @@ class SystemSettingsService
 
             $payload = [
                 'site_name' => trim((string) $input['site_name']) ?: self::DEFAULTS['site_name'],
-                'primary_color' => $this->normalizeColor((string) $input['primary_color']),
-                'sidebar_color' => $this->normalizeColor((string) $input['sidebar_color']),
+                'primary_color' => $this->normalizeColor((string) $input['primary_color'], self::DEFAULTS['primary_color']),
+                'sidebar_color' => $this->normalizeColor((string) $input['sidebar_color'], self::DEFAULTS['sidebar_color']),
             ];
 
             if ($logo !== null) {
-                $newLogoPath = $logo->store('system-settings/logos', 'public');
+                try {
+                    $newLogoPath = $logo->store('system-settings/logos', 'public');
+                } catch (Throwable) {
+                    throw ValidationException::withMessages([
+                        'logo' => 'No fue posible guardar el logo seleccionado.',
+                    ]);
+                }
 
                 if (! is_string($newLogoPath) || $newLogoPath === '') {
                     throw ValidationException::withMessages([
@@ -73,6 +92,7 @@ class SystemSettingsService
 
                 if (
                     $oldLogoPath !== null
+                    && $oldLogoPath !== ''
                     && $oldLogoPath !== $newLogoPath
                     && Storage::disk('public')->exists($oldLogoPath)
                 ) {
@@ -149,12 +169,20 @@ class SystemSettingsService
         return Storage::disk('public')->url($logoPath);
     }
 
-    private function normalizeColor(string $value): string
+    private function normalizeColor(string $value, ?string $fallback = null): string
     {
         $hex = strtoupper(ltrim(trim($value), '#'));
 
-        if (strlen($hex) === 3) {
+        if (preg_match('/^[A-F0-9]{3}$/', $hex) === 1) {
             $hex = sprintf('%s%s%s%s%s%s', $hex[0], $hex[0], $hex[1], $hex[1], $hex[2], $hex[2]);
+        }
+
+        if (preg_match('/^[A-F0-9]{6}$/', $hex) !== 1) {
+            if ($fallback !== null) {
+                return $this->normalizeColor($fallback, null);
+            }
+
+            return self::DEFAULTS['primary_color'];
         }
 
         return '#'.$hex;
@@ -162,7 +190,7 @@ class SystemSettingsService
 
     private function hexToRgbCsv(string $value): string
     {
-        $hex = ltrim($this->normalizeColor($value), '#');
+        $hex = ltrim($this->normalizeColor($value, self::DEFAULTS['primary_color']), '#');
 
         return sprintf(
             '%d, %d, %d',
@@ -172,4 +200,3 @@ class SystemSettingsService
         );
     }
 }
-

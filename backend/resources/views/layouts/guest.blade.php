@@ -4,19 +4,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     @php
-        $siteName = $uiSettings['site_name'] ?? config('app.name');
-        $primaryColor = $uiSettings['primary_color'] ?? '#4F46E5';
-        $sidebarColor = $uiSettings['sidebar_color'] ?? '#4338CA';
-        $primaryRgb = $uiSettings['primary_color_rgb'] ?? '79, 70, 229';
-        $sidebarRgb = $uiSettings['sidebar_color_rgb'] ?? '67, 56, 202';
+        $siteName = $settings->site_name ?? config('app.name');
     @endphp
     <title>{{ $siteName }} - @yield('title', 'Acceso')</title>
     <style>
         :root {
-            --primary-color: {{ $primaryColor }};
-            --primary-color-rgb: {{ $primaryRgb }};
-            --sidebar-color: {{ $sidebarColor }};
-            --sidebar-color-rgb: {{ $sidebarRgb }};
+            --primary-color: {{ $settings->primary_color ?? '#4F46E5' }};
+            --primary-color-rgb: {{ $settings->primary_color_rgb ?? '79, 70, 229' }};
+            --sidebar-color: {{ $settings->sidebar_color ?? '#4338CA' }};
+            --sidebar-color-rgb: {{ $settings->sidebar_color_rgb ?? '67, 56, 202' }};
         }
     </style>
     @vite(['resources/css/app.css', 'resources/js/app.js'])

@@ -4,8 +4,8 @@
 
 @section('content')
     @php
-        $siteName = $uiSettings['site_name'] ?? config('app.name');
-        $logoUrl = $uiSettings['logo_url'] ?? null;
+        $siteName = $settings->site_name ?? config('app.name');
+        $logoUrl = $settings->logo_url ?? null;
     @endphp
 
     <div class="card">
@@ -42,7 +42,7 @@
                     Recordarme
                 </label>
             </div>
-            <button type="submit" class="btn btn-primary w-full">
+            <button type="submit" class="btn-primary-theme w-full rounded-xl px-4 py-2 text-sm font-semibold text-white">
                 Ingresar
             </button>
         </form>

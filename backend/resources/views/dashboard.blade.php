@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Panel')
 @section('header', 'Panel general')
@@ -40,7 +40,7 @@
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <div class="flex items-center gap-4 rounded-xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <svg class="h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+            <svg class="h-8 w-8 text-primary-theme" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 21V6.75A2.25 2.25 0 0 1 7.5 4.5h9a2.25 2.25 0 0 1 2.25 2.25V21M9 9h.008v.008H9V9Zm0 3h.008v.008H9V12Zm0 3h.008v.008H9V15Zm3-6h.008v.008H12V9Zm0 3h.008v.008H12V12Zm0 3h.008v.008H12V15Zm3-6h.008v.008H15V9Zm0 3h.008v.008H15V12Zm0 3h.008v.008H15V15Z" />
             </svg>
             <div>
@@ -50,7 +50,7 @@
         </div>
 
         <div class="flex items-center gap-4 rounded-xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <svg class="h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+            <svg class="h-8 w-8 text-primary-theme" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 21V6.75a2.25 2.25 0 0 1 2.25-2.25h3a2.25 2.25 0 0 1 2.25 2.25V21m-7.5 0h7.5m-7.5 0H4.875A1.125 1.125 0 0 1 3.75 19.875V11.25c0-.621.504-1.125 1.125-1.125h2.25m8.25 10.875h3.75a1.125 1.125 0 0 0 1.125-1.125V11.25a1.125 1.125 0 0 0-1.125-1.125h-2.25M9 9.75h.008v.008H9V9.75Zm0 3h.008v.008H9v-.008Zm0 3h.008v.008H9v-.008Zm3-6h.008v.008H12V9.75Zm0 3h.008v.008H12v-.008Zm0 3h.008v.008H12v-.008Zm3-6h.008v.008H15V9.75Zm0 3h.008v.008H15v-.008Zm0 3h.008v.008H15v-.008Z" />
             </svg>
             <div>
@@ -60,7 +60,7 @@
         </div>
 
         <div class="flex items-center gap-4 rounded-xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <svg class="h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+            <svg class="h-8 w-8 text-primary-theme" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 5.25h16.5a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H3.75a1.5 1.5 0 0 1-1.5-1.5v-9a1.5 1.5 0 0 1 1.5-1.5ZM9.75 20.25h4.5M10.5 17.25l-.75 3m4.5-3 .75 3" />
             </svg>
             <div>
@@ -70,7 +70,7 @@
         </div>
 
         <div class="flex items-center gap-4 rounded-xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <svg class="h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+            <svg class="h-8 w-8 text-primary-theme" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="m11.42 15.17 6.375 6.375a1.875 1.875 0 0 0 2.652-2.652l-6.375-6.375m-6.75 6.75 6.375-6.375m0 0L8.625 3.67a1.875 1.875 0 0 0-2.652 2.652l6.375 6.375m0 0 3.182-3.182m-6.364 6.364 3.182-3.182" />
             </svg>
             <div>
@@ -143,7 +143,7 @@
                             <p>{{ $acta->created_at?->diffForHumans() }}</p>
                             <p>{{ $acta->creator?->name ?? 'Usuario' }}</p>
                         </div>
-                        <a href="{{ route('actas.show', $acta) }}" class="rounded-md bg-indigo-50 px-3 py-1 text-sm text-indigo-600 transition hover:bg-indigo-100">Ver</a>
+                        <a href="{{ route('actas.show', $acta) }}" class="rounded-md bg-primary-soft-theme px-3 py-1 text-sm text-primary-theme transition hover-bg-primary-soft-theme">Ver</a>
                     </div>
                 @empty
                     <p class="text-sm text-slate-500">No hay actas recientes.</p>
@@ -152,5 +152,6 @@
         </aside>
     </div>
 @endsection
+
 
 

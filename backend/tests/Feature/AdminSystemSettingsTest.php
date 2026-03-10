@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Tests\Feature;
 
@@ -20,7 +20,7 @@ class AdminSystemSettingsTest extends TestCase
         $this->actingAs($superadmin)
             ->get(route('admin.configuracion.general.edit'))
             ->assertOk()
-            ->assertSee('Configuracion general');
+            ->assertSee('Configuración general');
     }
 
     public function test_usuario_no_superadmin_recibe_403_en_modulo_configuracion_general(): void
@@ -51,7 +51,7 @@ class AdminSystemSettingsTest extends TestCase
                 'sidebar_color' => '#334455',
             ])
             ->assertRedirect(route('admin.configuracion.general.edit'))
-            ->assertSessionHas('status', 'La configuracion general se actualizo correctamente.');
+            ->assertSessionHas('status', 'Configuración actualizada correctamente.');
 
         $this->assertDatabaseHas('system_settings', [
             'site_name' => 'Hospital Regional Norte',
@@ -110,3 +110,5 @@ class AdminSystemSettingsTest extends TestCase
         ]);
     }
 }
+
+

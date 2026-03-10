@@ -1,4 +1,4 @@
-@csrf
+﻿@csrf
 <div class="grid gap-4 md:grid-cols-2">
     <div>
         <label class="text-sm" for="name">Nombre</label>
@@ -41,4 +41,5 @@
         @error('institution_id')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
     </div>
 </div>
-<button class="mt-4 rounded bg-indigo-600 px-4 py-2 text-white">Guardar</button>
+<button class="mt-4 rounded bg-primary-theme px-4 py-2 text-white">Guardar</button>
+

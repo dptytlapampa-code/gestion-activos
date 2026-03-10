@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Movimiento / Transferir')
 @section('header', 'Movimiento / Transferir')
@@ -46,11 +46,11 @@
         <div>
             <label for="tipo_movimiento" class="mb-1 block text-sm font-medium text-slate-700">Tipo de movimiento</label>
             <select id="tipo_movimiento" name="tipo_movimiento" required x-model="tipo_movimiento" @change="onTipoChange" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option value="">Seleccione una opción</option>
+                <option value="">Seleccione una opciÃ³n</option>
                 <option value="transferencia_interna">Transferencia interna</option>
                 <option value="transferencia_externa">Transferencia externa</option>
-                <option value="prestamo">Préstamo</option>
-                <option value="devolucion">Devolución</option>
+                <option value="prestamo">PrÃ©stamo</option>
+                <option value="devolucion">DevoluciÃ³n</option>
                 <option value="mantenimiento">Mantenimiento</option>
                 <option value="baja">Baja</option>
             </select>
@@ -59,7 +59,7 @@
 
         <div x-show="tipo_movimiento === 'transferencia_interna' || tipo_movimiento === 'transferencia_externa'" x-cloak class="grid gap-4 md:grid-cols-3">
             <div>
-                <label for="institucion_destino_id" class="mb-1 block text-sm font-medium text-slate-700">Institución destino</label>
+                <label for="institucion_destino_id" class="mb-1 block text-sm font-medium text-slate-700">InstituciÃ³n destino</label>
                 <select id="institucion_destino_id" name="institucion_destino_id" :required="tipo_movimiento === 'transferencia_interna' || tipo_movimiento === 'transferencia_externa'" x-model="institucion_destino_id" @change="onInstitutionChange" :disabled="tipo_movimiento === 'transferencia_interna'" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
                     <option value="">Seleccionar...</option>
                     @foreach ($instituciones as $institucion)
@@ -91,22 +91,23 @@
             <div><label class="mb-1 block text-sm">DNI</label><input type="text" name="receptor_dni" value="{{ old('receptor_dni') }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></div>
             <div><label class="mb-1 block text-sm">Cargo</label><input type="text" name="receptor_cargo" value="{{ old('receptor_cargo') }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></div>
             <div><label class="mb-1 block text-sm">Fecha inicio</label><input type="date" name="fecha_inicio_prestamo" value="{{ old('fecha_inicio_prestamo') }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></div>
-            <div><label class="mb-1 block text-sm">Fecha estimada devolución</label><input type="date" name="fecha_estimada_devolucion" value="{{ old('fecha_estimada_devolucion') }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></div>
+            <div><label class="mb-1 block text-sm">Fecha estimada devoluciÃ³n</label><input type="date" name="fecha_estimada_devolucion" value="{{ old('fecha_estimada_devolucion') }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"></div>
             @foreach (['receptor_nombre','receptor_dni','receptor_cargo','fecha_inicio_prestamo','fecha_estimada_devolucion'] as $field)
                 @error($field)<p class="text-sm text-red-600">{{ $message }}</p>@enderror
             @endforeach
         </div>
 
         <div>
-            <label for="observacion" class="mb-1 block text-sm font-medium text-slate-700">Observación</label>
+            <label for="observacion" class="mb-1 block text-sm font-medium text-slate-700">ObservaciÃ³n</label>
             <textarea id="observacion" name="observacion" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">{{ old('observacion') }}</textarea>
             @error('observacion')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
         </div>
 
         <div class="flex gap-3">
             <a href="{{ route('equipos.show', $equipo) }}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm">Cancelar</a>
-            <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white">Guardar movimiento</button>
+            <button type="submit" class="rounded-lg bg-primary-theme px-4 py-2 text-sm font-semibold text-white">Guardar movimiento</button>
         </div>
     </form>
 </div>
 @endsection
+

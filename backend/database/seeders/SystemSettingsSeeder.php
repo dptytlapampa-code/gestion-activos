@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 namespace Database\Seeders;
 
@@ -10,7 +10,7 @@ class SystemSettingsSeeder extends Seeder
     public function run(): void
     {
         $defaults = [
-            'site_name' => 'Gestion de Activos',
+            'site_name' => 'Gestión de Activos',
             'primary_color' => '#4F46E5',
             'sidebar_color' => '#4338CA',
             'logo_path' => null,
@@ -36,4 +36,3 @@ class SystemSettingsSeeder extends Seeder
             ->delete();
     }
 }
-
