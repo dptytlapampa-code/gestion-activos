@@ -3,35 +3,46 @@
 @section('title', 'Ingreso')
 
 @section('content')
+    @php
+        $siteName = $uiSettings['site_name'] ?? config('app.name');
+        $logoUrl = $uiSettings['logo_url'] ?? null;
+    @endphp
+
     <div class="card">
-        <h1 class="text-xl font-semibold text-surface-800">Acceso al sistema</h1>
-        <p class="mt-1 text-sm text-surface-500">Ingresa con tus credenciales institucionales.</p>
+        <div class="flex flex-col items-center text-center">
+            @if ($logoUrl)
+                <img src="{{ $logoUrl }}" alt="Logo institucional" class="h-16 w-auto rounded-lg bg-slate-100 p-2">
+            @endif
+            <h1 class="mt-3 text-xl font-semibold text-surface-800">{{ $siteName }}</h1>
+            <p class="mt-1 text-sm text-surface-500">Acceso al sistema</p>
+            <p class="mt-1 text-sm text-surface-500">Ingresa con tus credenciales institucionales.</p>
+        </div>
 
         <form class="mt-6 space-y-4" method="POST" action="{{ route('login.store') }}">
             @csrf
             <div>
                 <label class="text-sm font-medium text-surface-600" for="email">Correo</label>
                 <input id="email" name="email" type="email" required autofocus value="{{ old('email') }}"
-                    class="mt-1 w-full rounded-xl border bg-surface-50 px-3 py-2 text-sm text-surface-700 shadow-sm focus:outline-none focus:ring-2 @error('email') border-red-300 focus:border-red-400 focus:ring-red-100 @else border-surface-200 focus:border-primary-400 focus:ring-primary-200 @enderror" />
+                    class="form-control @error('email') form-control-error @enderror" />
                 @error('email')
-                    <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    <p class="form-error">{{ $message }}</p>
                 @enderror
             </div>
             <div>
                 <label class="text-sm font-medium text-surface-600" for="password">Contrasena</label>
                 <input id="password" name="password" type="password" required
-                    class="mt-1 w-full rounded-xl border bg-surface-50 px-3 py-2 text-sm text-surface-700 shadow-sm focus:outline-none focus:ring-2 @error('password') border-red-300 focus:border-red-400 focus:ring-red-100 @else border-surface-200 focus:border-primary-400 focus:ring-primary-200 @enderror" />
+                    class="form-control @error('password') form-control-error @enderror" />
                 @error('password')
-                    <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                    <p class="form-error">{{ $message }}</p>
                 @enderror
             </div>
             <div class="flex items-center justify-between text-sm text-surface-500">
                 <label class="flex items-center gap-2">
-                    <input type="checkbox" name="remember" class="rounded border-surface-300 text-primary-500 focus:ring-primary-300" />
+                    <input type="checkbox" name="remember" class="rounded border-surface-300" />
                     Recordarme
                 </label>
             </div>
-            <button type="submit" class="w-full rounded-xl bg-primary-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-600">
+            <button type="submit" class="btn btn-primary w-full">
                 Ingresar
             </button>
         </form>

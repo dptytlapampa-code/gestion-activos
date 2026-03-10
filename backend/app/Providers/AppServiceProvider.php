@@ -6,8 +6,8 @@ use App\Models\Acta;
 use App\Models\Document;
 use App\Models\Equipo;
 use App\Models\EquipoStatus;
-use App\Models\Mantenimiento;
 use App\Models\Institution;
+use App\Models\Mantenimiento;
 use App\Models\Movimiento;
 use App\Models\Office;
 use App\Models\Service;
@@ -17,14 +17,16 @@ use App\Policies\ActaPolicy;
 use App\Policies\DocumentPolicy;
 use App\Policies\EquipoPolicy;
 use App\Policies\EquipoStatusPolicy;
-use App\Policies\MantenimientoPolicy;
 use App\Policies\InstitutionPolicy;
+use App\Policies\MantenimientoPolicy;
 use App\Policies\MovimientoPolicy;
 use App\Policies\OfficePolicy;
 use App\Policies\ServicePolicy;
 use App\Policies\TipoEquipoPolicy;
 use App\Policies\UserPolicy;
+use App\Services\SystemSettingsService;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -49,5 +51,16 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(User::class, UserPolicy::class);
 
         Gate::define('manage-users', [UserPolicy::class, 'manageUsers']);
+        Gate::define('manage-system-settings', fn (User $user): bool => $user->hasRole(User::ROLE_SUPERADMIN));
+
+        View::composer('*', function ($view): void {
+            static $settings = null;
+
+            if ($settings === null) {
+                $settings = app(SystemSettingsService::class)->getCurrentSettings();
+            }
+
+            $view->with('uiSettings', $settings);
+        });
     }
 }

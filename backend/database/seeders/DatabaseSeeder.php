@@ -10,7 +10,11 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->call(EquipoStatusSeeder::class);
+        $this->call([
+            EquipoStatusSeeder::class,
+            SystemSettingsSeeder::class,
+        ]);
+
         User::updateOrCreate([
             'email' => 'admin@local.test',
         ], [
@@ -24,7 +28,8 @@ class DatabaseSeeder extends Seeder
         Institution::firstOrCreate([
             'nombre' => 'Hospital General Central',
         ], [
-            'descripcion' => 'Institución de referencia para la red de salud.',
+            'descripcion' => 'Institucion de referencia para la red de salud.',
         ]);
     }
 }
+
