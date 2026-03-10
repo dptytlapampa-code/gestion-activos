@@ -57,10 +57,12 @@ class AppServiceProvider extends ServiceProvider
             static $settings = null;
 
             if ($settings === null) {
-                $settings = app(SystemSettingsService::class)->getCurrentSettings();
+                $settings = (object) app(SystemSettingsService::class)->getCurrentSettings();
             }
 
-            $view->with('uiSettings', $settings);
+            $view->with('settings', $settings);
+            $view->with('uiSettings', (array) $settings);
         });
     }
 }
+
