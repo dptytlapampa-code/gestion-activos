@@ -77,26 +77,32 @@ class AdminSystemSettingsTest extends TestCase
             ->assertSessionHasErrors(['primary_color', 'sidebar_color']);
     }
 
-    public function test_superadmin_puede_subir_logo(): void
+    public function test_superadmin_puede_subir_logos_institucional_y_pdf(): void
     {
         Storage::fake('public');
 
         $superadmin = $this->crearUsuario(User::ROLE_SUPERADMIN);
-        $logo = UploadedFile::fake()->image('logo.png', 240, 240);
+        $logoInstitucional = UploadedFile::fake()->image('institucional.png', 240, 240);
+        $logoPdf = UploadedFile::fake()->image('pdf.png', 480, 160);
 
         $this->actingAs($superadmin)
             ->put(route('admin.configuracion.general.update'), [
                 'site_name' => 'Hospital Regional Norte',
                 'primary_color' => '#112233',
                 'sidebar_color' => '#334455',
-                'logo' => $logo,
+                'logo_institucional' => $logoInstitucional,
+                'logo_pdf' => $logoPdf,
             ])
             ->assertRedirect(route('admin.configuracion.general.edit'));
 
         $setting = SystemSetting::query()->firstOrFail();
 
-        $this->assertNotNull($setting->logo_path);
-        Storage::disk('public')->assertExists($setting->logo_path);
+        $this->assertSame('logos/institucional.png', $setting->logo_institucional);
+        $this->assertSame('logos/institucional.png', $setting->logo_path);
+        $this->assertSame('logos/pdf.png', $setting->logo_pdf);
+
+        Storage::disk('public')->assertExists('logos/institucional.png');
+        Storage::disk('public')->assertExists('logos/pdf.png');
     }
 
     private function crearUsuario(string $role): User

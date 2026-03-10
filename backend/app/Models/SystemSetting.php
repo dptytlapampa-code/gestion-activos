@@ -11,5 +11,7 @@ class SystemSetting extends Model
         'primary_color',
         'sidebar_color',
         'logo_path',
+        'logo_institucional',
+        'logo_pdf',
     ];
 }

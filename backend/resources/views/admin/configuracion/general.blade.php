@@ -21,7 +21,7 @@
         <div>
             <h3 class="text-lg font-semibold text-slate-800">General</h3>
             <p class="mt-1 text-sm text-slate-600">
-                Define la identidad visual institucional del sistema. Estos cambios afectan el layout, sidebar y pantalla de ingreso.
+                Define la identidad visual institucional del sistema. Los logos se almacenan en <code>/storage/logos/</code> usando el filesystem publico de Laravel.
             </p>
         </div>
 
@@ -86,28 +86,58 @@
                 </div>
             </div>
 
-            <div>
-                <label for="logo" class="text-sm font-medium text-slate-700">Logo institucional</label>
-                <input
-                    id="logo"
-                    name="logo"
-                    type="file"
-                    accept="image/*"
-                    class="form-control @error('logo') form-control-error @enderror"
-                >
-                <p class="mt-2 text-xs text-slate-500">Formatos permitidos: JPG, PNG, WEBP o SVG. Tamano maximo: 2 MB.</p>
-                @error('logo')
-                    <p class="form-error">{{ $message }}</p>
-                @enderror
+            <div class="grid gap-6 lg:grid-cols-2">
+                <div>
+                    <label for="logo_institucional" class="text-sm font-medium text-slate-700">Logo institucional (sidebar)</label>
+                    <input
+                        id="logo_institucional"
+                        name="logo_institucional"
+                        type="file"
+                        accept="image/png"
+                        class="form-control @error('logo_institucional') form-control-error @enderror"
+                    >
+                    <p class="mt-2 text-xs text-slate-500">Formato requerido: PNG. Archivo final: <code>storage/app/public/logos/institucional.png</code>.</p>
+                    @error('logo_institucional')
+                        <p class="form-error">{{ $message }}</p>
+                    @enderror
 
-                <div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-                    <p class="text-sm font-medium text-slate-700">Logo actual</p>
-                    @if (! empty($settings->logo_url))
-                        <img src="{{ $settings->logo_url }}" alt="Logo actual" class="mt-3 h-16 w-auto rounded bg-white p-2 shadow-sm">
-                    @else
-                        <p class="mt-2 text-sm text-slate-500">Todavia no hay un logo configurado.</p>
-                    @endif
+                    <div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                        <p class="text-sm font-medium text-slate-700">Logo institucional actual</p>
+                        @if (! empty($settings->logo_institucional_url))
+                            <img src="{{ $settings->logo_institucional_url }}" alt="Logo institucional" class="mt-3 h-16 w-auto rounded bg-white p-2 shadow-sm">
+                        @else
+                            <p class="mt-2 text-sm text-slate-500">Todavia no hay un logo institucional configurado.</p>
+                        @endif
+                    </div>
                 </div>
+
+                <div>
+                    <label for="logo_pdf" class="text-sm font-medium text-slate-700">Logo para PDFs y actas</label>
+                    <input
+                        id="logo_pdf"
+                        name="logo_pdf"
+                        type="file"
+                        accept="image/png"
+                        class="form-control @error('logo_pdf') form-control-error @enderror"
+                    >
+                    <p class="mt-2 text-xs text-slate-500">Formato requerido: PNG. Archivo final: <code>storage/app/public/logos/pdf.png</code>.</p>
+                    @error('logo_pdf')
+                        <p class="form-error">{{ $message }}</p>
+                    @enderror
+
+                    <div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                        <p class="text-sm font-medium text-slate-700">Logo PDF actual</p>
+                        @if (! empty($settings->logo_pdf_url))
+                            <img src="{{ $settings->logo_pdf_url }}" alt="Logo PDF" class="mt-3 h-16 w-auto rounded bg-white p-2 shadow-sm">
+                        @else
+                            <p class="mt-2 text-sm text-slate-500">Todavia no hay un logo para PDFs configurado.</p>
+                        @endif
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+                Para exponer los archivos publicamente, ejecute <code>php artisan storage:link</code>. Las URLs quedaran bajo <code>/storage/logos/...</code>.
             </div>
 
             <div class="flex justify-end">
@@ -116,4 +146,3 @@
         </form>
     </section>
 @endsection
-

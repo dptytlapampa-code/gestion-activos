@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\Equipo;
 use App\Models\Institution;
 use App\Models\User;
+use App\Services\ActaPdfDataService;
 use App\Services\ActaTraceabilityService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,7 +20,10 @@ use Illuminate\Validation\Rule;
 
 class ActaController extends Controller
 {
-    public function __construct(private readonly ActaTraceabilityService $traceabilityService) {}
+    public function __construct(
+        private readonly ActaTraceabilityService $traceabilityService,
+        private readonly ActaPdfDataService $actaPdfDataService,
+    ) {}
 
     public function index(Request $request)
     {
@@ -215,7 +219,9 @@ class ActaController extends Controller
             'equipos.tipoEquipo',
         ]);
 
-        $pdf = Pdf::loadView('actas.pdf.'.$acta->tipo, ['acta' => $acta])->setPaper('a4');
+        $pdfData = array_merge(['acta' => $acta], $this->actaPdfDataService->build($acta));
+
+        $pdf = Pdf::loadView('actas.pdf.'.$acta->tipo, $pdfData)->setPaper('a4');
 
         return $pdf->download($acta->codigo.'.pdf');
     }

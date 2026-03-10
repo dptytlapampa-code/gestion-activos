@@ -26,7 +26,11 @@ class SystemSettingsController extends Controller
     {
         $validated = $request->validated();
 
-        $this->settingsService->update($validated, $request->file('logo'));
+        $this->settingsService->update(
+            $validated,
+            $request->file('logo_institucional') ?? $request->file('logo'),
+            $request->file('logo_pdf'),
+        );
 
         return redirect()
             ->route('admin.configuracion.general.edit')
