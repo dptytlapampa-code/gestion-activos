@@ -5,8 +5,8 @@
 
 @section('content')
     @php
-        $primaryColorValue = old('primary_color', $settings['primary_color'] ?? '#4F46E5');
-        $sidebarColorValue = old('sidebar_color', $settings['sidebar_color'] ?? '#4338CA');
+        $primaryColorValue = old('primary_color', $settings->primary_color ?? '#4F46E5');
+        $sidebarColorValue = old('sidebar_color', $settings->sidebar_color ?? '#4338CA');
 
         if (! preg_match('/^#(?:[A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})$/', $primaryColorValue)) {
             $primaryColorValue = '#4F46E5';
@@ -36,7 +36,7 @@
                     id="site_name"
                     name="site_name"
                     type="text"
-                    value="{{ old('site_name', $settings['site_name'] ?? '') }}"
+                    value="{{ old('site_name', $settings->site_name ?? '') }}"
                     class="form-control @error('site_name') form-control-error @enderror"
                     maxlength="120"
                     required
@@ -102,8 +102,8 @@
 
                 <div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
                     <p class="text-sm font-medium text-slate-700">Logo actual</p>
-                    @if (! empty($settings['logo_url']))
-                        <img src="{{ $settings['logo_url'] }}" alt="Logo actual" class="mt-3 h-16 w-auto rounded bg-white p-2 shadow-sm">
+                    @if (! empty($settings->logo_url))
+                        <img src="{{ $settings->logo_url }}" alt="Logo actual" class="mt-3 h-16 w-auto rounded bg-white p-2 shadow-sm">
                     @else
                         <p class="mt-2 text-sm text-slate-500">Todavia no hay un logo configurado.</p>
                     @endif
@@ -116,3 +116,4 @@
         </form>
     </section>
 @endsection
+
