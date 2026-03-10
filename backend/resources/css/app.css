@@ -5,10 +5,6 @@
 @layer base {
     :root {
         color-scheme: light;
-        --primary-color: #4F46E5;
-        --primary-color-rgb: 79, 70, 229;
-        --sidebar-color: #4338CA;
-        --sidebar-color-rgb: 67, 56, 202;
     }
 
     :root.dark {

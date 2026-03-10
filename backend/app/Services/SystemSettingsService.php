@@ -8,6 +8,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use stdClass;
 
 class SystemSettingsService
 {
@@ -18,12 +19,9 @@ class SystemSettingsService
         'logo_path' => null,
     ];
 
-    /**
-     * @var array<string, mixed>|null
-     */
-    private ?array $cachedSettings = null;
+    private ?stdClass $cachedSettings = null;
 
-    public function getCurrentSettings(): array
+    public function getCurrentSettings(): stdClass
     {
         if ($this->cachedSettings !== null) {
             return $this->cachedSettings;
@@ -42,13 +40,13 @@ class SystemSettingsService
         $settings['primary_color_rgb'] = $this->hexToRgbCsv($settings['primary_color']);
         $settings['sidebar_color_rgb'] = $this->hexToRgbCsv($settings['sidebar_color']);
 
-        return $this->cachedSettings = $settings;
+        return $this->cachedSettings = (object) $settings;
     }
 
     /**
      * @param  array<string, mixed>  $input
      */
-    public function update(array $input, ?UploadedFile $logo = null): array
+    public function update(array $input, ?UploadedFile $logo = null): stdClass
     {
         DB::transaction(function () use ($input, $logo): void {
             $setting = $this->lockSingletonForUpdate();
@@ -172,4 +170,3 @@ class SystemSettingsService
         );
     }
 }
-
