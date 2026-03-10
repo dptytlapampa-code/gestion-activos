@@ -45,6 +45,7 @@
                     <th class="px-4 py-3">Codigo</th>
                     <th class="px-4 py-3">Tipo</th>
                     <th class="px-4 py-3">Fecha</th>
+                    <th class="px-4 py-3">Estado</th>
                     <th class="px-4 py-3">Responsable</th>
                     <th class="px-4 py-3">Equipos</th>
                     <th class="px-4 py-3"></th>
@@ -52,10 +53,16 @@
             </thead>
             <tbody class="divide-y divide-slate-100">
                 @forelse ($actas as $acta)
+                    @php($isAnulada = ($acta->status ?? \App\Models\Acta::STATUS_ACTIVA) === \App\Models\Acta::STATUS_ANULADA)
                     <tr>
                         <td class="px-4 py-3">{{ $acta->codigo }}</td>
                         <td class="px-4 py-3">{{ $tipoLabels[$acta->tipo] ?? strtoupper($acta->tipo) }}</td>
                         <td class="px-4 py-3">{{ $acta->fecha?->format('d/m/Y') }}</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold {{ $isAnulada ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700' }}">
+                                {{ $isAnulada ? 'Anulada' : 'Activa' }}
+                            </span>
+                        </td>
                         <td class="px-4 py-3">{{ $acta->receptor_nombre ?: '-' }}</td>
                         <td class="px-4 py-3">{{ $acta->equipos_count }}</td>
                         <td class="px-4 py-3 text-right">
@@ -65,7 +72,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-4 py-6 text-center text-slate-500">No hay actas registradas.</td>
+                        <td colspan="7" class="px-4 py-6 text-center text-slate-500">No hay actas registradas.</td>
                     </tr>
                 @endforelse
             </tbody>

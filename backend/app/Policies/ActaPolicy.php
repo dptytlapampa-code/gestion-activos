@@ -27,4 +27,10 @@ class ActaPolicy
     {
         return $user->hasRole(User::ROLE_ADMIN);
     }
+
+    public function anular(User $user, Acta $acta): bool
+    {
+        return $user->hasRole(User::ROLE_ADMIN)
+            && (int) $user->institution_id === (int) $acta->institution_id;
+    }
 }

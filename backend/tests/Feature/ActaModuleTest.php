@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Acta;
+use App\Models\AuditLog;
 use App\Models\Document;
 use App\Models\Equipo;
 use App\Models\Institution;
@@ -295,6 +296,110 @@ class ActaModuleTest extends TestCase
         ])->assertForbidden();
     }
 
+    public function test_admin_puede_anular_acta_y_registra_auditoria(): void
+    {
+        Storage::fake();
+
+        [$admin, , , $officeA] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
+
+        $this->actingAs($admin)->post(route('actas.store'), [
+            'tipo' => Acta::TIPO_PRESTAMO,
+            'fecha' => now()->toDateString(),
+            'receptor_nombre' => 'Persona prueba',
+            'equipos' => [
+                ['equipo_id' => $equipo->id, 'cantidad' => 1],
+            ],
+        ])->assertRedirect();
+
+        $acta = Acta::query()->firstOrFail();
+
+        $this->actingAs($admin)->post(route('actas.anular', $acta), [
+            'motivo_anulacion' => 'Error administrativo en la carga',
+        ])->assertRedirect(route('actas.show', $acta));
+
+        $this->assertDatabaseHas('actas', [
+            'id' => $acta->id,
+            'status' => Acta::STATUS_ANULADA,
+            'anulada_por' => $admin->id,
+            'motivo_anulacion' => 'Error administrativo en la carga',
+        ]);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $admin->id,
+            'action' => 'acta anulada',
+            'auditable_type' => Acta::class,
+            'auditable_id' => $acta->id,
+        ]);
+
+        $log = AuditLog::query()->where('action', 'acta anulada')->first();
+        $this->assertSame(Acta::STATUS_ANULADA, $log?->after['status'] ?? null);
+    }
+
+    public function test_anulacion_requiere_motivo(): void
+    {
+        Storage::fake();
+
+        [$admin, , , $officeA] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
+
+        $this->actingAs($admin)->post(route('actas.store'), [
+            'tipo' => Acta::TIPO_PRESTAMO,
+            'fecha' => now()->toDateString(),
+            'receptor_nombre' => 'Persona prueba',
+            'equipos' => [
+                ['equipo_id' => $equipo->id, 'cantidad' => 1],
+            ],
+        ])->assertRedirect();
+
+        $acta = Acta::query()->firstOrFail();
+
+        $this->actingAs($admin)->post(route('actas.anular', $acta), [
+            'motivo_anulacion' => '',
+        ])->assertSessionHasErrors('motivo_anulacion');
+
+        $this->assertDatabaseHas('actas', [
+            'id' => $acta->id,
+            'status' => Acta::STATUS_ACTIVA,
+        ]);
+    }
+
+    public function test_viewer_no_puede_anular_acta(): void
+    {
+        Storage::fake();
+
+        [$admin, , , $officeA] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
+
+        $this->actingAs($admin)->post(route('actas.store'), [
+            'tipo' => Acta::TIPO_PRESTAMO,
+            'fecha' => now()->toDateString(),
+            'receptor_nombre' => 'Persona prueba',
+            'equipos' => [
+                ['equipo_id' => $equipo->id, 'cantidad' => 1],
+            ],
+        ])->assertRedirect();
+
+        $acta = Acta::query()->firstOrFail();
+
+        $viewer = User::create([
+            'name' => 'Viewer',
+            'email' => uniqid('viewer_').'@test.com',
+            'password' => '123456',
+            'role' => User::ROLE_VIEWER,
+            'institution_id' => $officeA->service->institution_id,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($viewer)->post(route('actas.anular', $acta), [
+            'motivo_anulacion' => 'No autorizado',
+        ])->assertForbidden();
+
+        $this->assertDatabaseHas('actas', [
+            'id' => $acta->id,
+            'status' => Acta::STATUS_ACTIVA,
+        ]);
+    }
     private function crearEscenarioBase(string $suffix = 'A'): array
     {
         $institution = Institution::create(['nombre' => 'Hospital '.$suffix]);
