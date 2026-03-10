@@ -22,7 +22,11 @@ RUN apt-get update \
         unzip \
         libpq-dev \
         libzip-dev \
-    && docker-php-ext-install pdo_pgsql zip \
+        libpng-dev \
+        libjpeg-dev \
+        libfreetype6-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo_pgsql zip gd \
     && rm -rf /var/lib/apt/lists/*
 
 COPY backend /var/www/app
