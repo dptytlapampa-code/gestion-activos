@@ -52,17 +52,64 @@
     }
 
     .app-sidebar-link {
-        @apply flex items-center gap-3 rounded-lg px-4 py-2 text-white/90 transition;
+        @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/85 transition-all duration-200 ease-out;
     }
 
     .app-sidebar-link:hover {
         @apply text-white;
-        background-color: rgba(255, 255, 255, 0.14);
+        background-color: rgba(255, 255, 255, 0.12);
     }
 
     .app-sidebar-link-active {
         @apply text-white;
-        background-color: var(--primary-color);
+        background-color: rgba(var(--primary-color-rgb), 0.55);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+    }
+
+    .app-sidebar-divider {
+        @apply my-2 border-t border-white/15;
+    }
+
+    .app-sidebar-group-button {
+        @apply flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-white/85 transition-all duration-200 ease-out;
+    }
+
+    .app-sidebar-group-button:hover {
+        @apply text-white;
+        background-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .app-sidebar-group-button-active {
+        @apply text-white;
+        background-color: rgba(var(--primary-color-rgb), 0.45);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+    }
+
+    .app-sidebar-group-chevron {
+        @apply ml-auto h-4 w-4 text-white/75 transition-transform duration-300 ease-out;
+    }
+
+    .app-sidebar-submenu {
+        @apply overflow-hidden pl-2 pr-1 transition-[max-height,opacity,margin] duration-300 ease-out;
+    }
+
+    .app-sidebar-submenu-inner {
+        @apply ml-4 space-y-1 border-l border-white/20 pl-3;
+    }
+
+    .app-sidebar-sublink {
+        @apply flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-white/80 transition-all duration-200 ease-out;
+    }
+
+    .app-sidebar-sublink:hover {
+        @apply text-white;
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .app-sidebar-sublink-active {
+        @apply text-white;
+        background-color: rgba(var(--primary-color-rgb), 0.55);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
     }
 
     .nav-link {
@@ -258,3 +305,4 @@
         background-color: rgba(var(--primary-color-rgb), 0.08) !important;
     }
 }
+
