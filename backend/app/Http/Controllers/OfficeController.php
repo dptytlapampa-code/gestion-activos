@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreOfficeRequest;
+use App\Http\Requests\UpdateOfficeRequest;
+use App\Models\Institution;
 use App\Models\Office;
 use App\Models\Service;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class OfficeController extends Controller
@@ -45,43 +47,21 @@ class OfficeController extends Controller
     {
         $user = $request->user();
 
-        $services = Service::query()
-            ->with('institution')
-            ->when(
-                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-                fn ($query) => $query->where('institution_id', $user->institution_id)
-            )
-            ->orderBy('nombre')
-            ->get();
-
         return view('offices.create', [
-            'services' => $services,
+            'institutions' => $this->scopedInstitutions($user),
+            'services' => $this->scopedServices($user),
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreOfficeRequest $request): RedirectResponse
     {
-        $user = $request->user();
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'service_id' => [
-                'required',
-                'integer',
-                Rule::exists('services', 'id')->when(
-                    $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-                    fn ($query) => $query->where('institution_id', $user->institution_id)
-                ),
-            ],
-            'nombre' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('offices', 'nombre')->where('service_id', $request->input('service_id')),
-            ],
-            'descripcion' => ['nullable', 'string', 'max:2000'],
+        Office::create([
+            'service_id' => $validated['service_id'],
+            'nombre' => $validated['nombre'],
+            'descripcion' => $validated['descripcion'] ?? null,
         ]);
-
-        Office::create($validated);
 
         return redirect()
             ->route('offices.index')
@@ -92,28 +72,20 @@ class OfficeController extends Controller
     {
         $user = $request->user();
 
-        $office->loadMissing('service');
+        $office->loadMissing('service.institution');
 
         if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && (int) $office->service?->institution_id !== (int) $user->institution_id) {
             abort(403);
         }
 
-        $services = Service::query()
-            ->with('institution')
-            ->when(
-                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-                fn ($query) => $query->where('institution_id', $user->institution_id)
-            )
-            ->orderBy('nombre')
-            ->get();
-
         return view('offices.edit', [
             'office' => $office,
-            'services' => $services,
+            'institutions' => $this->scopedInstitutions($user),
+            'services' => $this->scopedServices($user),
         ]);
     }
 
-    public function update(Request $request, Office $office): RedirectResponse
+    public function update(UpdateOfficeRequest $request, Office $office): RedirectResponse
     {
         $user = $request->user();
 
@@ -123,27 +95,13 @@ class OfficeController extends Controller
             abort(403);
         }
 
-        $validated = $request->validate([
-            'service_id' => [
-                'required',
-                'integer',
-                Rule::exists('services', 'id')->when(
-                    $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-                    fn ($query) => $query->where('institution_id', $user->institution_id)
-                ),
-            ],
-            'nombre' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('offices', 'nombre')
-                    ->where('service_id', $request->input('service_id'))
-                    ->ignore($office->id),
-            ],
-            'descripcion' => ['nullable', 'string', 'max:2000'],
-        ]);
+        $validated = $request->validated();
 
-        $office->update($validated);
+        $office->update([
+            'service_id' => $validated['service_id'],
+            'nombre' => $validated['nombre'],
+            'descripcion' => $validated['descripcion'] ?? null,
+        ]);
 
         return redirect()
             ->route('offices.index')
@@ -165,5 +123,27 @@ class OfficeController extends Controller
         return redirect()
             ->route('offices.index')
             ->with('status', 'Oficina eliminada correctamente.');
+    }
+
+    private function scopedInstitutions(?User $user)
+    {
+        return Institution::query()
+            ->when(
+                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+                fn ($query) => $query->where('id', $user->institution_id)
+            )
+            ->orderBy('nombre')
+            ->get(['id', 'nombre']);
+    }
+
+    private function scopedServices(?User $user)
+    {
+        return Service::query()
+            ->when(
+                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+                fn ($query) => $query->where('institution_id', $user->institution_id)
+            )
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'institution_id']);
     }
 }
