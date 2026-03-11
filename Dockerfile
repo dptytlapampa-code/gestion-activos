@@ -39,6 +39,7 @@ RUN if [ ! -f /var/www/app/composer.lock ]; then \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
     && composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --working-dir=/var/www/app \
     && mkdir -p \
+        /var/www/app/storage/app/public \
         /var/www/app/storage/framework/sessions \
         /var/www/app/storage/framework/views \
         /var/www/app/storage/framework/cache \
@@ -58,3 +59,4 @@ FROM nginx:1.25-alpine AS nginx
 
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY --from=app /var/www/app/public /var/www/app/public
+RUN mkdir -p /var/www/app/public/storage

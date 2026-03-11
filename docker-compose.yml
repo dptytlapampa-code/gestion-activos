@@ -29,6 +29,8 @@ services:
       CACHE_DRIVER: ${CACHE_DRIVER:-file}
       QUEUE_CONNECTION: ${QUEUE_CONNECTION:-sync}
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-false}
+    volumes:
+      - laravel-public-storage:/var/www/app/storage/app/public
 
   web:
     build:
@@ -41,6 +43,8 @@ services:
       - "8080:80"
     networks:
       - app-network
+    volumes:
+      - laravel-public-storage:/var/www/app/public/storage
 
   db:
     image: postgres:16.2
@@ -60,6 +64,7 @@ services:
 
 volumes:
   db-data:
+  laravel-public-storage:
 
 networks:
   app-network:
