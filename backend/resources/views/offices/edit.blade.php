@@ -7,7 +7,7 @@
     <div class="max-w-3xl">
         <div class="mb-6">
             <h3 class="text-xl font-semibold text-surface-900">Editar oficina</h3>
-            <p class="text-sm text-surface-500">Actualice la informacion de la oficina seleccionada.</p>
+            <p class="text-sm text-surface-500">Actualice la oficina manteniendo el orden institucion, servicio y nombre.</p>
         </div>
 
         @if ($errors->any())
@@ -21,65 +21,13 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('offices.update', $office) }}" class="space-y-6 rounded-2xl border border-surface-200 bg-white p-6 shadow-sm">
-            @csrf
-            @method('PUT')
-
-            <div>
-                <label for="service_id" class="text-sm font-semibold text-surface-700">Servicio</label>
-                <select
-                    id="service_id"
-                    name="service_id"
-                    class="form-control @error('service_id') form-control-error @enderror"
-                    required
-                >
-                    <option value="">Seleccione un servicio</option>
-                    @foreach ($services as $service)
-                        <option value="{{ $service->id }}" @selected(old('service_id', $office->service_id) == $service->id)>
-                            {{ $service->nombre }} ({{ $service->institution?->nombre }})
-                        </option>
-                    @endforeach
-                </select>
-                @error('service_id') <p class="form-error">{{ $message }}</p> @enderror
-                @if ($services->isEmpty())
-                    <p class="mt-2 text-xs text-amber-600">Debe crear un servicio antes de registrar oficinas.</p>
-                @endif
-            </div>
-
-            <div>
-                <label for="nombre" class="text-sm font-semibold text-surface-700">Nombre</label>
-                <input
-                    type="text"
-                    id="nombre"
-                    name="nombre"
-                    value="{{ old('nombre', $office->nombre) }}"
-                    maxlength="255"
-                    class="form-control @error('nombre') form-control-error @enderror"
-                    required
-                />
-                @error('nombre') <p class="form-error">{{ $message }}</p> @enderror
-            </div>
-
-            <div>
-                <label for="descripcion" class="text-sm font-semibold text-surface-700">Descripcion</label>
-                <textarea
-                    id="descripcion"
-                    name="descripcion"
-                    rows="4"
-                    maxlength="2000"
-                    class="form-control @error('descripcion') form-control-error @enderror"
-                >{{ old('descripcion', $office->descripcion) }}</textarea>
-                @error('descripcion') <p class="form-error">{{ $message }}</p> @enderror
-            </div>
-
-            <div class="flex items-center gap-3">
-                <button type="submit" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700">
-                    Guardar cambios
-                </button>
-                <a href="{{ route('offices.index') }}" class="rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-600 transition hover:border-surface-300 hover:text-surface-900">
-                    Cancelar
-                </a>
-            </div>
-        </form>
+        @include('offices.partials.form', [
+            'action' => route('offices.update', $office),
+            'method' => 'PUT',
+            'submitLabel' => 'Guardar cambios',
+            'office' => $office,
+            'institutions' => $institutions,
+            'services' => $services,
+        ])
     </div>
 @endsection
