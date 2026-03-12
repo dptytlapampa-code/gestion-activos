@@ -23,13 +23,13 @@ class DocumentPolicy
                 ?? $documentable?->equipo?->oficina?->service?->institution_id);
 
         return $user->hasRole(User::ROLE_ADMIN, User::ROLE_TECNICO, User::ROLE_VIEWER)
-            && (int) $institutionId === (int) $user->institution_id;
+            && $user->canAccessInstitution($institutionId !== null ? (int) $institutionId : null);
     }
 
     public function create(User $user, int $institutionId): bool
     {
         return $user->hasRole(User::ROLE_ADMIN, User::ROLE_TECNICO)
-            && (int) $institutionId === (int) $user->institution_id;
+            && $user->canAccessInstitution($institutionId);
     }
 
     public function delete(User $user, Document $document): bool

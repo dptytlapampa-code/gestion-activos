@@ -20,7 +20,7 @@ class ActaPolicy
     public function view(User $user, Acta $acta): bool
     {
         return $user->hasRole(User::ROLE_ADMIN, User::ROLE_TECNICO, User::ROLE_VIEWER)
-            && (int) $user->institution_id === (int) $acta->institution_id;
+            && $user->canAccessInstitution((int) $acta->institution_id);
     }
 
     public function create(User $user): bool
@@ -31,6 +31,6 @@ class ActaPolicy
     public function anular(User $user, Acta $acta): bool
     {
         return $user->hasRole(User::ROLE_ADMIN)
-            && (int) $user->institution_id === (int) $acta->institution_id;
+            && $user->canAccessInstitution((int) $acta->institution_id);
     }
 }

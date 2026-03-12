@@ -98,7 +98,7 @@ class Equipo extends Model
 
     public function actas(): BelongsToMany
     {
-        return $this->belongsToMany(Acta::class, 'acta_equipo')->withPivot(['cantidad', 'accesorios']);
+        return $this->belongsToMany(Acta::class, 'acta_equipo')->withPivot(['cantidad', 'accesorios', 'institucion_origen_id', 'institucion_origen_nombre', 'servicio_origen_id', 'servicio_origen_nombre', 'oficina_origen_id', 'oficina_origen_nombre']);
     }
 
     public function historial(): HasMany
@@ -149,3 +149,4 @@ class Equipo extends Model
         return $this->equipoStatus?->code === EquipoStatus::CODE_BAJA;
     }
 }
+

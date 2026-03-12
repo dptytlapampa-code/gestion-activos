@@ -24,7 +24,7 @@ class SearchController extends Controller
         $query = Institution::query()
             ->when(
                 $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-                fn ($query) => $query->where('id', $user->institution_id)
+                fn ($query) => $query->whereIn('id', $user->accessibleInstitutionIds())
             )
             ->when(! $listAll, fn ($query) => $query->where('nombre', 'ilike', "%{$q}%"))
             ->orderBy('nombre');
@@ -172,15 +172,43 @@ class SearchController extends Controller
         $actaContext = (bool) ($validated['acta_context'] ?? false);
         $user = $request->user();
 
-        $institutionId = $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN)
-            ? (int) $user->institution_id
-            : (($validated['institution_id'] ?? null) !== null ? (int) $validated['institution_id'] : null);
+        $requestedInstitutionId = ($validated['institution_id'] ?? null) !== null
+            ? (int) $validated['institution_id']
+            : null;
 
-        if ($institutionId === null && ! $actaContext) {
+        if ($user !== null && $actaContext && ! $user->can('create', Acta::class)) {
             return response()->json([]);
         }
 
-        if ($user !== null && $actaContext && ! $user->can('create', Acta::class)) {
+        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN)) {
+            if ($actaContext) {
+                $allowedInstitutionIds = $user->accessibleInstitutionIds();
+
+                if ($allowedInstitutionIds->isEmpty()) {
+                    return response()->json([]);
+                }
+
+                if ($requestedInstitutionId !== null && ! $allowedInstitutionIds->contains($requestedInstitutionId)) {
+                    return response()->json([]);
+                }
+
+                $institutionIds = $requestedInstitutionId !== null
+                    ? collect([$requestedInstitutionId])
+                    : $allowedInstitutionIds;
+            } else {
+                $institutionIds = collect([(int) $user->institution_id]);
+            }
+        } else {
+            $institutionIds = $requestedInstitutionId !== null
+                ? collect([$requestedInstitutionId])
+                : null;
+        }
+
+        if ($institutionIds !== null && $institutionIds->isEmpty()) {
+            return response()->json([]);
+        }
+
+        if ($institutionIds === null && ! $actaContext) {
             return response()->json([]);
         }
 
@@ -216,7 +244,7 @@ class SearchController extends Controller
             ->join('offices', 'offices.id', '=', 'equipos.oficina_id')
             ->join('services', 'services.id', '=', 'offices.service_id')
             ->join('institutions', 'institutions.id', '=', 'services.institution_id')
-            ->when($institutionId !== null, fn ($query) => $query->where('institutions.id', $institutionId))
+            ->when($institutionIds !== null, fn ($query) => $query->whereIn('institutions.id', $institutionIds->all()))
             ->when(! $includeBaja, fn ($query) => $query->where('equipos.estado', '!=', Equipo::ESTADO_BAJA))
             ->when(! $listAll, function ($query) use ($q, $hasMacAddress, $hasCodigoInterno): void {
                 $like = "%{$q}%";

@@ -5,6 +5,8 @@
 
 @section('content')
 @php($isAnulada = ($acta->status ?? \App\Models\Acta::STATUS_ACTIVA) === \App\Models\Acta::STATUS_ANULADA)
+@php($origenMultiple = (bool) data_get($acta->evento_payload, 'origen_multiple', false))
+@php($origenInstituciones = collect(data_get($acta->evento_payload, 'instituciones_origen_ids', []))->filter()->values())
 <div class="space-y-6">
     @if ($isAnulada)
         <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
@@ -18,10 +20,19 @@
         <div><span class="text-xs text-slate-500">Estado</span><p class="font-medium">{{ $isAnulada ? 'Anulada' : 'Activa' }}</p></div>
         <div><span class="text-xs text-slate-500">Fecha</span><p class="font-medium">{{ $acta->fecha?->format('d/m/Y') }}</p></div>
         <div><span class="text-xs text-slate-500">Generado por</span><p class="font-medium">{{ $acta->creator?->name }}</p></div>
-        <div><span class="text-xs text-slate-500">Institucion origen</span><p class="font-medium">{{ $acta->institution?->nombre ?: '-' }}</p></div>
+        <div>
+            <span class="text-xs text-slate-500">Institucion origen</span>
+            <p class="font-medium">
+                @if ($origenMultiple)
+                    Multiples instituciones ({{ $origenInstituciones->count() }})
+                @else
+                    {{ $acta->institution?->nombre ?: '-' }}
+                @endif
+            </p>
+        </div>
         <div><span class="text-xs text-slate-500">Institucion destino</span><p class="font-medium">{{ $acta->institucionDestino?->nombre ?: '-' }}</p></div>
-        <div><span class="text-xs text-slate-500">Servicio origen</span><p class="font-medium">{{ $acta->servicioOrigen?->nombre ?: '-' }}</p></div>
-        <div><span class="text-xs text-slate-500">Oficina origen</span><p class="font-medium">{{ $acta->oficinaOrigen?->nombre ?: '-' }}</p></div>
+        <div><span class="text-xs text-slate-500">Servicio origen</span><p class="font-medium">{{ $origenMultiple ? 'Multiples (ver detalle)' : ($acta->servicioOrigen?->nombre ?: '-') }}</p></div>
+        <div><span class="text-xs text-slate-500">Oficina origen</span><p class="font-medium">{{ $origenMultiple ? 'Multiples (ver detalle)' : ($acta->oficinaOrigen?->nombre ?: '-') }}</p></div>
         <div><span class="text-xs text-slate-500">Servicio destino</span><p class="font-medium">{{ $acta->servicioDestino?->nombre ?: '-' }}</p></div>
         <div><span class="text-xs text-slate-500">Oficina destino</span><p class="font-medium">{{ $acta->oficinaDestino?->nombre ?: '-' }}</p></div>
         <div><span class="text-xs text-slate-500">Receptor</span><p class="font-medium">{{ $acta->receptor_nombre ?: '-' }}</p></div>
@@ -46,18 +57,34 @@
                 <th class="px-4 py-3">Modelo</th>
                 <th class="px-4 py-3">Serie</th>
                 <th class="px-4 py-3">Patrimonial</th>
+                <th class="px-4 py-3">Origen snapshot</th>
+                <th class="px-4 py-3">Destino</th>
                 <th class="px-4 py-3">Cantidad</th>
                 <th class="px-4 py-3">Accesorios</th>
             </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
             @foreach ($acta->equipos as $equipo)
+                @php
+                    $origenEquipo = trim(implode(' / ', [
+                        $equipo->pivot->institucion_origen_nombre ?: ($equipo->oficina?->service?->institution?->nombre ?? '-'),
+                        $equipo->pivot->servicio_origen_nombre ?: ($equipo->oficina?->service?->nombre ?? '-'),
+                        $equipo->pivot->oficina_origen_nombre ?: ($equipo->oficina?->nombre ?? '-'),
+                    ]));
+                    $destinoEquipo = trim(implode(' / ', [
+                        $acta->institucionDestino?->nombre ?: '-',
+                        $acta->servicioDestino?->nombre ?: '-',
+                        $acta->oficinaDestino?->nombre ?: '-',
+                    ]));
+                @endphp
                 <tr>
                     <td class="px-4 py-3">{{ $equipo->tipo }}</td>
                     <td class="px-4 py-3">{{ $equipo->marca }}</td>
                     <td class="px-4 py-3">{{ $equipo->modelo }}</td>
                     <td class="px-4 py-3">{{ $equipo->numero_serie }}</td>
                     <td class="px-4 py-3">{{ $equipo->bien_patrimonial }}</td>
+                    <td class="px-4 py-3">{{ $origenEquipo }}</td>
+                    <td class="px-4 py-3">{{ $destinoEquipo }}</td>
                     <td class="px-4 py-3">{{ $equipo->pivot->cantidad }}</td>
                     <td class="px-4 py-3">{{ $equipo->pivot->accesorios ?: '-' }}</td>
                 </tr>
@@ -99,7 +126,7 @@
     <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-end">
         @can('anular', $acta)
             @if (! $isAnulada)
-                <form method="POST" action="{{ route('actas.anular', $acta) }}" class="flex flex-col gap-2 md:w-[420px]" onsubmit="return confirm('Esta acci\u00f3n no puede deshacerse. \u00bfDesea anular el acta?');">
+                <form method="POST" action="{{ route('actas.anular', $acta) }}" class="flex flex-col gap-2 md:w-[420px]" onsubmit="return confirm('Esta accion no puede deshacerse. Desea anular el acta?');">
                     @csrf
                     <label for="motivo_anulacion" class="text-xs font-medium text-slate-600">Motivo de anulacion</label>
                     <textarea id="motivo_anulacion" name="motivo_anulacion" rows="2" required class="rounded-xl border-slate-300 text-sm" placeholder="Detalle el motivo administrativo"></textarea>

@@ -28,6 +28,8 @@ class UpdateUserRequest extends FormRequest
                 'integer',
                 'exists:institutions,id',
             ],
+            'accessible_institution_ids' => ['nullable', 'array'],
+            'accessible_institution_ids.*' => ['integer', 'distinct', 'exists:institutions,id'],
         ];
     }
 }
