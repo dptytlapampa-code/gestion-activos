@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Equipo;
-use App\Models\EquipoStatus;
 use App\Models\Movimiento;
 use App\Models\Office;
 use App\Models\Service;
@@ -13,6 +12,8 @@ use Illuminate\Validation\ValidationException;
 
 class MovimientoService
 {
+    public function __construct(private readonly EquipoStatusResolver $equipoStatusResolver) {}
+
     public function registrar(Equipo $equipo, User $user, array $data): void
     {
         DB::transaction(function () use ($equipo, $user, $data): void {
@@ -60,11 +61,11 @@ class MovimientoService
 
             if ($tipo === Movimiento::TIPO_MANTENIMIENTO) {
                 $estadoNuevo = Equipo::ESTADO_MANTENIMIENTO;
-                $equipo->equipo_status_id = (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_EN_SERVICIO_TECNICO)->value('id');
+                $equipo->equipo_status_id = $this->equipoStatusResolver->resolveIdByEstado(Equipo::ESTADO_MANTENIMIENTO, 'tipo_movimiento');
             }
 
             if ($tipo === Movimiento::TIPO_PRESTAMO) {
-                $equipo->equipo_status_id = (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_PRESTADA)->value('id');
+                $equipo->equipo_status_id = $this->equipoStatusResolver->resolveIdByEstado(Equipo::ESTADO_PRESTADO, 'tipo_movimiento');
                 $estadoNuevo = Equipo::ESTADO_PRESTADO;
                 $prestamoData = [
                     'receptor_nombre' => $data['receptor_nombre'],
@@ -86,12 +87,12 @@ class MovimientoService
                 ];
 
                 $prestamo->update(['fecha_devolucion_real' => now()]);
-                $equipo->equipo_status_id = (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_OPERATIVA)->value('id');
+                $equipo->equipo_status_id = $this->equipoStatusResolver->resolveIdByEstado(Equipo::ESTADO_OPERATIVO, 'tipo_movimiento');
                 $estadoNuevo = Equipo::ESTADO_OPERATIVO;
             }
 
             if ($tipo === Movimiento::TIPO_BAJA) {
-                $equipo->equipo_status_id = (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_BAJA)->value('id');
+                $equipo->equipo_status_id = $this->equipoStatusResolver->resolveIdByEstado(Equipo::ESTADO_BAJA, 'tipo_movimiento');
                 $estadoNuevo = Equipo::ESTADO_BAJA;
             }
 
@@ -199,4 +200,3 @@ class MovimientoService
         return $prestamo;
     }
 }
-

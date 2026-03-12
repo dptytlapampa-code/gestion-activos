@@ -13,6 +13,7 @@ use App\Models\Service;
 use App\Models\TipoEquipo;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -176,6 +177,40 @@ class ActaModuleTest extends TestCase
             'equipo_id' => $equipo->id,
             'tipo_movimiento' => Movimiento::TIPO_PRESTAMO,
         ]);
+    }
+
+    public function test_acta_prestamo_resuelve_codigo_legacy_prestada_si_existe_historico(): void
+    {
+        Storage::fake();
+
+        [$admin, , , $officeA] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
+
+        DB::table('equipo_statuses')->where('code', 'PRESTADO')->delete();
+
+        $legacyPrestadaId = DB::table('equipo_statuses')->insertGetId([
+            'code' => 'PRESTADA',
+            'name' => 'Prestada Legacy',
+            'color' => 'blue',
+            'is_terminal' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->post(route('actas.store'), [
+            'tipo' => Acta::TIPO_PRESTAMO,
+            'fecha' => now()->toDateString(),
+            'receptor_nombre' => 'Carlos Gomez',
+            'receptor_dni' => '22333444',
+            'equipos' => [
+                ['equipo_id' => $equipo->id, 'cantidad' => 1],
+            ],
+        ])->assertRedirect();
+
+        $equipo->refresh();
+
+        $this->assertSame(Equipo::ESTADO_PRESTADO, $equipo->estado);
+        $this->assertSame($legacyPrestadaId, (int) $equipo->equipo_status_id);
     }
 
     public function test_acta_traslado_actualiza_ubicacion_dentro_de_la_misma_institucion(): void
@@ -529,6 +564,3 @@ class ActaModuleTest extends TestCase
         ]);
     }
 }
-
-
-

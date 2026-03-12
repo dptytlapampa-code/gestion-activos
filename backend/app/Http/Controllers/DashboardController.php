@@ -35,6 +35,7 @@ class DashboardController extends Controller
 
         $estadoCodes = [
             EquipoStatus::CODE_OPERATIVA,
+            EquipoStatus::CODE_PRESTADO,
             EquipoStatus::CODE_PRESTADA,
             EquipoStatus::CODE_EN_SERVICIO_TECNICO,
             EquipoStatus::CODE_FUERA_DE_SERVICIO,
@@ -83,4 +84,3 @@ class DashboardController extends Controller
         return view('dashboard', compact('totalEquipos', 'equiposPorTipo', 'equiposPorEstado', 'ultimosServicioTecnico', 'movimientos', 'actas'));
     }
 }
-

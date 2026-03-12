@@ -11,6 +11,7 @@ use App\Models\Service;
 use App\Models\TipoEquipo;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class EquipoModuleTest extends TestCase
@@ -159,6 +160,39 @@ class EquipoModuleTest extends TestCase
         ]);
     }
 
+    public function test_creacion_recrea_estado_operativa_si_falta_configuracion_de_status(): void
+    {
+        $institution = Institution::create(['nombre' => 'Hospital Sin Status']);
+        $service = Service::create(['nombre' => 'Servicio Sin Status', 'institution_id' => $institution->id]);
+        $office = Office::create(['nombre' => 'Oficina Sin Status', 'service_id' => $service->id]);
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Monitor de Guardia']);
+
+        $superadmin = $this->crearUsuario(User::ROLE_SUPERADMIN);
+
+        DB::table('equipo_statuses')->delete();
+
+        $this->actingAs($superadmin)->post(route('equipos.store'), [
+            'institution_id' => $institution->id,
+            'service_id' => $service->id,
+            'oficina_id' => $office->id,
+            'tipo_equipo_id' => $tipoEquipo->id,
+            'marca' => 'Philips',
+            'modelo' => 'G5',
+            'numero_serie' => 'SER-STATUS-1',
+            'bien_patrimonial' => 'BP-STATUS-1',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => '2025-02-10',
+        ])->assertRedirect(route('equipos.index'));
+
+        $equipo = Equipo::query()->firstOrFail();
+
+        $this->assertNotSame(0, (int) $equipo->equipo_status_id);
+        $this->assertDatabaseHas('equipo_statuses', [
+            'id' => $equipo->equipo_status_id,
+            'code' => 'OPERATIVA',
+        ]);
+    }
+
     public function test_creacion_rechaza_estado_invalido(): void
     {
         $institution = Institution::create(['nombre' => 'Hospital Invalido']);
@@ -217,6 +251,7 @@ class EquipoModuleTest extends TestCase
             'codigo_interno' => 'CI-MAC-001',
         ]);
     }
+
     public function test_uuid_se_genera_automaticamente_al_crear_equipo(): void
     {
         $institution = Institution::create(['nombre' => 'Hospital UUID']);
@@ -331,6 +366,4 @@ class EquipoModuleTest extends TestCase
         ]);
     }
 }
-
-
 

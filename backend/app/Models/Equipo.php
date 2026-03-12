@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\Auditing\Auditable;
+use App\Services\EquipoStatusResolver;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -61,7 +62,7 @@ class Equipo extends Model
             }
 
             if ($equipo->equipo_status_id === null) {
-                $equipo->equipo_status_id = (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_OPERATIVA)->value('id');
+                $equipo->equipo_status_id = app(EquipoStatusResolver::class)->resolveOrCreateOperativaId();
             }
         });
     }
@@ -149,4 +150,3 @@ class Equipo extends Model
         return $this->equipoStatus?->code === EquipoStatus::CODE_BAJA;
     }
 }
-

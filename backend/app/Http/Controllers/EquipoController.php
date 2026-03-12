@@ -5,13 +5,13 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreEquipoRequest;
 use App\Http\Requests\UpdateEquipoRequest;
 use App\Models\Equipo;
-use App\Models\EquipoStatus;
 use App\Models\Institution;
 use App\Models\Movimiento;
 use App\Models\Office;
 use App\Models\Service;
 use App\Models\TipoEquipo;
 use App\Models\User;
+use App\Services\EquipoStatusResolver;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +21,7 @@ class EquipoController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct()
+    public function __construct(private readonly EquipoStatusResolver $equipoStatusResolver)
     {
         $this->authorizeResource(Equipo::class, 'equipo');
     }
@@ -88,7 +88,7 @@ class EquipoController extends Controller
             'mac_address' => $validated['mac_address'] ?? null,
             'codigo_interno' => $validated['codigo_interno'] ?? null,
             'estado' => $validated['estado'],
-            'equipo_status_id' => $this->resolveStatusIdByEstado($validated['estado']),
+            'equipo_status_id' => $this->equipoStatusResolver->resolveIdByEstado($validated['estado'], 'estado'),
             'fecha_ingreso' => $validated['fecha_ingreso'],
             'oficina_id' => $validated['office_id'],
             'tipo' => $tipoEquipo->nombre,
@@ -203,7 +203,7 @@ class EquipoController extends Controller
             'mac_address' => $validated['mac_address'] ?? null,
             'codigo_interno' => $validated['codigo_interno'] ?? null,
             'estado' => $validated['estado'],
-            'equipo_status_id' => $this->resolveStatusIdByEstado($validated['estado']),
+            'equipo_status_id' => $this->equipoStatusResolver->resolveIdByEstado($validated['estado'], 'estado'),
             'fecha_ingreso' => $validated['fecha_ingreso'],
             'oficina_id' => $validated['office_id'],
             'tipo' => $tipoEquipo->nombre,
@@ -260,16 +260,6 @@ class EquipoController extends Controller
         ];
     }
 
-    private function resolveStatusIdByEstado(string $estado): int
-    {
-        return match ($estado) {
-            Equipo::ESTADO_PRESTADO => (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_PRESTADA)->value('id'),
-            Equipo::ESTADO_MANTENIMIENTO => (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_EN_SERVICIO_TECNICO)->value('id'),
-            Equipo::ESTADO_FUERA_DE_SERVICIO => (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_FUERA_DE_SERVICIO)->value('id'),
-            Equipo::ESTADO_BAJA => (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_BAJA)->value('id'),
-            default => (int) EquipoStatus::query()->where('code', EquipoStatus::CODE_OPERATIVA)->value('id'),
-        };
-    }
 
     private function scopedInstituciones(?User $user)
     {
@@ -322,5 +312,3 @@ class EquipoController extends Controller
         return null;
     }
 }
-
-

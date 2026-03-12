@@ -6,7 +6,6 @@ use App\Models\Acta;
 use App\Models\AuditLog;
 use App\Models\Equipo;
 use App\Models\EquipoHistorial;
-use App\Models\EquipoStatus;
 use App\Models\Movimiento;
 use App\Models\Office;
 use App\Models\Service;
@@ -19,7 +18,7 @@ use Illuminate\Validation\ValidationException;
 
 class ActaTraceabilityService
 {
-    public function __construct(private readonly ActaPdfDataService $actaPdfDataService) {}
+    public function __construct(private readonly ActaPdfDataService $actaPdfDataService, private readonly EquipoStatusResolver $equipoStatusResolver) {}
 
     public function crear(User $user, array $data): Acta
     {
@@ -287,7 +286,7 @@ class ActaTraceabilityService
         }
 
         $equipo->estado = $estadoNuevo;
-        $equipo->equipo_status_id = $this->resolveStatusIdByEstado($estadoNuevo);
+        $equipo->equipo_status_id = $this->equipoStatusResolver->resolveIdByEstado($estadoNuevo, 'equipos');
 
         if ($equipo->offsetExists('_audit_before')) {
             $equipo->offsetUnset('_audit_before');
@@ -375,28 +374,6 @@ class ActaTraceabilityService
         };
     }
 
-    private function resolveStatusIdByEstado(string $estado): int
-    {
-        $code = match ($estado) {
-            Equipo::ESTADO_PRESTADO => EquipoStatus::CODE_PRESTADA,
-            Equipo::ESTADO_EN_MANTENIMIENTO => EquipoStatus::CODE_EN_SERVICIO_TECNICO,
-            Equipo::ESTADO_FUERA_DE_SERVICIO => EquipoStatus::CODE_FUERA_DE_SERVICIO,
-            Equipo::ESTADO_BAJA => EquipoStatus::CODE_BAJA,
-            default => EquipoStatus::CODE_OPERATIVA,
-        };
-
-        $statusId = EquipoStatus::query()
-            ->where('code', $code)
-            ->value('id');
-
-        if ($statusId === null) {
-            throw ValidationException::withMessages([
-                'equipos' => "No se encontro un estado de equipo configurado para el codigo {$code}.",
-            ]);
-        }
-
-        return (int) $statusId;
-    }
 
     private function assertTransitionAllowed(Equipo $equipo, string $tipo): void
     {

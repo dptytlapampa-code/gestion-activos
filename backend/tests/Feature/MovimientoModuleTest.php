@@ -10,6 +10,7 @@ use App\Models\Service;
 use App\Models\TipoEquipo;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class MovimientoModuleTest extends TestCase
@@ -124,6 +125,41 @@ class MovimientoModuleTest extends TestCase
         ]);
     }
 
+    public function test_movimiento_prestamo_resuelve_codigo_legacy_prestada(): void
+    {
+        [, , $office] = $this->crearUbicacion('Hospital Legacy', 'Clinica', 'Sala 5');
+
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Notebook']);
+        $equipo = $this->crearEquipo($office, $tipoEquipo);
+        $usuario = $this->crearUsuario(User::ROLE_SUPERADMIN);
+
+        DB::table('equipo_statuses')->where('code', 'PRESTADO')->delete();
+
+        $legacyPrestadaId = DB::table('equipo_statuses')->insertGetId([
+            'code' => 'PRESTADA',
+            'name' => 'Prestada Legacy',
+            'color' => 'blue',
+            'is_terminal' => false,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($usuario)
+            ->post(route('equipos.movimientos.store', $equipo), [
+                'tipo_movimiento' => 'prestamo',
+                'receptor_nombre' => 'Juan Perez',
+                'receptor_dni' => '20111222',
+                'fecha_inicio_prestamo' => now()->toDateString(),
+                'fecha_estimada_devolucion' => now()->addDays(7)->toDateString(),
+                'observacion' => 'Prestamo de prueba',
+            ])
+            ->assertRedirect(route('equipos.show', $equipo));
+
+        $equipo->refresh();
+
+        $this->assertSame(Equipo::ESTADO_PRESTADO, $equipo->estado);
+        $this->assertSame($legacyPrestadaId, (int) $equipo->equipo_status_id);
+    }
 
     public function test_movimiento_traslado_actualiza_ubicacion_y_estado_operativo(): void
     {
@@ -283,3 +319,4 @@ class MovimientoModuleTest extends TestCase
         return [$institution, $service, $office];
     }
 }
+

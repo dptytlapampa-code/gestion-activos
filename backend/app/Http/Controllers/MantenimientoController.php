@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\AuditLog;
 use App\Models\Equipo;
-use App\Models\EquipoStatus;
 use App\Models\Mantenimiento;
 use App\Models\User;
+use App\Services\EquipoStatusResolver;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +18,8 @@ use Throwable;
 
 class MantenimientoController extends Controller
 {
+    public function __construct(private readonly EquipoStatusResolver $equipoStatusResolver) {}
+
     public function index(Request $request): View
     {
         $this->authorize('viewAny', Mantenimiento::class);
@@ -109,9 +111,9 @@ class MantenimientoController extends Controller
 
     private function applyRulesAndCreate(Equipo $equipo, array $validated, User $user, int $institutionId): void
     {
-        $operativa = EquipoStatus::query()->where('code', EquipoStatus::CODE_OPERATIVA)->firstOrFail();
-        $enServicio = EquipoStatus::query()->where('code', EquipoStatus::CODE_EN_SERVICIO_TECNICO)->firstOrFail();
-        $baja = EquipoStatus::query()->where('code', EquipoStatus::CODE_BAJA)->firstOrFail();
+        $operativaId = $this->equipoStatusResolver->resolveIdByEstado(Equipo::ESTADO_OPERATIVO, 'tipo');
+        $enServicioId = $this->equipoStatusResolver->resolveIdByEstado(Equipo::ESTADO_MANTENIMIENTO, 'tipo');
+        $bajaId = $this->equipoStatusResolver->resolveIdByEstado(Equipo::ESTADO_BAJA, 'tipo');
 
         $tipo = $validated['tipo'];
         $fecha = Carbon::parse($validated['fecha'])->toDateString();
@@ -150,8 +152,8 @@ class MantenimientoController extends Controller
 
         if ($tipo === Mantenimiento::TIPO_EXTERNO) {
             $payload['fecha_ingreso_st'] = $payload['fecha_ingreso_st'] ?: $fecha;
-            $payload['estado_resultante_id'] = $enServicio->id;
-            $equipo->equipo_status_id = $enServicio->id;
+            $payload['estado_resultante_id'] = $enServicioId;
+            $equipo->equipo_status_id = $enServicioId;
             $equipo->estado = Equipo::ESTADO_MANTENIMIENTO;
             $equipo->save();
         }
@@ -192,15 +194,15 @@ class MantenimientoController extends Controller
                 ]);
             }
 
-            $payload['estado_resultante_id'] = $operativa->id;
-            $equipo->equipo_status_id = $operativa->id;
+            $payload['estado_resultante_id'] = $operativaId;
+            $equipo->equipo_status_id = $operativaId;
             $equipo->estado = Equipo::ESTADO_OPERATIVO;
             $equipo->save();
         }
 
         if ($tipo === Mantenimiento::TIPO_BAJA) {
-            $payload['estado_resultante_id'] = $baja->id;
-            $equipo->equipo_status_id = $baja->id;
+            $payload['estado_resultante_id'] = $bajaId;
+            $equipo->equipo_status_id = $bajaId;
             $equipo->estado = Equipo::ESTADO_BAJA;
             $equipo->save();
         }
