@@ -385,7 +385,17 @@ class ActaTraceabilityService
             default => EquipoStatus::CODE_OPERATIVA,
         };
 
-        return (int) EquipoStatus::query()->where('code', $code)->value('id');
+        $statusId = EquipoStatus::query()
+            ->where('code', $code)
+            ->value('id');
+
+        if ($statusId === null) {
+            throw ValidationException::withMessages([
+                'equipos' => "No se encontro un estado de equipo configurado para el codigo {$code}.",
+            ]);
+        }
+
+        return (int) $statusId;
     }
 
     private function assertTransitionAllowed(Equipo $equipo, string $tipo): void
@@ -605,4 +615,3 @@ class ActaTraceabilityService
         return $trimmed === '' ? null : $trimmed;
     }
 }
-

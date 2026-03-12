@@ -4,9 +4,11 @@
 @section('header', 'Detalle de acta '.$acta->codigo)
 
 @section('content')
-@php($isAnulada = ($acta->status ?? \App\Models\Acta::STATUS_ACTIVA) === \App\Models\Acta::STATUS_ANULADA)
-@php($origenMultiple = (bool) data_get($acta->evento_payload, 'origen_multiple', false))
-@php($origenInstituciones = collect(data_get($acta->evento_payload, 'instituciones_origen_ids', []))->filter()->values())
+@php
+    $isAnulada = ($acta->status ?? \App\Models\Acta::STATUS_ACTIVA) === \App\Models\Acta::STATUS_ANULADA;
+    $origenMultiple = (bool) data_get($acta->evento_payload, 'origen_multiple', false);
+    $origenInstituciones = collect(data_get($acta->evento_payload, 'instituciones_origen_ids', []))->filter()->values();
+@endphp
 <div class="space-y-6">
     @if ($isAnulada)
         <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
