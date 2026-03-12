@@ -8,6 +8,42 @@
     $isAnulada = ($acta->status ?? \App\Models\Acta::STATUS_ACTIVA) === \App\Models\Acta::STATUS_ANULADA;
     $origenMultiple = (bool) data_get($acta->evento_payload, 'origen_multiple', false);
     $origenInstituciones = collect(data_get($acta->evento_payload, 'instituciones_origen_ids', []))->filter()->values();
+
+    $isPrestamo = $acta->tipo === \App\Models\Acta::TIPO_PRESTAMO;
+    $destinatarioPrestamo = [
+        'nombre' => trim((string) ($acta->receptor_nombre ?? '')),
+        'dni' => trim((string) ($acta->receptor_dni ?? '')),
+        'cargo' => trim((string) ($acta->receptor_cargo ?? '')),
+        'dependencia' => trim((string) ($acta->receptor_dependencia ?? '')),
+    ];
+
+    $hasDestinatarioPrestamo = $isPrestamo
+        && collect($destinatarioPrestamo)->contains(fn (?string $value): bool => $value !== null && $value !== '');
+
+    $destinoInstitucional = [
+        'institucion' => $acta->institucionDestino?->nombre,
+        'servicio' => $acta->servicioDestino?->nombre,
+        'oficina' => $acta->oficinaDestino?->nombre,
+    ];
+
+    $destinoInstitucionalPartes = array_values(array_filter([
+        $destinoInstitucional['institucion'],
+        $destinoInstitucional['servicio'],
+        $destinoInstitucional['oficina'],
+    ], fn (?string $value): bool => $value !== null && trim($value) !== ''));
+
+    $destinoInstitucionalTexto = $destinoInstitucionalPartes !== []
+        ? implode(' / ', $destinoInstitucionalPartes)
+        : '-';
+
+    $hasDestinoInstitucional = $destinoInstitucionalPartes !== [];
+
+    $destinoPrestamoResumen = trim(implode(' | ', array_values(array_filter([
+        $destinatarioPrestamo['nombre'] !== '' ? $destinatarioPrestamo['nombre'] : null,
+        $destinatarioPrestamo['dni'] !== '' ? 'DNI '.$destinatarioPrestamo['dni'] : null,
+        $destinatarioPrestamo['cargo'] !== '' ? $destinatarioPrestamo['cargo'] : null,
+        $destinatarioPrestamo['dependencia'] !== '' ? $destinatarioPrestamo['dependencia'] : null,
+    ], fn (?string $item): bool => $item !== null && trim($item) !== ''))));
 @endphp
 <div class="space-y-6">
     @if ($isAnulada)
@@ -32,13 +68,14 @@
                 @endif
             </p>
         </div>
-        <div><span class="text-xs text-slate-500">Institucion destino</span><p class="font-medium">{{ $acta->institucionDestino?->nombre ?: '-' }}</p></div>
+        <div><span class="text-xs text-slate-500">Institucion destino</span><p class="font-medium">{{ $acta->institucionDestino?->nombre ?: ($isPrestamo ? 'No aplica (prestamo a persona)' : '-') }}</p></div>
         <div><span class="text-xs text-slate-500">Servicio origen</span><p class="font-medium">{{ $origenMultiple ? 'Multiples (ver detalle)' : ($acta->servicioOrigen?->nombre ?: '-') }}</p></div>
         <div><span class="text-xs text-slate-500">Oficina origen</span><p class="font-medium">{{ $origenMultiple ? 'Multiples (ver detalle)' : ($acta->oficinaOrigen?->nombre ?: '-') }}</p></div>
-        <div><span class="text-xs text-slate-500">Servicio destino</span><p class="font-medium">{{ $acta->servicioDestino?->nombre ?: '-' }}</p></div>
-        <div><span class="text-xs text-slate-500">Oficina destino</span><p class="font-medium">{{ $acta->oficinaDestino?->nombre ?: '-' }}</p></div>
+        <div><span class="text-xs text-slate-500">Servicio destino</span><p class="font-medium">{{ $acta->servicioDestino?->nombre ?: ($isPrestamo ? 'No aplica (prestamo a persona)' : '-') }}</p></div>
+        <div><span class="text-xs text-slate-500">Oficina destino</span><p class="font-medium">{{ $acta->oficinaDestino?->nombre ?: ($isPrestamo ? 'No aplica (prestamo a persona)' : '-') }}</p></div>
         <div><span class="text-xs text-slate-500">Receptor</span><p class="font-medium">{{ $acta->receptor_nombre ?: '-' }}</p></div>
         <div><span class="text-xs text-slate-500">DNI / Cargo</span><p class="font-medium">{{ $acta->receptor_dni ?: '-' }} {{ $acta->receptor_cargo ? '| '.$acta->receptor_cargo : '' }}</p></div>
+        <div><span class="text-xs text-slate-500">Dependencia receptor</span><p class="font-medium">{{ $acta->receptor_dependencia ?: '-' }}</p></div>
         <div><span class="text-xs text-slate-500">Motivo de baja</span><p class="font-medium">{{ $acta->motivo_baja ?: '-' }}</p></div>
         <div class="md:col-span-2"><span class="text-xs text-slate-500">Observaciones</span><p class="font-medium">{{ $acta->observaciones ?: '-' }}</p></div>
 
@@ -48,6 +85,37 @@
             <div class="md:col-span-2"><span class="text-xs text-slate-500">Motivo de anulacion</span><p class="font-medium">{{ $acta->motivo_anulacion ?: '-' }}</p></div>
         @endif
     </div>
+
+    @if ($isPrestamo)
+        <div class="card border-2 border-blue-200 bg-blue-50">
+            <h3 class="mb-3 text-base font-semibold text-blue-900">Destinatario del prestamo</h3>
+            <div class="grid gap-4 md:grid-cols-2">
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wide text-blue-700">Nombre y apellido</span>
+                    <p class="mt-1 text-sm font-medium text-slate-900">{{ $destinatarioPrestamo['nombre'] !== '' ? $destinatarioPrestamo['nombre'] : '-' }}</p>
+                </div>
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wide text-blue-700">DNI</span>
+                    <p class="mt-1 text-sm font-medium text-slate-900">{{ $destinatarioPrestamo['dni'] !== '' ? $destinatarioPrestamo['dni'] : '-' }}</p>
+                </div>
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wide text-blue-700">Cargo</span>
+                    <p class="mt-1 text-sm font-medium text-slate-900">{{ $destinatarioPrestamo['cargo'] !== '' ? $destinatarioPrestamo['cargo'] : '-' }}</p>
+                </div>
+                <div>
+                    <span class="text-xs font-semibold uppercase tracking-wide text-blue-700">Dependencia</span>
+                    <p class="mt-1 text-sm font-medium text-slate-900">{{ $destinatarioPrestamo['dependencia'] !== '' ? $destinatarioPrestamo['dependencia'] : '-' }}</p>
+                </div>
+            </div>
+
+            @if ($hasDestinoInstitucional)
+                <div class="mt-4 rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm text-slate-700">
+                    <p class="font-semibold text-blue-900">Destino institucional complementario</p>
+                    <p class="mt-1">{{ $destinoInstitucionalTexto }}</p>
+                </div>
+            @endif
+        </div>
+    @endif
 
     <div class="card overflow-x-auto">
         <h3 class="mb-3 text-base font-semibold text-slate-900">Equipos del acta</h3>
@@ -73,11 +141,18 @@
                         $equipo->pivot->servicio_origen_nombre ?: ($equipo->oficina?->service?->nombre ?? '-'),
                         $equipo->pivot->oficina_origen_nombre ?: ($equipo->oficina?->nombre ?? '-'),
                     ]));
-                    $destinoEquipo = trim(implode(' / ', [
-                        $acta->institucionDestino?->nombre ?: '-',
-                        $acta->servicioDestino?->nombre ?: '-',
-                        $acta->oficinaDestino?->nombre ?: '-',
-                    ]));
+
+                    $destinoEquipo = $destinoInstitucionalTexto;
+
+                    if ($isPrestamo && $hasDestinatarioPrestamo) {
+                        $destinoEquipo = $destinoPrestamoResumen !== ''
+                            ? $destinoPrestamoResumen
+                            : 'Destinatario del prestamo no informado';
+
+                        if ($hasDestinoInstitucional) {
+                            $destinoEquipo .= ' (Ref. institucional: '.$destinoInstitucionalTexto.')';
+                        }
+                    }
                 @endphp
                 <tr>
                     <td class="px-4 py-3">{{ $equipo->tipo }}</td>

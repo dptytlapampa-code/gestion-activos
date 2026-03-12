@@ -80,6 +80,19 @@
         margin-bottom: 5px;
     }
 
+    .destinatario-prestamo {
+        border: 2px solid #1d4ed8;
+        background: #eff6ff;
+    }
+
+    .destinatario-note {
+        margin-top: 6px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #1e3a8a;
+    }
+
     table {
         width: 100%;
         border-collapse: collapse;
@@ -178,11 +191,62 @@
         $clausulaTexto = $clausula ?? 'Se deja constancia institucional del evento de trazabilidad registrado sobre el equipamiento detallado en el presente documento.';
         $origenMultiple = (bool) data_get($acta->evento_payload, 'origen_multiple', false);
         $institucionesOrigenCount = count(data_get($acta->evento_payload, 'instituciones_origen_ids', []));
-        $destinoTexto = trim(implode(' / ', [
-            $acta->institucionDestino?->nombre ?: '-',
-            $acta->servicioDestino?->nombre ?: '-',
-            $acta->oficinaDestino?->nombre ?: '-',
-        ]));
+
+        $destinoInstitucional = is_array($pdfDestinoInstitucional ?? null)
+            ? $pdfDestinoInstitucional
+            : [
+                'institucion' => $acta->institucionDestino?->nombre,
+                'servicio' => $acta->servicioDestino?->nombre,
+                'oficina' => $acta->oficinaDestino?->nombre,
+                'texto' => trim(implode(' / ', [
+                    $acta->institucionDestino?->nombre ?: '-',
+                    $acta->servicioDestino?->nombre ?: '-',
+                    $acta->oficinaDestino?->nombre ?: '-',
+                ])),
+                'has_data' => (bool) ($acta->institucionDestino?->nombre || $acta->servicioDestino?->nombre || $acta->oficinaDestino?->nombre),
+            ];
+
+        $destinoInstitucionalTexto = (string) ($destinoInstitucional['texto'] ?? '-');
+        $destinoInstitucionalHasData = (bool) ($destinoInstitucional['has_data'] ?? false);
+
+        $prestamoDestinatario = is_array($pdfPrestamoDestinatario ?? null)
+            ? $pdfPrestamoDestinatario
+            : [
+                'is_prestamo' => $acta->tipo === \App\Models\Acta::TIPO_PRESTAMO,
+                'nombre' => trim((string) ($acta->receptor_nombre ?? '')),
+                'dni' => trim((string) ($acta->receptor_dni ?? '')),
+                'cargo' => trim((string) ($acta->receptor_cargo ?? '')),
+                'dependencia' => trim((string) ($acta->receptor_dependencia ?? '')),
+                'has_data' => false,
+                'summary' => '',
+            ];
+
+        $isPrestamo = (bool) ($prestamoDestinatario['is_prestamo'] ?? false);
+        $destinatarioPrestamoHasData = (bool) ($prestamoDestinatario['has_data'] ?? false);
+        $destinatarioPrestamoSummary = (string) ($prestamoDestinatario['summary'] ?? '');
+
+        if ($destinatarioPrestamoSummary === '') {
+            $summaryParts = array_values(array_filter([
+                $prestamoDestinatario['nombre'] ?? null,
+                ! empty($prestamoDestinatario['dni']) ? 'DNI '.(string) $prestamoDestinatario['dni'] : null,
+                $prestamoDestinatario['cargo'] ?? null,
+                $prestamoDestinatario['dependencia'] ?? null,
+            ], fn (?string $value): bool => $value !== null && trim($value) !== ''));
+
+            $destinatarioPrestamoSummary = $summaryParts !== [] ? implode(' | ', $summaryParts) : '';
+        }
+
+        $destinoPrincipalTexto = $destinoInstitucionalTexto;
+
+        if ($isPrestamo && $destinatarioPrestamoHasData) {
+            $destinoPrincipalTexto = $destinatarioPrestamoSummary !== ''
+                ? $destinatarioPrestamoSummary
+                : 'Destinatario del prestamo no informado';
+
+            if ($destinoInstitucionalHasData) {
+                $destinoPrincipalTexto .= ' (Ref. institucional: '.$destinoInstitucionalTexto.')';
+            }
+        }
     @endphp
 
     @if ($isAnulada)
@@ -218,10 +282,32 @@
                             {{ $acta->institution?->nombre ?: '-' }}
                         @endif
                     </td>
-                    <td><span class="label">Institucion destino</span>{{ $acta->institucionDestino?->nombre ?: '-' }}</td>
+                    @if ($isPrestamo)
+                        <td><span class="label">Destinatario del prestamo</span>{{ $prestamoDestinatario['nombre'] ?: '-' }}</td>
+                    @else
+                        <td><span class="label">Institucion destino</span>{{ $acta->institucionDestino?->nombre ?: '-' }}</td>
+                    @endif
                 </tr>
             </table>
         </div>
+
+        @if ($isPrestamo)
+            <div class="section destinatario-prestamo">
+                <div class="section-title">Destinatario del prestamo</div>
+                <table class="event-table">
+                    <tr>
+                        <td><span class="label">Nombre y apellido</span>{{ $prestamoDestinatario['nombre'] ?: '-' }}</td>
+                        <td><span class="label">DNI</span>{{ $prestamoDestinatario['dni'] ?: '-' }}</td>
+                        <td><span class="label">Cargo</span>{{ $prestamoDestinatario['cargo'] ?: '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"><span class="label">Dependencia</span>{{ $prestamoDestinatario['dependencia'] ?: '-' }}</td>
+                        <td><span class="label">Destino institucional complementario</span>{{ $destinoInstitucionalHasData ? $destinoInstitucionalTexto : '-' }}</td>
+                    </tr>
+                </table>
+                <div class="destinatario-note">Este bloque identifica al DESTINATARIO DEL PRESTAMO.</div>
+            </div>
+        @endif
 
         <div class="section">
             <div class="section-title">Detalle de equipamiento</div>
@@ -259,7 +345,7 @@
                         <td>{{ $equipo->numero_serie ?: '-' }}</td>
                         <td>{{ $equipo->bien_patrimonial ?: '-' }}</td>
                         <td>{{ $origenTexto }}</td>
-                        <td>{{ $destinoTexto }}</td>
+                        <td>{{ $destinoPrincipalTexto }}</td>
                         <td>{{ $equipo->pivot->cantidad }}</td>
                     </tr>
                 @empty
@@ -279,6 +365,14 @@
                     <td><span class="label">DNI</span>{{ $acta->receptor_dni ?: '-' }}</td>
                     <td><span class="label">Cargo</span>{{ $acta->receptor_cargo ?: '-' }}</td>
                 </tr>
+                <tr>
+                    <td colspan="3"><span class="label">Dependencia</span>{{ $acta->receptor_dependencia ?: '-' }}</td>
+                </tr>
+                @if ($isPrestamo)
+                    <tr>
+                        <td colspan="3"><span class="label">Destinatario del prestamo</span>{{ $destinoPrincipalTexto }}</td>
+                    </tr>
+                @endif
                 <tr>
                     <td colspan="2"><span class="label">Servicio origen</span>{{ $origenMultiple ? 'Multiples (ver detalle)' : ($acta->servicioOrigen?->nombre ?: '-') }}</td>
                     <td><span class="label">Oficina origen</span>{{ $origenMultiple ? 'Multiples (ver detalle)' : ($acta->oficinaOrigen?->nombre ?: '-') }}</td>
