@@ -19,6 +19,7 @@ class StoreTipoEquipoRequest extends FormRequest
         return [
             'nombre' => ['required', 'string', 'max:100', 'unique:tipos_equipos,nombre'],
             'descripcion' => ['nullable', 'string'],
+            'imagen_png' => ['nullable', 'file', 'mimes:png', 'mimetypes:image/png', 'max:2048'],
         ];
     }
 
@@ -27,6 +28,9 @@ class StoreTipoEquipoRequest extends FormRequest
         return [
             'nombre.required' => 'El nombre es obligatorio.',
             'nombre.unique' => 'Ya existe un tipo de equipo con ese nombre.',
+            'imagen_png.mimes' => 'La imagen debe estar en formato PNG.',
+            'imagen_png.mimetypes' => 'La imagen debe estar en formato PNG valido.',
+            'imagen_png.max' => 'La imagen no puede superar los 2 MB.',
         ];
     }
 }

@@ -156,7 +156,7 @@
     }
 
     .app-alert-icon {
-        @apply inline-flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold;
+        @apply inline-flex h-5 w-5 items-center justify-center rounded-full;
     }
 
     .app-alert-success {
@@ -305,4 +305,5 @@
         background-color: rgba(var(--primary-color-rgb), 0.08) !important;
     }
 }
+
 

@@ -11,7 +11,10 @@
             <p class="text-sm text-slate-500">Gestion visual de activos biomedicos y tecnologicos.</p>
         </div>
         @can('create', \App\Models\Equipo::class)
-            <a href="{{ route('equipos.create') }}" class="btn btn-primary">Crear equipo</a>
+            <a href="{{ route('equipos.create') }}" class="btn btn-primary gap-2">
+                <x-icon name="plus" class="h-4 w-4" />
+                Crear equipo
+            </a>
         @endcan
     </div>
 
@@ -26,8 +29,14 @@
             @endforeach
         </select>
         <div class="flex items-center gap-2">
-            <button class="btn btn-primary">Buscar</button>
-            <a href="{{ route('equipos.index') }}" class="btn btn-neutral">Limpiar</a>
+            <button class="btn btn-primary gap-2">
+                <x-icon name="search" class="h-4 w-4" />
+                Buscar
+            </button>
+            <a href="{{ route('equipos.index') }}" class="btn btn-neutral gap-2">
+                <x-icon name="x" class="h-4 w-4" />
+                Limpiar
+            </a>
         </div>
     </form>
 
@@ -47,7 +56,12 @@
             <tbody>
             @forelse($equipos as $equipo)
                 <tr>
-                    <td>{{ $equipo->tipo }}</td>
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <x-tipo-equipo-image :tipo-equipo="$equipo->tipoEquipo" size="xs" class="rounded-lg" />
+                            <span>{{ $equipo->tipo }}</span>
+                        </div>
+                    </td>
                     <td>{{ $equipo->marca }}</td>
                     <td>{{ $equipo->modelo }}</td>
                     <td>
@@ -71,12 +85,25 @@
                     </td>
                     <td>
                         <div class="flex flex-wrap gap-2">
-                            @can('view', $equipo)<a class="btn btn-neutral !px-3 !py-1.5" href="{{ route('equipos.show',$equipo) }}">Ver</a>@endcan
-                            @can('update', $equipo)<a class="btn btn-info !px-3 !py-1.5" href="{{ route('equipos.edit',$equipo) }}">Editar</a>@endcan
+                            @can('view', $equipo)
+                                <a class="btn btn-neutral !px-3 !py-1.5 gap-1.5" href="{{ route('equipos.show',$equipo) }}">
+                                    <x-icon name="eye" class="h-4 w-4" />
+                                    Ver
+                                </a>
+                            @endcan
+                            @can('update', $equipo)
+                                <a class="btn btn-info !px-3 !py-1.5 gap-1.5" href="{{ route('equipos.edit',$equipo) }}">
+                                    <x-icon name="pencil" class="h-4 w-4" />
+                                    Editar
+                                </a>
+                            @endcan
                             @can('delete', $equipo)
                                 <form method="POST" action="{{ route('equipos.destroy',$equipo) }}" onsubmit="return confirm('Eliminar equipo?')">
                                     @csrf @method('DELETE')
-                                    <button class="btn btn-danger !px-3 !py-1.5">Eliminar</button>
+                                    <button class="btn btn-danger !px-3 !py-1.5 gap-1.5">
+                                        <x-icon name="trash-2" class="h-4 w-4" />
+                                        Eliminar
+                                    </button>
                                 </form>
                             @endcan
                         </div>
