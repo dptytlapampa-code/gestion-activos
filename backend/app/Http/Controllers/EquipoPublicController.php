@@ -12,7 +12,7 @@ class EquipoPublicController extends Controller
         $equipo = Equipo::query()
             ->where('uuid', $uuid)
             ->with([
-                'tipoEquipo:id,nombre',
+                'tipoEquipo:id,nombre,image_path',
                 'oficina:id,nombre,service_id',
                 'oficina.service:id,nombre,institution_id',
                 'oficina.service.institution:id,nombre',
@@ -38,3 +38,4 @@ class EquipoPublicController extends Controller
         ]);
     }
 }
+

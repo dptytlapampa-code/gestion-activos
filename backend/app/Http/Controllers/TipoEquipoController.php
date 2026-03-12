@@ -6,12 +6,19 @@ use App\Http\Requests\StoreTipoEquipoRequest;
 use App\Http\Requests\UpdateTipoEquipoRequest;
 use App\Models\TipoEquipo;
 use App\Models\User;
+use App\Services\TipoEquipoImageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Throwable;
 
 class TipoEquipoController extends Controller
 {
+    public function __construct(private readonly TipoEquipoImageService $tipoEquipoImageService)
+    {
+    }
+
     public function index(Request $request): View
     {
         $this->authorizeRead($request);
@@ -39,7 +46,29 @@ class TipoEquipoController extends Controller
 
     public function store(StoreTipoEquipoRequest $request): RedirectResponse
     {
-        TipoEquipo::query()->create($request->validated());
+        $data = $request->safe()->only(['nombre', 'descripcion']);
+        $storedImagePath = null;
+
+        try {
+            if ($request->hasFile('imagen_png')) {
+                $storedImagePath = $this->tipoEquipoImageService->storeUploadedImage($request->file('imagen_png'));
+                $data['image_path'] = $storedImagePath;
+            }
+
+            TipoEquipo::query()->create($data);
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            if ($storedImagePath !== null) {
+                $this->tipoEquipoImageService->deleteImage($storedImagePath);
+            }
+
+            report($exception);
+
+            return back()
+                ->withInput()
+                ->with('error', 'No fue posible guardar el tipo de equipo. Verifique la imagen e intente nuevamente.');
+        }
 
         return redirect()
             ->route('tipos-equipos.index')
@@ -66,7 +95,39 @@ class TipoEquipoController extends Controller
 
     public function update(UpdateTipoEquipoRequest $request, TipoEquipo $tipo_equipo): RedirectResponse
     {
-        $tipo_equipo->update($request->validated());
+        $data = $request->safe()->only(['nombre', 'descripcion']);
+        $removeCurrentImage = $request->boolean('remove_imagen_png');
+        $currentImagePath = $tipo_equipo->image_path;
+        $newImagePath = null;
+
+        try {
+            if ($request->hasFile('imagen_png')) {
+                $newImagePath = $this->tipoEquipoImageService->storeUploadedImage($request->file('imagen_png'));
+                $data['image_path'] = $newImagePath;
+            } elseif ($removeCurrentImage) {
+                $data['image_path'] = null;
+            }
+
+            $tipo_equipo->update($data);
+
+            if ($newImagePath !== null) {
+                $this->tipoEquipoImageService->deleteImage($currentImagePath, $newImagePath);
+            } elseif ($removeCurrentImage) {
+                $this->tipoEquipoImageService->deleteImage($currentImagePath);
+            }
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            if ($newImagePath !== null) {
+                $this->tipoEquipoImageService->deleteImage($newImagePath);
+            }
+
+            report($exception);
+
+            return back()
+                ->withInput()
+                ->with('error', 'No fue posible actualizar el tipo de equipo. Verifique la imagen e intente nuevamente.');
+        }
 
         return redirect()
             ->route('tipos-equipos.index')
@@ -77,7 +138,10 @@ class TipoEquipoController extends Controller
     {
         $this->authorizeWrite($request);
 
+        $imagePath = $tipo_equipo->image_path;
+
         $tipo_equipo->delete();
+        $this->tipoEquipoImageService->deleteImage($imagePath);
 
         return redirect()
             ->route('tipos-equipos.index')

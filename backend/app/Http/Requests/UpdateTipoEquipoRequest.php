@@ -9,6 +9,13 @@ use Illuminate\Validation\Rule;
 
 class UpdateTipoEquipoRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'remove_imagen_png' => $this->boolean('remove_imagen_png'),
+        ]);
+    }
+
     public function authorize(): bool
     {
         $user = $this->user();
@@ -29,6 +36,8 @@ class UpdateTipoEquipoRequest extends FormRequest
                 Rule::unique('tipos_equipos', 'nombre')->ignore($tipo_equipo->id),
             ],
             'descripcion' => ['nullable', 'string'],
+            'imagen_png' => ['nullable', 'file', 'mimes:png', 'mimetypes:image/png', 'max:2048'],
+            'remove_imagen_png' => ['nullable', 'boolean'],
         ];
     }
 
@@ -37,6 +46,9 @@ class UpdateTipoEquipoRequest extends FormRequest
         return [
             'nombre.required' => 'El nombre es obligatorio.',
             'nombre.unique' => 'Ya existe un tipo de equipo con ese nombre.',
+            'imagen_png.mimes' => 'La imagen debe estar en formato PNG.',
+            'imagen_png.mimetypes' => 'La imagen debe estar en formato PNG valido.',
+            'imagen_png.max' => 'La imagen no puede superar los 2 MB.',
         ];
     }
 }

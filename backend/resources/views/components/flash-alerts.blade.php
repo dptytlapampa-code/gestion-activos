@@ -1,27 +1,35 @@
 @if (session('status'))
     <div class="app-alert app-alert-success" role="status" aria-live="polite">
-        <span class="app-alert-icon" aria-hidden="true">OK</span>
+        <span class="app-alert-icon" aria-hidden="true">
+            <x-icon name="check-circle-2" class="h-4 w-4" />
+        </span>
         <span>{{ session('status') }}</span>
     </div>
 @endif
 
 @if (session('warning'))
     <div class="app-alert app-alert-warning" role="alert" aria-live="assertive">
-        <span class="app-alert-icon" aria-hidden="true">!</span>
+        <span class="app-alert-icon" aria-hidden="true">
+            <x-icon name="info" class="h-4 w-4" />
+        </span>
         <span>{{ session('warning') }}</span>
     </div>
 @endif
 
 @if (session('error'))
     <div class="app-alert app-alert-error" role="alert" aria-live="assertive">
-        <span class="app-alert-icon" aria-hidden="true">!</span>
+        <span class="app-alert-icon" aria-hidden="true">
+            <x-icon name="alert-circle" class="h-4 w-4" />
+        </span>
         <span>{{ session('error') }}</span>
     </div>
 @endif
 
 @if ($errors->any() && ! session('error'))
     <div class="app-alert app-alert-error" role="alert" aria-live="assertive">
-        <span class="app-alert-icon" aria-hidden="true">!</span>
+        <span class="app-alert-icon" aria-hidden="true">
+            <x-icon name="alert-circle" class="h-4 w-4" />
+        </span>
         <div>
             <p class="font-semibold">Revise los campos marcados para continuar.</p>
             <ul class="mt-1 list-disc pl-5">

@@ -25,7 +25,7 @@
         $equiposEnMantenimiento = $equiposPorEstado[\App\Models\EquipoStatus::CODE_EN_SERVICIO_TECNICO] ?? 0;
 
         $equiposRecientes = \App\Models\Equipo::query()
-            ->with(['oficina:id,nombre', 'equipoStatus:id,code,name'])
+            ->with(['oficina:id,nombre', 'equipoStatus:id,code,name', 'tipoEquipo:id,nombre,image_path'])
             ->join('offices', 'offices.id', '=', 'equipos.oficina_id')
             ->join('services', 'services.id', '=', 'offices.service_id')
             ->when(
@@ -40,9 +40,9 @@
 
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <div class="flex items-center gap-4 rounded-xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <svg class="h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 21V6.75A2.25 2.25 0 0 1 7.5 4.5h9a2.25 2.25 0 0 1 2.25 2.25V21M9 9h.008v.008H9V9Zm0 3h.008v.008H9V12Zm0 3h.008v.008H9V15Zm3-6h.008v.008H12V9Zm0 3h.008v.008H12V12Zm0 3h.008v.008H12V15Zm3-6h.008v.008H15V9Zm0 3h.008v.008H15V12Zm0 3h.008v.008H15V15Z" />
-            </svg>
+            <div class="rounded-xl bg-indigo-50 p-2.5 text-indigo-600">
+                <x-icon name="building-2" class="h-6 w-6" />
+            </div>
             <div>
                 <p class="text-3xl font-semibold text-slate-800">{{ $instituciones }}</p>
                 <p class="text-sm text-slate-500">Instituciones</p>
@@ -50,9 +50,9 @@
         </div>
 
         <div class="flex items-center gap-4 rounded-xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <svg class="h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 21V6.75a2.25 2.25 0 0 1 2.25-2.25h3a2.25 2.25 0 0 1 2.25 2.25V21m-7.5 0h7.5m-7.5 0H4.875A1.125 1.125 0 0 1 3.75 19.875V11.25c0-.621.504-1.125 1.125-1.125h2.25m8.25 10.875h3.75a1.125 1.125 0 0 0 1.125-1.125V11.25a1.125 1.125 0 0 0-1.125-1.125h-2.25M9 9.75h.008v.008H9V9.75Zm0 3h.008v.008H9v-.008Zm0 3h.008v.008H9v-.008Zm3-6h.008v.008H12V9.75Zm0 3h.008v.008H12v-.008Zm0 3h.008v.008H12v-.008Zm3-6h.008v.008H15V9.75Zm0 3h.008v.008H15v-.008Zm0 3h.008v.008H15v-.008Z" />
-            </svg>
+            <div class="rounded-xl bg-indigo-50 p-2.5 text-indigo-600">
+                <x-icon name="map-pin" class="h-6 w-6" />
+            </div>
             <div>
                 <p class="text-3xl font-semibold text-slate-800">{{ $oficinas }}</p>
                 <p class="text-sm text-slate-500">Oficinas</p>
@@ -60,9 +60,9 @@
         </div>
 
         <div class="flex items-center gap-4 rounded-xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <svg class="h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 5.25h16.5a1.5 1.5 0 0 1 1.5 1.5v9a1.5 1.5 0 0 1-1.5 1.5H3.75a1.5 1.5 0 0 1-1.5-1.5v-9a1.5 1.5 0 0 1 1.5-1.5ZM9.75 20.25h4.5M10.5 17.25l-.75 3m4.5-3 .75 3" />
-            </svg>
+            <div class="rounded-xl bg-indigo-50 p-2.5 text-indigo-600">
+                <x-icon name="monitor" class="h-6 w-6" />
+            </div>
             <div>
                 <p class="text-3xl font-semibold text-slate-800">{{ $totalEquipos }}</p>
                 <p class="text-sm text-slate-500">Equipos</p>
@@ -70,9 +70,9 @@
         </div>
 
         <div class="flex items-center gap-4 rounded-xl bg-white p-6 shadow-sm transition hover:shadow-md">
-            <svg class="h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="m11.42 15.17 6.375 6.375a1.875 1.875 0 0 0 2.652-2.652l-6.375-6.375m-6.75 6.75 6.375-6.375m0 0L8.625 3.67a1.875 1.875 0 0 0-2.652 2.652l6.375 6.375m0 0 3.182-3.182m-6.364 6.364 3.182-3.182" />
-            </svg>
+            <div class="rounded-xl bg-indigo-50 p-2.5 text-indigo-600">
+                <x-icon name="stethoscope" class="h-6 w-6" />
+            </div>
             <div>
                 <p class="text-3xl font-semibold text-slate-800">{{ $equiposEnMantenimiento }}</p>
                 <p class="text-sm text-slate-500">Equipos en mantenimiento</p>
@@ -114,7 +114,12 @@
                                 };
                             @endphp
                             <tr class="border-b border-slate-100 transition hover:bg-slate-50">
-                                <td class="px-2 py-3 text-slate-700">{{ $equipo->tipo }}</td>
+                                <td class="px-2 py-3 text-slate-700">
+                                    <div class="flex items-center gap-2">
+                                        <x-tipo-equipo-image :tipo-equipo="$equipo->tipoEquipo" size="xs" class="rounded-lg" />
+                                        <span>{{ $equipo->tipo }}</span>
+                                    </div>
+                                </td>
                                 <td class="px-2 py-3 text-slate-700">{{ $equipo->numero_serie ?: '-' }}</td>
                                 <td class="px-2 py-3 text-slate-700">{{ $equipo->oficina?->nombre ?: '-' }}</td>
                                 <td class="px-2 py-3 text-slate-700">{{ optional($equipo->created_at)->format('d/m/Y') }}</td>
@@ -143,7 +148,10 @@
                             <p>{{ $acta->created_at?->diffForHumans() }}</p>
                             <p>{{ $acta->creator?->name ?? 'Usuario' }}</p>
                         </div>
-                        <a href="{{ route('actas.show', $acta) }}" class="rounded-md bg-indigo-50 px-3 py-1 text-sm text-indigo-600 transition hover:bg-indigo-100">Ver</a>
+                        <a href="{{ route('actas.show', $acta) }}" class="inline-flex items-center gap-1 rounded-md bg-indigo-50 px-3 py-1 text-sm text-indigo-600 transition hover:bg-indigo-100">
+                            <x-icon name="eye" class="h-4 w-4" />
+                            Ver
+                        </a>
                     </div>
                 @empty
                     <p class="text-sm text-slate-500">No hay actas recientes.</p>
@@ -152,5 +160,3 @@
         </aside>
     </div>
 @endsection
-
-

@@ -287,12 +287,11 @@
                 class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:opacity-70"
                 :disabled="isSubmitting"
             >
-                <svg x-show="isSubmitting" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-30"></circle>
-                    <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" stroke-width="4" class="opacity-90"></path>
-                </svg>
-                <span x-text="isSubmitting ? 'Guardando…' : '{{ $submit_label ?? 'Guardar equipo' }}'"></span>
+                <x-icon name="loader-circle" x-show="isSubmitting" class="h-4 w-4 animate-spin" />
+                <span x-text="isSubmitting ? 'Guardando...' : '{{ $submit_label ?? 'Guardar equipo' }}'"></span>
             </button>
         </div>
     </form>
 </div>
+
+

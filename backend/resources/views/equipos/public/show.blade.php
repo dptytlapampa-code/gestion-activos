@@ -12,15 +12,21 @@
     @endphp
 
     <section class="card space-y-6">
-        <header>
-            <h1 class="text-xl font-semibold text-slate-800">Ficha publica del equipo</h1>
-            <p class="mt-1 text-sm text-slate-500">Consulta institucional de solo lectura.</p>
+        <header class="flex items-start gap-4">
+            <x-tipo-equipo-image :tipo-equipo="$equipo->tipoEquipo" size="lg" class="rounded-xl" />
+            <div>
+                <h1 class="text-xl font-semibold text-slate-800">Ficha publica del equipo</h1>
+                <p class="mt-1 text-sm text-slate-500">Consulta institucional de solo lectura.</p>
+            </div>
         </header>
 
         <div class="grid gap-4 md:grid-cols-2">
             <div>
                 <p class="text-xs uppercase tracking-wide text-slate-500">Tipo de equipo</p>
-                <p class="text-sm font-medium text-slate-800">{{ $tipoEquipo }}</p>
+                <div class="mt-1 flex items-center gap-2">
+                    <x-tipo-equipo-image :tipo-equipo="$equipo->tipoEquipo" size="xs" class="rounded-lg" />
+                    <p class="text-sm font-medium text-slate-800">{{ $tipoEquipo }}</p>
+                </div>
             </div>
             <div>
                 <p class="text-xs uppercase tracking-wide text-slate-500">Marca</p>
