@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Support\Auditing\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Collection;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -62,6 +64,55 @@ class User extends Authenticatable
     public function institution(): BelongsTo
     {
         return $this->belongsTo(Institution::class);
+    }
+
+    public function permittedInstitutions(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Institution::class,
+            'user_institution_permissions',
+            'user_id',
+            'institution_id'
+        )->withTimestamps();
+    }
+
+    /**
+     * @return Collection<int, int>
+     */
+    public function accessibleInstitutionIds(): Collection
+    {
+        if ($this->hasRole(self::ROLE_SUPERADMIN)) {
+            return Institution::query()
+                ->orderBy('id')
+                ->pluck('id')
+                ->map(fn ($id): int => (int) $id)
+                ->values();
+        }
+
+        $primaryId = $this->institution_id !== null ? [(int) $this->institution_id] : [];
+        $additionalIds = $this->relationLoaded('permittedInstitutions')
+            ? $this->permittedInstitutions->pluck('id')
+            : $this->permittedInstitutions()->pluck('institutions.id');
+
+        return collect($primaryId)
+            ->merge($additionalIds)
+            ->filter(fn ($id): bool => (int) $id > 0)
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values();
+    }
+
+    public function canAccessInstitution(?int $institutionId): bool
+    {
+        if ($institutionId === null || $institutionId <= 0) {
+            return false;
+        }
+
+        if ($this->hasRole(self::ROLE_SUPERADMIN)) {
+            return true;
+        }
+
+        return $this->accessibleInstitutionIds()->contains((int) $institutionId);
     }
 
     public function hasRole(string ...$roles): bool

@@ -116,7 +116,12 @@ class Acta extends Model
     public function equipos(): BelongsToMany
     {
         return $this->belongsToMany(Equipo::class, 'acta_equipo')
-            ->withPivot(['cantidad', 'accesorios']);
+            ->withPivot(['cantidad', 'accesorios', 'institucion_origen_id', 'institucion_origen_nombre', 'servicio_origen_id', 'servicio_origen_nombre', 'oficina_origen_id', 'oficina_origen_nombre']);
+    }
+
+    public function movimientos(): HasMany
+    {
+        return $this->hasMany(Movimiento::class)->latest('fecha');
     }
 
     public function historial(): HasMany
@@ -139,3 +144,4 @@ class Acta extends Model
         return self::LABELS[$this->tipo] ?? strtoupper((string) $this->tipo);
     }
 }
+

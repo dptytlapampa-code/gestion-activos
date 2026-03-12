@@ -88,7 +88,12 @@
         </section>
 
         <section class="card space-y-4">
-            <h3 class="text-lg font-semibold text-slate-900">Paso 3 - Equipos seleccionados y origen</h3>
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-slate-900">Paso 3 - Equipos seleccionados y trazabilidad</h3>
+                <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Multiples origenes permitidos</span>
+            </div>
+
+            <p class="text-sm text-slate-600">Puede incluir equipos de distintos hospitales/instituciones siempre que tenga permisos sobre cada origen.</p>
 
             <template x-if="!selected.length">
                 <p class="text-sm text-slate-500">Todavia no agrego equipos al acta.</p>
@@ -107,11 +112,19 @@
                             </button>
                         </div>
 
-                        <div class="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
-                            <p class="font-semibold text-slate-900">Origen</p>
-                            <p class="mt-1" x-text="item.institucion || '-'"></p>
-                            <p x-text="item.servicio || '-'"></p>
-                            <p x-text="item.oficina || '-'"></p>
+                        <div class="mt-3 grid gap-3 md:grid-cols-2">
+                            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                                <p class="font-semibold text-slate-900">Origen del equipo</p>
+                                <p class="mt-1" x-text="item.institucion || '-'"></p>
+                                <p x-text="item.servicio || '-'"></p>
+                                <p x-text="item.oficina || '-'"></p>
+                            </div>
+                            <div class="rounded-xl border border-primary-200 bg-primary-50 p-3 text-sm text-slate-700">
+                                <p class="font-semibold text-primary-800">Destino comun (previo)</p>
+                                <p class="mt-1" x-text="getDestinoPreview().institucion"></p>
+                                <p x-text="getDestinoPreview().servicio"></p>
+                                <p x-text="getDestinoPreview().oficina"></p>
+                            </div>
                         </div>
 
                         <div class="mt-3 grid gap-3 md:grid-cols-2">
@@ -189,16 +202,21 @@
 
             <template x-if="tipo === 'traslado'">
                 <div class="space-y-4">
-                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                        <p class="font-semibold text-slate-900">Institucion origen detectada</p>
-                        <p class="mt-1" x-text="selected.length ? (getSelectedInstitutionName() || 'Sin institucion') : 'Agregue equipos para detectar la institucion.'"></p>
-                        <p class="mt-1 text-xs text-slate-500">Regla: el traslado no permite cambiar de institucion.</p>
-                    </div>
-
-                    <div class="grid gap-4 md:grid-cols-2">
+                    <p class="text-sm text-slate-600">Seleccione un destino comun para todos los equipos del acta.</p>
+                    <div class="grid gap-4 md:grid-cols-3">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700">Institucion destino</label>
+                            <select name="institution_destino_id" x-model="institution_destino_id" @change="onTrasladoInstitutionChange()" class="mt-1 w-full rounded-xl border-slate-300">
+                                <option value="">Seleccionar</option>
+                                @foreach ($institutions as $institution)
+                                    <option value="{{ $institution->id }}">{{ $institution->nombre }}</option>
+                                @endforeach
+                            </select>
+                            @error('institution_destino_id') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                        </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700">Servicio destino</label>
-                            <select name="service_destino_id" x-model="service_destino_id" @change="onDestinoServiceChange('traslado')" :disabled="!getSelectedInstitutionId() || isLoadingServices.traslado" class="mt-1 w-full rounded-xl border-slate-300 disabled:bg-slate-100 disabled:text-slate-500">
+                            <select name="service_destino_id" x-model="service_destino_id" @change="onDestinoServiceChange('traslado')" :disabled="!institution_destino_id || isLoadingServices.traslado" class="mt-1 w-full rounded-xl border-slate-300 disabled:bg-slate-100 disabled:text-slate-500">
                                 <option value="">Seleccionar</option>
                                 <template x-for="service in serviceOptions.traslado" :key="`st-${service.id}`">
                                     <option :value="String(service.id)" x-text="service.label"></option>
@@ -292,7 +310,6 @@
             officeOptions: { destino: [], traslado: [] },
             isLoadingServices: { destino: false, traslado: false },
             isLoadingOffices: { destino: false, traslado: false },
-            currentTrasladoInstitutionId: '',
             isSuperadmin,
             userInstitutionId,
 
@@ -300,57 +317,75 @@
                 const initialServiceDestinoId = this.service_destino_id ? String(this.service_destino_id) : '';
                 const initialOfficeDestinoId = this.office_destino_id ? String(this.office_destino_id) : '';
 
-                if (this.tipo === 'entrega' && this.institution_destino_id) {
-                    await this.loadServices('destino', this.institution_destino_id, false);
+                if (['entrega', 'traslado'].includes(this.tipo) && this.institution_destino_id) {
+                    const scope = this.tipo === 'traslado' ? 'traslado' : 'destino';
+                    await this.loadServices(scope, this.institution_destino_id, false);
 
                     if (initialServiceDestinoId) {
-                        const serviceExists = this.serviceOptions.destino.some((service) => String(service.id) === initialServiceDestinoId);
+                        const serviceExists = this.serviceOptions[scope].some((service) => String(service.id) === initialServiceDestinoId);
                         this.service_destino_id = serviceExists ? initialServiceDestinoId : '';
                     }
+
+                    if (this.service_destino_id && initialOfficeDestinoId) {
+                        await this.loadOffices(scope, this.institution_destino_id, this.service_destino_id);
+                        const officeExists = this.officeOptions[scope].some((office) => String(office.id) === initialOfficeDestinoId);
+                        this.office_destino_id = officeExists ? initialOfficeDestinoId : '';
+                    }
                 }
-
-                if (this.tipo === 'entrega' && this.institution_destino_id && this.service_destino_id && initialOfficeDestinoId) {
-                    await this.loadOffices('destino', this.institution_destino_id, this.service_destino_id);
-
-                    const officeExists = this.officeOptions.destino.some((office) => String(office.id) === initialOfficeDestinoId);
-                    this.office_destino_id = officeExists ? initialOfficeDestinoId : '';
-                }
-
-                await this.refreshTrasladoContext(false);
             },
 
             selectTipo(tipo) {
                 this.tipo = tipo;
                 this.errorBusqueda = '';
 
-                if (tipo !== 'entrega') {
+                if (!['entrega', 'traslado'].includes(tipo)) {
                     this.institution_destino_id = '';
-                    this.serviceOptions.destino = [];
-                    this.officeOptions.destino = [];
                     this.service_destino_id = '';
                     this.office_destino_id = '';
-                }
-
-                if (tipo === 'traslado') {
-                    this.refreshTrasladoContext(true);
+                    this.serviceOptions.destino = [];
+                    this.serviceOptions.traslado = [];
+                    this.officeOptions.destino = [];
+                    this.officeOptions.traslado = [];
                 }
             },
 
-            getSelectedInstitutionId() {
-                const ids = [...new Set(this.selected.map((item) => Number(item.institucion_id || 0)).filter((id) => id > 0))];
-                if (ids.length !== 1) {
-                    return '';
+            getDestinoPreview() {
+                if (!['entrega', 'traslado'].includes(this.tipo)) {
+                    return {
+                        institucion: 'Destino no aplica para este tipo de acta.',
+                        servicio: '-',
+                        oficina: '-',
+                    };
                 }
 
-                return String(ids[0]);
+                const scope = this.tipo === 'traslado' ? 'traslado' : 'destino';
+                const institution = this.institutionsById()[this.institution_destino_id] || 'Institucion destino pendiente';
+                const service = this.findOptionLabel(this.serviceOptions[scope], this.service_destino_id) || 'Servicio destino pendiente';
+                const office = this.findOptionLabel(this.officeOptions[scope], this.office_destino_id) || 'Oficina destino pendiente';
+
+                return {
+                    institucion: institution,
+                    servicio: service,
+                    oficina: office,
+                };
             },
 
-            getSelectedInstitutionName() {
-                if (!this.selected.length) {
+            institutionsById() {
+                return Array.isArray(institutions)
+                    ? institutions.reduce((carry, institution) => {
+                        carry[String(institution.id)] = institution.nombre;
+                        return carry;
+                    }, {})
+                    : {};
+            },
+
+            findOptionLabel(options, value) {
+                if (!value || !Array.isArray(options)) {
                     return '';
                 }
 
-                return this.selected[0].institucion || '';
+                const found = options.find((item) => String(item.id) === String(value));
+                return found ? found.label : '';
             },
 
             async onEntregaInstitutionChange() {
@@ -367,66 +402,31 @@
                 await this.loadServices('destino', this.institution_destino_id, true);
             },
 
+            async onTrasladoInstitutionChange() {
+                this.errorBusqueda = '';
+                this.service_destino_id = '';
+                this.office_destino_id = '';
+                this.serviceOptions.traslado = [];
+                this.officeOptions.traslado = [];
+
+                if (!this.institution_destino_id) {
+                    return;
+                }
+
+                await this.loadServices('traslado', this.institution_destino_id, true);
+            },
+
             async onDestinoServiceChange(scope) {
                 this.office_destino_id = '';
                 this.officeOptions[scope] = [];
 
-                if (!this.service_destino_id) {
+                if (!this.service_destino_id || !this.institution_destino_id) {
                     return;
                 }
 
-                let institutionId = '';
-                if (scope === 'destino') {
-                    institutionId = this.institution_destino_id;
-                }
-
-                if (scope === 'traslado') {
-                    institutionId = this.getSelectedInstitutionId();
-                }
-
-                if (!institutionId) {
-                    return;
-                }
-
-                await this.loadOffices(scope, institutionId, this.service_destino_id);
+                await this.loadOffices(scope, this.institution_destino_id, this.service_destino_id);
             },
 
-            async refreshTrasladoContext(resetSelection) {
-                if (this.tipo !== 'traslado') {
-                    return;
-                }
-
-                const institutionId = this.getSelectedInstitutionId();
-
-                if (!institutionId) {
-                    this.currentTrasladoInstitutionId = '';
-                    this.serviceOptions.traslado = [];
-                    this.officeOptions.traslado = [];
-                    if (resetSelection) {
-                        this.service_destino_id = '';
-                        this.office_destino_id = '';
-                    }
-                    return;
-                }
-
-                if (this.currentTrasladoInstitutionId !== institutionId) {
-                    this.currentTrasladoInstitutionId = institutionId;
-                    this.serviceOptions.traslado = [];
-                    this.officeOptions.traslado = [];
-                    if (resetSelection) {
-                        this.service_destino_id = '';
-                        this.office_destino_id = '';
-                    }
-                    await this.loadServices('traslado', institutionId, true);
-                    if (resetSelection) {
-                        return;
-                    }
-                }
-
-                if (this.service_destino_id) {
-                    await this.loadOffices('traslado', institutionId, this.service_destino_id);
-                }
-            },
             async loadServices(scope, institutionId, clearOnError) {
                 if (!institutionId) {
                     return;
@@ -484,11 +484,6 @@
 
                 try {
                     const params = new URLSearchParams({ q, acta_context: '1' });
-                    const selectedInstitutionId = this.getSelectedInstitutionId();
-                    if (selectedInstitutionId) {
-                        params.set('institution_id', selectedInstitutionId);
-                    }
-
                     const response = await fetch(`/api/search/equipos?${params.toString()}`);
                     const payload = await response.json();
                     this.results = Array.isArray(payload) ? payload : [];
@@ -507,14 +502,6 @@
                     return;
                 }
 
-                const selectedInstitutionId = this.getSelectedInstitutionId();
-                const itemInstitutionId = item.institucion_id ? String(item.institucion_id) : '';
-
-                if (selectedInstitutionId && itemInstitutionId && selectedInstitutionId !== itemInstitutionId) {
-                    this.errorBusqueda = 'No se pueden mezclar equipos de instituciones distintas en la misma acta.';
-                    return;
-                }
-
                 this.selected.push({
                     ...item,
                     institucion_id: item.institucion_id ? Number(item.institucion_id) : null,
@@ -523,18 +510,10 @@
                     cantidad: 1,
                     accesorios: '',
                 });
-
-                if (this.tipo === 'traslado') {
-                    this.refreshTrasladoContext(true);
-                }
             },
 
             remove(index) {
                 this.selected.splice(index, 1);
-
-                if (this.tipo === 'traslado') {
-                    this.refreshTrasladoContext(true);
-                }
             },
         };
     }

@@ -41,7 +41,7 @@ class ActaController extends Controller
             ->with(['creator:id,name'])
             ->when(
                 ! $user->hasRole(User::ROLE_SUPERADMIN),
-                fn (Builder $query) => $query->where('institution_id', $user->institution_id)
+                fn (Builder $query) => $query->whereIn('institution_id', $user->accessibleInstitutionIds())
             )
             ->when($validated['tipo'] ?? null, fn (Builder $query, string $tipo) => $query->where('tipo', $tipo))
             ->when($validated['fecha_desde'] ?? null, fn (Builder $query, string $fechaDesde) => $query->whereDate('fecha', '>=', $fechaDesde))
@@ -194,7 +194,7 @@ class ActaController extends Controller
             'creator:id,name',
             'annulledBy:id,name',
             'equipos.tipoEquipo',
-            'equipos.oficina.service',
+            'equipos.oficina.service.institution',
             'documents.uploadedBy:id,name',
             'historial.usuario:id,name',
             'historial.equipo:id,tipo,numero_serie',
@@ -217,6 +217,7 @@ class ActaController extends Controller
             'creator',
             'annulledBy',
             'equipos.tipoEquipo',
+            'equipos.oficina.service.institution',
         ]);
 
         $pdfData = array_merge(['acta' => $acta], $this->actaPdfDataService->build($acta));

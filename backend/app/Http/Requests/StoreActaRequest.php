@@ -85,16 +85,26 @@ class StoreActaRequest extends FormRequest
             }
 
             if ($tipo === Acta::TIPO_TRASLADO) {
-                if ($this->filled('institution_destino_id')) {
-                    $validator->errors()->add('institution_destino_id', 'El traslado no permite cambiar de institucion.');
-                }
-
                 if (! $this->filled('service_destino_id')) {
                     $validator->errors()->add('service_destino_id', 'Debe seleccionar el servicio destino.');
                 }
 
                 if (! $this->filled('office_destino_id')) {
                     $validator->errors()->add('office_destino_id', 'Debe seleccionar la oficina destino.');
+                }
+
+                $institutionDestinoId = $this->integer('institution_destino_id');
+                $serviceDestinoId = $this->integer('service_destino_id');
+
+                if ($institutionDestinoId > 0 && $serviceDestinoId > 0) {
+                    $belongs = Service::query()
+                        ->where('id', $serviceDestinoId)
+                        ->where('institution_id', $institutionDestinoId)
+                        ->exists();
+
+                    if (! $belongs) {
+                        $validator->errors()->add('service_destino_id', 'El servicio destino no pertenece a la institucion destino.');
+                    }
                 }
             }
 
@@ -116,7 +126,7 @@ class StoreActaRequest extends FormRequest
         $officeDestinoId = $this->integer('office_destino_id');
         $institutionDestinoId = $this->integer('institution_destino_id');
 
-        if ($tipo === Acta::TIPO_ENTREGA && $serviceDestinoId > 0 && $institutionDestinoId > 0) {
+        if (in_array($tipo, [Acta::TIPO_ENTREGA, Acta::TIPO_TRASLADO], true) && $serviceDestinoId > 0 && $institutionDestinoId > 0) {
             $belongs = Service::query()->where('id', $serviceDestinoId)->where('institution_id', $institutionDestinoId)->exists();
             if (! $belongs) {
                 $validator->errors()->add('service_destino_id', 'El servicio destino no pertenece a la institucion destino.');
@@ -131,4 +141,3 @@ class StoreActaRequest extends FormRequest
         }
     }
 }
-

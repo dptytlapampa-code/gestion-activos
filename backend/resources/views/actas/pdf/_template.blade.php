@@ -98,7 +98,7 @@
         border: 1px solid #6b7280;
         padding: 4px 5px;
         vertical-align: top;
-        font-size: 11px;
+        font-size: 10px;
     }
 
     .detail-table th {
@@ -176,6 +176,13 @@
         $documentTitle = $pdfDocumentTitle ?? strtoupper((string) ($titulo ?? 'ACTA DE EQUIPAMIENTO INFORMATICO'));
         $institutionName = $pdfInstitutionName ?? ($acta->institution?->nombre ?: 'Institucion');
         $clausulaTexto = $clausula ?? 'Se deja constancia institucional del evento de trazabilidad registrado sobre el equipamiento detallado en el presente documento.';
+        $origenMultiple = (bool) data_get($acta->evento_payload, 'origen_multiple', false);
+        $institucionesOrigenCount = count(data_get($acta->evento_payload, 'instituciones_origen_ids', []));
+        $destinoTexto = trim(implode(' / ', [
+            $acta->institucionDestino?->nombre ?: '-',
+            $acta->servicioDestino?->nombre ?: '-',
+            $acta->oficinaDestino?->nombre ?: '-',
+        ]));
     @endphp
 
     @if ($isAnulada)
@@ -203,7 +210,14 @@
                     <td><span class="label">Fecha</span>{{ $acta->fecha?->format('d/m/Y') ?: '-' }}</td>
                 </tr>
                 <tr>
-                    <td colspan="2"><span class="label">Institucion origen</span>{{ $acta->institution?->nombre ?: '-' }}</td>
+                    <td colspan="2">
+                        <span class="label">Institucion origen</span>
+                        @if ($origenMultiple)
+                            Multiples instituciones ({{ $institucionesOrigenCount }})
+                        @else
+                            {{ $acta->institution?->nombre ?: '-' }}
+                        @endif
+                    </td>
                     <td><span class="label">Institucion destino</span>{{ $acta->institucionDestino?->nombre ?: '-' }}</td>
                 </tr>
             </table>
@@ -214,25 +228,43 @@
             <table class="detail-table">
                 <thead>
                 <tr>
-                    <th style="width: 24%;">Equipo</th>
-                    <th style="width: 25%;">Marca / Modelo</th>
-                    <th style="width: 17%;">Serie</th>
-                    <th style="width: 20%;">Patrimonial</th>
-                    <th style="width: 14%;">Cantidad</th>
+                    <th style="width: 15%;">Equipo</th>
+                    <th style="width: 17%;">Marca / Modelo</th>
+                    <th style="width: 10%;">Serie</th>
+                    <th style="width: 13%;">Patrimonial</th>
+                    <th style="width: 19%;">Origen snapshot</th>
+                    <th style="width: 18%;">Destino</th>
+                    <th style="width: 8%;">Cant.</th>
                 </tr>
                 </thead>
                 <tbody>
                 @forelse ($acta->equipos as $equipo)
+                    @php
+                        $payloadOrigen = data_get($acta->evento_payload, 'origenes_por_equipo.'.(string) $equipo->id, []);
+                        $origenTexto = trim(implode(' / ', [
+                            $equipo->pivot->institucion_origen_nombre
+                                ?: data_get($payloadOrigen, 'institucion_nombre')
+                                ?: '-',
+                            $equipo->pivot->servicio_origen_nombre
+                                ?: data_get($payloadOrigen, 'servicio_nombre')
+                                ?: '-',
+                            $equipo->pivot->oficina_origen_nombre
+                                ?: data_get($payloadOrigen, 'oficina_nombre')
+                                ?: '-',
+                        ]));
+                    @endphp
                     <tr>
                         <td>{{ $equipo->tipoEquipo?->nombre ?? $equipo->tipo }}</td>
                         <td>{{ trim(($equipo->marca ?: '-') . ' / ' . ($equipo->modelo ?: '-')) }}</td>
                         <td>{{ $equipo->numero_serie ?: '-' }}</td>
                         <td>{{ $equipo->bien_patrimonial ?: '-' }}</td>
+                        <td>{{ $origenTexto }}</td>
+                        <td>{{ $destinoTexto }}</td>
                         <td>{{ $equipo->pivot->cantidad }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5">Sin equipos asociados.</td>
+                        <td colspan="7">Sin equipos asociados.</td>
                     </tr>
                 @endforelse
                 </tbody>
@@ -248,8 +280,8 @@
                     <td><span class="label">Cargo</span>{{ $acta->receptor_cargo ?: '-' }}</td>
                 </tr>
                 <tr>
-                    <td colspan="2"><span class="label">Servicio origen</span>{{ $acta->servicioOrigen?->nombre ?: '-' }}</td>
-                    <td><span class="label">Oficina origen</span>{{ $acta->oficinaOrigen?->nombre ?: '-' }}</td>
+                    <td colspan="2"><span class="label">Servicio origen</span>{{ $origenMultiple ? 'Multiples (ver detalle)' : ($acta->servicioOrigen?->nombre ?: '-') }}</td>
+                    <td><span class="label">Oficina origen</span>{{ $origenMultiple ? 'Multiples (ver detalle)' : ($acta->oficinaOrigen?->nombre ?: '-') }}</td>
                 </tr>
                 <tr>
                     <td colspan="2"><span class="label">Servicio destino</span>{{ $acta->servicioDestino?->nombre ?: '-' }}</td>

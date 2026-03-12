@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\Document;
 use App\Models\Equipo;
 use App\Models\Institution;
+use App\Models\Movimiento;
 use App\Models\Office;
 use App\Models\Service;
 use App\Models\TipoEquipo;
@@ -19,7 +20,7 @@ class ActaModuleTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_puede_crear_acta_entrega_y_actualiza_equipo_historial_y_pdf(): void
+    public function test_admin_puede_crear_acta_entrega_y_actualiza_equipo_historial_movimiento_y_pdf(): void
     {
         Storage::fake();
 
@@ -60,9 +61,86 @@ class ActaModuleTest extends TestCase
             'institucion_nueva' => $instB->id,
         ]);
 
+        $this->assertDatabaseHas('movimientos', [
+            'equipo_id' => $equipo->id,
+            'tipo_movimiento' => Movimiento::TIPO_TRASLADO,
+            'acta_id' => $acta->id,
+            'institucion_origen_id' => $instA->id,
+            'institucion_destino_id' => $instB->id,
+            'oficina_destino_id' => $officeB->id,
+        ]);
+
+        $this->assertDatabaseHas('acta_equipo', [
+            'acta_id' => $acta->id,
+            'equipo_id' => $equipo->id,
+            'institucion_origen_id' => $instA->id,
+            'servicio_origen_id' => $officeA->service_id,
+            'oficina_origen_id' => $officeA->id,
+        ]);
+
         $document = Document::query()->where('documentable_type', Acta::class)->first();
         $this->assertNotNull($document);
         Storage::assertExists($document->file_path);
+    }
+
+    public function test_acta_permite_mezclar_equipos_de_distintas_instituciones_si_usuario_tiene_permisos(): void
+    {
+        Storage::fake();
+
+        [$adminA, $instA, , $officeA] = $this->crearEscenarioBase('A');
+        [, $instB, , $officeB] = $this->crearEscenarioBase('B');
+        [, $instZ, , , $serviceZ, $officeZ] = $this->crearEscenarioBase('Z');
+
+        $adminA->permittedInstitutions()->sync([$instB->id]);
+
+        $equipoA = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO, 'A');
+        $equipoB = $this->crearEquipo($officeB, Equipo::ESTADO_OPERATIVO, 'B');
+
+        $this->actingAs($adminA)->post(route('actas.store'), [
+            'tipo' => Acta::TIPO_ENTREGA,
+            'fecha' => now()->toDateString(),
+            'institution_destino_id' => $instZ->id,
+            'service_destino_id' => $serviceZ->id,
+            'office_destino_id' => $officeZ->id,
+            'receptor_nombre' => 'Responsable Z',
+            'receptor_dni' => '20111222',
+            'equipos' => [
+                ['equipo_id' => $equipoA->id, 'cantidad' => 1, 'accesorios' => 'Fuente A'],
+                ['equipo_id' => $equipoB->id, 'cantidad' => 1, 'accesorios' => 'Fuente B'],
+            ],
+        ])->assertRedirect();
+
+        $acta = Acta::query()->firstOrFail();
+
+        $this->assertDatabaseHas('acta_equipo', [
+            'acta_id' => $acta->id,
+            'equipo_id' => $equipoA->id,
+            'institucion_origen_id' => $instA->id,
+            'oficina_origen_id' => $officeA->id,
+        ]);
+
+        $this->assertDatabaseHas('acta_equipo', [
+            'acta_id' => $acta->id,
+            'equipo_id' => $equipoB->id,
+            'institucion_origen_id' => $instB->id,
+            'oficina_origen_id' => $officeB->id,
+        ]);
+
+        $this->assertDatabaseHas('equipo_historial', [
+            'equipo_id' => $equipoA->id,
+            'acta_id' => $acta->id,
+            'institucion_anterior' => $instA->id,
+            'institucion_nueva' => $instZ->id,
+        ]);
+
+        $this->assertDatabaseHas('equipo_historial', [
+            'equipo_id' => $equipoB->id,
+            'acta_id' => $acta->id,
+            'institucion_anterior' => $instB->id,
+            'institucion_nueva' => $instZ->id,
+        ]);
+
+        $this->assertSame(2, Movimiento::query()->where('acta_id', $acta->id)->where('tipo_movimiento', Movimiento::TIPO_TRASLADO)->count());
     }
 
     public function test_acta_prestamo_actualiza_estado_a_prestado_sin_mover_ubicacion(): void
@@ -94,6 +172,10 @@ class ActaModuleTest extends TestCase
             'oficina_anterior' => $officeA->id,
             'oficina_nueva' => $officeA->id,
         ]);
+        $this->assertDatabaseHas('movimientos', [
+            'equipo_id' => $equipo->id,
+            'tipo_movimiento' => Movimiento::TIPO_PRESTAMO,
+        ]);
     }
 
     public function test_acta_traslado_actualiza_ubicacion_dentro_de_la_misma_institucion(): void
@@ -106,6 +188,7 @@ class ActaModuleTest extends TestCase
         $this->actingAs($admin)->post(route('actas.store'), [
             'tipo' => Acta::TIPO_TRASLADO,
             'fecha' => now()->toDateString(),
+            'institution_destino_id' => $inst->id,
             'service_destino_id' => $serviceB->id,
             'office_destino_id' => $officeB->id,
             'observaciones' => 'Traslado interno',
@@ -127,40 +210,44 @@ class ActaModuleTest extends TestCase
         ]);
     }
 
-    public function test_traslado_no_permite_enviar_institucion_destino(): void
+    public function test_traslado_permite_mover_entre_instituciones_con_destino_unico(): void
     {
         Storage::fake();
 
-        [$admin, $instA, , $officeA, $serviceB, $officeB] = $this->crearEscenarioBase('A');
+        [$adminA, $instA, , $officeA] = $this->crearEscenarioBase('A');
+        [, $instB, , , $serviceB, $officeB] = $this->crearEscenarioBase('B');
+        $adminA->permittedInstitutions()->sync([$instB->id]);
+
         $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
 
-        $this->actingAs($admin)->post(route('actas.store'), [
+        $this->actingAs($adminA)->post(route('actas.store'), [
             'tipo' => Acta::TIPO_TRASLADO,
             'fecha' => now()->toDateString(),
-            'institution_destino_id' => $instA->id,
+            'institution_destino_id' => $instB->id,
             'service_destino_id' => $serviceB->id,
             'office_destino_id' => $officeB->id,
             'equipos' => [
                 ['equipo_id' => $equipo->id, 'cantidad' => 1],
             ],
-        ])->assertSessionHasErrors('institution_destino_id');
+        ])->assertRedirect();
 
-        $this->assertDatabaseCount('actas', 0);
-        $this->assertDatabaseCount('equipo_historial', 0);
+        $equipo->refresh();
+        $this->assertSame($officeB->id, $equipo->oficina_id);
     }
 
-    public function test_traslado_entre_instituciones_genera_error(): void
+    public function test_traslado_rechaza_servicio_fuera_de_la_institucion_destino_indicada(): void
     {
         Storage::fake();
 
-        [$admin, , , $officeA] = $this->crearEscenarioBase('A');
-        [, , , , $serviceB, $officeB] = $this->crearEscenarioBase('B');
+        [$adminA, $instA, , $officeA] = $this->crearEscenarioBase('A');
+        [, $instB, , , $serviceB, $officeB] = $this->crearEscenarioBase('B');
 
         $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
 
-        $this->actingAs($admin)->post(route('actas.store'), [
+        $this->actingAs($adminA)->post(route('actas.store'), [
             'tipo' => Acta::TIPO_TRASLADO,
             'fecha' => now()->toDateString(),
+            'institution_destino_id' => $instA->id,
             'service_destino_id' => $serviceB->id,
             'office_destino_id' => $officeB->id,
             'equipos' => [
@@ -238,17 +325,17 @@ class ActaModuleTest extends TestCase
         $this->assertSame($officeA->id, $equipo->oficina_id);
     }
 
-    public function test_admin_no_puede_generar_acta_con_equipo_de_otra_institucion(): void
+    public function test_admin_bloquea_solo_equipo_fuera_de_alcance_con_mensaje_claro(): void
     {
         Storage::fake();
 
         [$adminA, , , $officeA] = $this->crearEscenarioBase('A');
         [, , , $officeB] = $this->crearEscenarioBase('B');
 
-        $equipoA = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
+        $equipoA = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO, 'A');
         $equipoB = $this->crearEquipo($officeB, Equipo::ESTADO_OPERATIVO, 'B');
 
-        $this->actingAs($adminA)->post(route('actas.store'), [
+        $response = $this->actingAs($adminA)->post(route('actas.store'), [
             'tipo' => Acta::TIPO_ENTREGA,
             'fecha' => now()->toDateString(),
             'institution_destino_id' => $officeA->service->institution_id,
@@ -260,7 +347,11 @@ class ActaModuleTest extends TestCase
                 ['equipo_id' => $equipoA->id, 'cantidad' => 1],
                 ['equipo_id' => $equipoB->id, 'cantidad' => 1],
             ],
-        ])->assertSessionHasErrors('equipos');
+        ]);
+
+        $response->assertSessionHasErrors('equipos');
+        $error = session('errors')->first('equipos');
+        $this->assertStringContainsString($equipoB->numero_serie, $error);
 
         $this->assertDatabaseCount('actas', 0);
         $this->assertDatabaseCount('equipo_historial', 0);
@@ -400,6 +491,7 @@ class ActaModuleTest extends TestCase
             'status' => Acta::STATUS_ACTIVA,
         ]);
     }
+
     private function crearEscenarioBase(string $suffix = 'A'): array
     {
         $institution = Institution::create(['nombre' => 'Hospital '.$suffix]);
@@ -437,3 +529,6 @@ class ActaModuleTest extends TestCase
         ]);
     }
 }
+
+
+

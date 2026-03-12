@@ -31,10 +31,22 @@ class Movimiento extends Model
     ];
 
     protected $fillable = [
-        'equipo_id', 'user_id', 'tipo_movimiento', 'fecha',
-        'institucion_origen_id', 'servicio_origen_id', 'oficina_origen_id',
-        'institucion_destino_id', 'servicio_destino_id', 'oficina_destino_id',
-        'receptor_nombre', 'receptor_dni', 'receptor_cargo', 'fecha_inicio_prestamo', 'fecha_estimada_devolucion',
+        'equipo_id',
+        'user_id',
+        'acta_id',
+        'tipo_movimiento',
+        'fecha',
+        'institucion_origen_id',
+        'servicio_origen_id',
+        'oficina_origen_id',
+        'institucion_destino_id',
+        'servicio_destino_id',
+        'oficina_destino_id',
+        'receptor_nombre',
+        'receptor_dni',
+        'receptor_cargo',
+        'fecha_inicio_prestamo',
+        'fecha_estimada_devolucion',
         'fecha_devolucion_real',
         'observacion',
     ];
@@ -57,6 +69,11 @@ class Movimiento extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function acta(): BelongsTo
+    {
+        return $this->belongsTo(Acta::class);
     }
 
     public function documents(): MorphMany
@@ -83,3 +100,4 @@ class Movimiento extends Model
         return $this->tipo_movimiento === self::TIPO_DEVOLUCION;
     }
 }
+
