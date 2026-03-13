@@ -21,9 +21,9 @@
         ]),
         @js([
             'tipoLabels' => $tipoLabels,
-            'searchUrl' => route('api.search.acta-equipos'),
-            'servicesUrl' => url('/api/search/services'),
-            'officesUrl' => url('/api/search/offices'),
+            'searchUrl' => $searchEndpoints['actaEquipos'],
+            'servicesUrl' => $searchEndpoints['services'],
+            'officesUrl' => $searchEndpoints['offices'],
             'originInstitutions' => $originInstitutions,
             'destinationInstitutions' => $destinationInstitutions,
             'tipoEquipoOptions' => $tipoEquipoOptions,
@@ -729,7 +729,11 @@
                         this.isLoadingDestinationServices = true;
                     }
 
-                    const response = await fetch(`${this.servicesUrl}?${params.toString()}`);
+                    const response = await fetch(`${this.servicesUrl}?${params.toString()}`, {
+                        headers: {
+                            'Accept': 'application/json',
+                        },
+                    });
                     if (!response.ok) {
                         throw new Error(`services_${response.status}`);
                     }
@@ -780,7 +784,11 @@
                         this.isLoadingDestinationOffices = true;
                     }
 
-                    const response = await fetch(`${this.officesUrl}?${params.toString()}`);
+                    const response = await fetch(`${this.officesUrl}?${params.toString()}`, {
+                        headers: {
+                            'Accept': 'application/json',
+                        },
+                    });
                     if (!response.ok) {
                         throw new Error(`offices_${response.status}`);
                     }
@@ -874,7 +882,18 @@
                     }
 
                     if (!response.ok) {
-                        throw new Error(`search_${response.status}`);
+                        let backendMessage = 'Ocurrio un error al buscar equipos. Intente nuevamente.';
+
+                        try {
+                            const payload = await response.json();
+                            backendMessage = payload.message || backendMessage;
+                        } catch (parseError) {
+                            backendMessage = response.status >= 500
+                                ? 'Ocurrio un error al buscar equipos. Intente nuevamente.'
+                                : 'No fue posible completar la busqueda.';
+                        }
+
+                        throw new Error(backendMessage);
                     }
 
                     const payload = await response.json();
@@ -906,7 +925,7 @@
 
                     this.searchMeta = {
                         searched: true,
-                        message: 'No fue posible buscar equipos en este momento.',
+                        message: error.message || 'No fue posible buscar equipos en este momento.',
                         page,
                         per_page: 25,
                         has_more: false,

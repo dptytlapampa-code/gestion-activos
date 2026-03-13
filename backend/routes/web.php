@@ -65,14 +65,14 @@ Route::middleware('auth')->group(function (): void {
     });
 
     Route::prefix('api/search')->group(function (): void {
-        Route::get('institutions', [SearchController::class, 'searchInstitutions']);
-        Route::get('services', [SearchController::class, 'searchServices']);
-        Route::get('offices', [SearchController::class, 'searchOffices']);
-        Route::get('equipos', [SearchController::class, 'searchEquipos']);
+        Route::get('institutions', [SearchController::class, 'searchInstitutions'])->name('api.search.institutions');
+        Route::get('services', [SearchController::class, 'searchServices'])->name('api.search.services');
+        Route::get('offices', [SearchController::class, 'searchOffices'])->name('api.search.offices');
+        Route::get('equipos', [SearchController::class, 'searchEquipos'])->name('api.search.equipos');
         Route::get('acta-equipos', [SearchController::class, 'searchActaEquipos'])->name('api.search.acta-equipos');
     });
 });
 
-Route::get('/api/search/tipos-equipos', [SearchController::class, 'tiposEquipos'])->middleware('auth');
+Route::get('/api/search/tipos-equipos', [SearchController::class, 'tiposEquipos'])->middleware('auth')->name('api.search.tipos-equipos');
 
 
