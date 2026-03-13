@@ -109,14 +109,70 @@
     .detail-table th,
     .detail-table td {
         border: 1px solid #6b7280;
-        padding: 4px 5px;
+        padding: 3px 4px;
         vertical-align: top;
-        font-size: 10px;
+        font-size: 9px;
+        line-height: 1.2;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        word-break: break-word;
+        white-space: normal;
     }
 
     .detail-table th {
         background-color: #f3f4f6;
         text-align: left;
+    }
+
+    .detail-col-equipo {
+        width: 12%;
+    }
+
+    .detail-col-marca-modelo {
+        width: 16%;
+    }
+
+    .detail-col-serie {
+        width: 14%;
+    }
+
+    .detail-col-patrimonial {
+        width: 14%;
+    }
+
+    .detail-col-origen {
+        width: 20%;
+    }
+
+    .detail-col-destino {
+        width: 18%;
+    }
+
+    .detail-col-cantidad {
+        width: 6%;
+    }
+
+    .detail-cell-equipo,
+    .detail-cell-serie,
+    .detail-cell-patrimonial,
+    .detail-cell-cantidad {
+        text-align: center;
+    }
+
+    .detail-cell-marca-modelo .detail-primary,
+    .detail-cell-marca-modelo .detail-secondary {
+        display: block;
+    }
+
+    .detail-cell-marca-modelo .detail-secondary {
+        margin-top: 1px;
+    }
+
+    .detail-cell-serie,
+    .detail-cell-patrimonial {
+        font-family: DejaVu Sans Mono, DejaVu Sans, sans-serif;
+        font-size: 8.5px;
+        word-break: break-all;
     }
 
     .event-table td {
@@ -312,15 +368,24 @@
         <div class="section">
             <div class="section-title">Detalle de equipamiento</div>
             <table class="detail-table">
+                <colgroup>
+                    <col class="detail-col-equipo">
+                    <col class="detail-col-marca-modelo">
+                    <col class="detail-col-serie">
+                    <col class="detail-col-patrimonial">
+                    <col class="detail-col-origen">
+                    <col class="detail-col-destino">
+                    <col class="detail-col-cantidad">
+                </colgroup>
                 <thead>
                 <tr>
-                    <th style="width: 15%;">Equipo</th>
-                    <th style="width: 17%;">Marca / Modelo</th>
-                    <th style="width: 10%;">Serie</th>
-                    <th style="width: 13%;">Patrimonial</th>
-                    <th style="width: 19%;">Origen snapshot</th>
-                    <th style="width: 18%;">Destino</th>
-                    <th style="width: 8%;">Cant.</th>
+                    <th class="detail-col-equipo">Equipo</th>
+                    <th class="detail-col-marca-modelo">Marca / Modelo</th>
+                    <th class="detail-col-serie">Serie</th>
+                    <th class="detail-col-patrimonial">Patrimonial</th>
+                    <th class="detail-col-origen">Origen snapshot</th>
+                    <th class="detail-col-destino">Destino</th>
+                    <th class="detail-col-cantidad">Cant.</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -340,13 +405,16 @@
                         ]));
                     @endphp
                     <tr>
-                        <td>{{ $equipo->tipoEquipo?->nombre ?? $equipo->tipo }}</td>
-                        <td>{{ trim(($equipo->marca ?: '-') . ' / ' . ($equipo->modelo ?: '-')) }}</td>
-                        <td>{{ $equipo->numero_serie ?: '-' }}</td>
-                        <td>{{ $equipo->bien_patrimonial ?: '-' }}</td>
+                        <td class="detail-cell-equipo">{{ $equipo->tipoEquipo?->nombre ?? $equipo->tipo }}</td>
+                        <td class="detail-cell-marca-modelo">
+                            <span class="detail-primary">{{ $equipo->marca ?: '-' }}</span>
+                            <span class="detail-secondary">{{ $equipo->modelo ?: '-' }}</span>
+                        </td>
+                        <td class="detail-cell-serie">{{ $equipo->numero_serie ?: '-' }}</td>
+                        <td class="detail-cell-patrimonial">{{ $equipo->bien_patrimonial ?: '-' }}</td>
                         <td>{{ $origenTexto }}</td>
                         <td>{{ $destinoPrincipalTexto }}</td>
-                        <td>{{ $equipo->pivot->cantidad }}</td>
+                        <td class="detail-cell-cantidad">{{ $equipo->pivot->cantidad }}</td>
                     </tr>
                 @empty
                     <tr>
@@ -448,3 +516,4 @@
 </div>
 </body>
 </html>
+
