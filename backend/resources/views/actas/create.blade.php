@@ -130,7 +130,7 @@
                         <div class="mt-3 grid gap-3 md:grid-cols-2">
                             <div>
                                 <label class="block text-xs font-medium text-slate-600">Cantidad</label>
-                                <input type="number" min="1" x-model="item.cantidad" class="mt-1 min-h-[48px] w-full rounded-xl border-slate-300">
+                                <input type="number" value="1" disabled class="mt-1 min-h-[48px] w-full rounded-xl border-slate-300 bg-slate-100 text-slate-500">
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-slate-600">Accesorios</label>
@@ -148,7 +148,7 @@
             <template x-for="(item, index) in selected" :key="`hidden-${item.id}`">
                 <div>
                     <input type="hidden" :name="`equipos[${index}][equipo_id]`" :value="item.id">
-                    <input type="hidden" :name="`equipos[${index}][cantidad]`" :value="item.cantidad || 1">
+                    <input type="hidden" :name="`equipos[${index}][cantidad]`" value="1">
                     <input type="hidden" :name="`equipos[${index}][accesorios]`" :value="item.accesorios || ''">
                 </div>
             </template>
@@ -301,7 +301,7 @@
                     institucion_id: item.institucion_id ? Number(item.institucion_id) : null,
                     servicio_id: item.servicio_id ? Number(item.servicio_id) : null,
                     oficina_id: item.oficina_id ? Number(item.oficina_id) : null,
-                    cantidad: item.cantidad || 1,
+                    cantidad: 1,
                     accesorios: item.accesorios || '',
                 }))
                 : [],

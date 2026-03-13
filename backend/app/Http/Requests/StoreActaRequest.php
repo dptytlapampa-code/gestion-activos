@@ -36,8 +36,16 @@ class StoreActaRequest extends FormRequest
             'observaciones' => ['nullable', 'string'],
             'equipos' => ['required', 'array', 'min:1'],
             'equipos.*.equipo_id' => ['required', 'integer', 'distinct', 'exists:equipos,id'],
-            'equipos.*.cantidad' => ['required', 'integer', 'min:1', 'max:999'],
+            'equipos.*.cantidad' => ['required', 'integer', Rule::in([1])],
             'equipos.*.accesorios' => ['nullable', 'string', 'max:1000'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'equipos.*.equipo_id.distinct' => 'No puede repetir el mismo equipo dentro de la misma acta.',
+            'equipos.*.cantidad.in' => 'Cada equipo del acta debe registrarse con cantidad fija 1.',
         ];
     }
 
