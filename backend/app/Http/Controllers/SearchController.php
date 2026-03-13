@@ -11,9 +11,12 @@ use App\Models\Service;
 use App\Models\TipoEquipo;
 use App\Models\User;
 use App\Services\ActaEquipoSearchService;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 class SearchController extends Controller
 {
@@ -301,9 +304,23 @@ class SearchController extends Controller
 
     public function searchActaEquipos(SearchActaEquiposRequest $request, ActaEquipoSearchService $service): JsonResponse
     {
-        return response()->json(
-            $service->search($request->user(), $request->validated())
-        );
+        try {
+            return response()->json(
+                $service->search($request->user(), $request->validated())
+            );
+        } catch (HttpResponseException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            Log::error('acta equipos search failed', [
+                'user_id' => $request->user()?->id,
+                'filters' => $request->except(['_token']),
+                'exception' => $exception,
+            ]);
+
+            return response()->json([
+                'message' => 'Ocurrio un error al buscar equipos. Intente nuevamente en unos segundos.',
+            ], 500);
+        }
     }
 
     public function tiposEquipos(Request $request): JsonResponse

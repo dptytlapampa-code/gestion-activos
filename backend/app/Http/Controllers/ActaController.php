@@ -135,6 +135,11 @@ class ActaController extends Controller
             'destinationInstitutions' => $destinationInstitutions,
             'originInstitutions' => $originInstitutions,
             'tipoEquipoOptions' => $tiposEquipo,
+            'searchEndpoints' => [
+                'actaEquipos' => route('api.search.acta-equipos', [], false),
+                'services' => route('api.search.services', [], false),
+                'offices' => route('api.search.offices', [], false),
+            ],
             'estadoOptions' => [
                 ['value' => Equipo::ESTADO_OPERATIVO, 'label' => 'Operativo'],
                 ['value' => Equipo::ESTADO_PRESTADO, 'label' => 'Prestado'],

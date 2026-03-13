@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Equipo;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Schema;
 
 class ActaEquipoSearchService
@@ -184,7 +185,7 @@ class ActaEquipoSearchService
 
     private function applyRelevanceSorting(Builder $query, string $queryText, bool $hasUuid, bool $hasMacAddress, bool $hasCodigoInterno): void
     {
-        $needle = mb_strtolower($queryText);
+        $needle = $this->normalizeSearchText($queryText);
         $startsWith = $needle.'%';
 
         $cases = [
@@ -264,7 +265,7 @@ class ActaEquipoSearchService
 
     private function hasSearchCriteria(string $queryText, ?int $institutionId, ?int $serviceId, ?int $officeId, ?int $tipoEquipoId, ?string $estado): bool
     {
-        return mb_strlen($queryText) >= 3
+        return $this->searchTextLength($queryText) >= 3
             || $institutionId !== null
             || $serviceId !== null
             || $officeId !== null
@@ -332,5 +333,19 @@ class ActaEquipoSearchService
             Equipo::ESTADO_BAJA => 'Baja',
             default => ucfirst(str_replace('_', ' ', $estado)),
         };
+    }
+
+    private function normalizeSearchText(string $value): string
+    {
+        return function_exists('mb_strtolower')
+            ? mb_strtolower($value)
+            : Str::lower($value);
+    }
+
+    private function searchTextLength(string $value): int
+    {
+        return function_exists('mb_strlen')
+            ? mb_strlen($value)
+            : strlen($value);
     }
 }

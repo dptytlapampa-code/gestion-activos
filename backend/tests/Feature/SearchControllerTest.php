@@ -8,7 +8,9 @@ use App\Models\Office;
 use App\Models\Service;
 use App\Models\TipoEquipo;
 use App\Models\User;
+use App\Services\ActaEquipoSearchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Mockery;
 use Tests\TestCase;
 
 class SearchControllerTest extends TestCase
@@ -415,6 +417,24 @@ class SearchControllerTest extends TestCase
 
         $blockedResponse->assertOk()
             ->assertJsonCount(0, 'items');
+    }
+
+    public function test_acta_search_devuelve_error_controlado_si_falla_el_servicio(): void
+    {
+        $service = Mockery::mock(ActaEquipoSearchService::class);
+        $service->shouldReceive('search')
+            ->once()
+            ->andThrow(new \RuntimeException('search failed'));
+
+        $this->app->instance(ActaEquipoSearchService::class, $service);
+
+        $response = $this->actingAs($this->createUser(User::ROLE_ADMIN))
+            ->get('/api/search/acta-equipos?q=SER-123');
+
+        $response->assertStatus(500)
+            ->assertJson([
+                'message' => 'Ocurrio un error al buscar equipos. Intente nuevamente en unos segundos.',
+            ]);
     }
 
     private function createUser(string $role, ?int $institutionId = null): User
