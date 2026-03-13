@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\SearchActaEquiposRequest;
 use App\Models\Acta;
 use App\Models\Equipo;
 use App\Models\Institution;
@@ -9,6 +10,7 @@ use App\Models\Office;
 use App\Models\Service;
 use App\Models\TipoEquipo;
 use App\Models\User;
+use App\Services\ActaEquipoSearchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -295,6 +297,13 @@ class SearchController extends Controller
             ->values();
 
         return response()->json($items);
+    }
+
+    public function searchActaEquipos(SearchActaEquiposRequest $request, ActaEquipoSearchService $service): JsonResponse
+    {
+        return response()->json(
+            $service->search($request->user(), $request->validated())
+        );
     }
 
     public function tiposEquipos(Request $request): JsonResponse

@@ -7,6 +7,7 @@ use App\Models\Acta;
 use App\Models\AuditLog;
 use App\Models\Equipo;
 use App\Models\Institution;
+use App\Models\TipoEquipo;
 use App\Models\User;
 use App\Services\ActaPdfDataService;
 use App\Services\ActaTraceabilityService;
@@ -64,7 +65,15 @@ class ActaController extends Controller
         $this->authorize('create', Acta::class);
 
         $user = $request->user();
-        $institutions = Institution::query()->orderBy('nombre')->get(['id', 'nombre']);
+        $destinationInstitutions = Institution::query()->orderBy('nombre')->get(['id', 'nombre']);
+        $originInstitutions = Institution::query()
+            ->when(
+                ! $user->hasRole(User::ROLE_SUPERADMIN),
+                fn (Builder $query) => $query->whereIn('id', $user->accessibleInstitutionIds())
+            )
+            ->orderBy('nombre')
+            ->get(['id', 'nombre']);
+        $tiposEquipo = TipoEquipo::query()->orderBy('nombre')->get(['id', 'nombre']);
 
         $oldEquipoIds = collect(old('equipos', []))
             ->pluck('equipo_id')
@@ -85,8 +94,10 @@ class ActaController extends Controller
 
                     return [
                         'id' => $equipo->id,
+                        'uuid' => $equipo->uuid,
                         'label' => trim(sprintf('%s %s %s', $equipo->tipo, $equipo->marca, $equipo->modelo)),
                         'tipo' => $equipo->tipo,
+                        'tipo_equipo_id' => $equipo->tipo_equipo_id,
                         'marca' => $equipo->marca,
                         'modelo' => $equipo->modelo,
                         'numero_serie' => $equipo->numero_serie,
@@ -100,6 +111,19 @@ class ActaController extends Controller
                         'institucion_id' => $equipo->oficina?->service?->institution?->id,
                         'servicio_id' => $equipo->oficina?->service?->id,
                         'oficina_id' => $equipo->oficina?->id,
+                        'estado_label' => match ($equipo->estado) {
+                            Equipo::ESTADO_OPERATIVO => 'Operativo',
+                            Equipo::ESTADO_PRESTADO => 'Prestado',
+                            Equipo::ESTADO_EN_MANTENIMIENTO => 'Mantenimiento',
+                            Equipo::ESTADO_FUERA_DE_SERVICIO => 'Fuera de servicio',
+                            Equipo::ESTADO_BAJA => 'Baja',
+                            default => ucfirst(str_replace('_', ' ', (string) $equipo->estado)),
+                        },
+                        'ubicacion_resumida' => collect([
+                            $equipo->oficina?->service?->institution?->nombre,
+                            $equipo->oficina?->service?->nombre,
+                            $equipo->oficina?->nombre,
+                        ])->filter()->implode(' / '),
                         'cantidad' => (int) ($meta['cantidad'] ?? 1),
                         'accesorios' => $meta['accesorios'] ?? '',
                     ];
@@ -108,9 +132,16 @@ class ActaController extends Controller
         return view('actas.create', [
             'tipos' => Acta::TIPOS,
             'tipoLabels' => Acta::LABELS,
-            'institutions' => $institutions,
-            'userInstitutionId' => $user->institution_id,
-            'isSuperadmin' => $user->hasRole(User::ROLE_SUPERADMIN),
+            'destinationInstitutions' => $destinationInstitutions,
+            'originInstitutions' => $originInstitutions,
+            'tipoEquipoOptions' => $tiposEquipo,
+            'estadoOptions' => [
+                ['value' => Equipo::ESTADO_OPERATIVO, 'label' => 'Operativo'],
+                ['value' => Equipo::ESTADO_PRESTADO, 'label' => 'Prestado'],
+                ['value' => Equipo::ESTADO_EN_MANTENIMIENTO, 'label' => 'Mantenimiento'],
+                ['value' => Equipo::ESTADO_FUERA_DE_SERVICIO, 'label' => 'Fuera de servicio'],
+                ['value' => Equipo::ESTADO_BAJA, 'label' => 'Baja'],
+            ],
             'oldSelectedEquipos' => $oldSelectedEquipos,
         ]);
     }

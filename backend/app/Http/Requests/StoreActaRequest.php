@@ -44,6 +44,8 @@ class StoreActaRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'equipos.required' => 'Agregue al menos un equipo antes de generar el acta.',
+            'equipos.min' => 'Agregue al menos un equipo antes de generar el acta.',
             'equipos.*.equipo_id.distinct' => 'No puede repetir el mismo equipo dentro de la misma acta.',
             'equipos.*.cantidad.in' => 'Cada equipo del acta debe registrarse con cantidad fija 1.',
         ];
