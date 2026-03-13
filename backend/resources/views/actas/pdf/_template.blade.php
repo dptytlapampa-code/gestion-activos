@@ -133,19 +133,19 @@
     }
 
     .detail-col-serie {
-        width: 14%;
+        width: 15%;
     }
 
     .detail-col-patrimonial {
-        width: 14%;
+        width: 15%;
     }
 
     .detail-col-origen {
-        width: 20%;
+        width: 18%;
     }
 
     .detail-col-destino {
-        width: 18%;
+        width: 16%;
     }
 
     .detail-col-cantidad {
@@ -172,7 +172,10 @@
     .detail-cell-patrimonial {
         font-family: DejaVu Sans Mono, DejaVu Sans, sans-serif;
         font-size: 8.5px;
-        word-break: break-all;
+        text-align: left;
+        padding-left: 6px;
+        padding-right: 6px;
+        word-break: normal;
     }
 
     .event-table td {
