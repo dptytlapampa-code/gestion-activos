@@ -22,17 +22,21 @@ class ActaTraceabilityService
 
     public function crear(User $user, array $data): Acta
     {
-        $equipoIds = collect($data['equipos'])
+        $items = collect($data['equipos'] ?? [])->values();
+
+        if ($items->isEmpty()) {
+            throw ValidationException::withMessages(['equipos' => 'Debe seleccionar al menos un equipo.']);
+        }
+
+        $this->validateActaEquipoItems($items);
+
+        $equipoIds = $items
             ->pluck('equipo_id')
             ->map(fn ($id): int => (int) $id)
             ->unique()
             ->values();
 
-        if ($equipoIds->isEmpty()) {
-            throw ValidationException::withMessages(['equipos' => 'Debe seleccionar al menos un equipo.']);
-        }
-
-        return DB::transaction(function () use ($user, $data, $equipoIds): Acta {
+        return DB::transaction(function () use ($user, $data, $equipoIds, $items): Acta {
             $equipos = Equipo::query()
                 ->with('oficina.service.institution')
                 ->whereIn('id', $equipoIds)
@@ -72,7 +76,7 @@ class ActaTraceabilityService
                 'created_by' => $user->id,
             ]);
 
-            $pivotPayload = collect($data['equipos'])
+            $pivotPayload = $items
                 ->mapWithKeys(function (array $item) use ($origenesPorEquipo): array {
                     $equipoId = (int) $item['equipo_id'];
                     $origen = $origenesPorEquipo->get($equipoId);
@@ -85,7 +89,7 @@ class ActaTraceabilityService
 
                     return [
                         $equipoId => [
-                            'cantidad' => (int) ($item['cantidad'] ?? 1),
+                            'cantidad' => 1,
                             'accesorios' => $item['accesorios'] ?? null,
                             'institucion_origen_id' => $origen['institucion_id'] ?? null,
                             'institucion_origen_nombre' => $origen['institucion_nombre'] ?? null,
@@ -156,6 +160,31 @@ class ActaTraceabilityService
 
             return $acta;
         });
+    }
+
+    private function validateActaEquipoItems(Collection $items): void
+    {
+        $equipoIds = $items
+            ->pluck('equipo_id')
+            ->map(fn ($id): int => (int) $id)
+            ->values();
+
+        $duplicados = $equipoIds->duplicates()->values();
+        if ($duplicados->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'equipos' => 'No puede repetir el mismo equipo dentro de la misma acta.',
+            ]);
+        }
+
+        $invalidIndex = $items->search(
+            fn (array $item): bool => (int) ($item['cantidad'] ?? 1) !== 1
+        );
+
+        if ($invalidIndex !== false) {
+            throw ValidationException::withMessages([
+                "equipos.{$invalidIndex}.cantidad" => 'Cada equipo del acta debe registrarse con cantidad fija 1.',
+            ]);
+        }
     }
 
     private function validateScope(User $user, array $data, Collection $equipos, Collection $origenesPorEquipo): void

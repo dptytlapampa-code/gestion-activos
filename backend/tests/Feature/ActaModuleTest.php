@@ -12,9 +12,11 @@ use App\Models\Office;
 use App\Models\Service;
 use App\Models\TipoEquipo;
 use App\Models\User;
+use App\Services\ActaTraceabilityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 class ActaModuleTest extends TestCase
@@ -316,6 +318,49 @@ class ActaModuleTest extends TestCase
         $this->assertSame(Equipo::ESTADO_BAJA, $equipo->estado);
     }
 
+    public function test_acta_rechaza_cantidad_mayor_a_uno(): void
+    {
+        Storage::fake();
+
+        [$admin, , , $officeA] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
+
+        $this->actingAs($admin)->post(route('actas.store'), [
+            'tipo' => Acta::TIPO_ENTREGA,
+            'fecha' => now()->toDateString(),
+            'institution_destino_id' => $officeA->service->institution_id,
+            'service_destino_id' => $officeA->service_id,
+            'office_destino_id' => $officeA->id,
+            'receptor_nombre' => 'Responsable',
+            'equipos' => [
+                ['equipo_id' => $equipo->id, 'cantidad' => 2],
+            ],
+        ])->assertSessionHasErrors('equipos.0.cantidad');
+
+        $this->assertDatabaseCount('actas', 0);
+        $this->assertDatabaseCount('acta_equipo', 0);
+    }
+
+    public function test_acta_rechaza_equipo_duplicado_en_la_misma_acta(): void
+    {
+        Storage::fake();
+
+        [$admin, , , $officeA] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
+
+        $this->actingAs($admin)->post(route('actas.store'), [
+            'tipo' => Acta::TIPO_PRESTAMO,
+            'fecha' => now()->toDateString(),
+            'receptor_nombre' => 'Persona prueba',
+            'equipos' => [
+                ['equipo_id' => $equipo->id, 'cantidad' => 1],
+                ['equipo_id' => $equipo->id, 'cantidad' => 1],
+            ],
+        ])->assertSessionHasErrors('equipos.1.equipo_id');
+
+        $this->assertDatabaseCount('actas', 0);
+        $this->assertDatabaseCount('acta_equipo', 0);
+    }
     public function test_acta_mantenimiento_actualiza_estado_sin_mover_ubicacion(): void
     {
         Storage::fake();
@@ -360,6 +405,63 @@ class ActaModuleTest extends TestCase
         $this->assertSame($officeA->id, $equipo->oficina_id);
     }
 
+    public function test_traceability_service_rechaza_payload_con_cantidad_distinta_de_uno(): void
+    {
+        Storage::fake();
+
+        [$admin, , , $officeA] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
+
+        try {
+            app(ActaTraceabilityService::class)->crear($admin, [
+                'tipo' => Acta::TIPO_PRESTAMO,
+                'fecha' => now()->toDateString(),
+                'receptor_nombre' => 'Persona prueba',
+                'equipos' => [
+                    ['equipo_id' => $equipo->id, 'cantidad' => 3],
+                ],
+            ]);
+
+            $this->fail('Expected ValidationException was not thrown.');
+        } catch (ValidationException $exception) {
+            $this->assertSame(
+                ['Cada equipo del acta debe registrarse con cantidad fija 1.'],
+                $exception->errors()['equipos.0.cantidad'] ?? null
+            );
+        }
+
+        $this->assertDatabaseCount('actas', 0);
+        $this->assertDatabaseCount('acta_equipo', 0);
+    }
+    public function test_traceability_service_rechaza_payload_con_equipo_duplicado(): void
+    {
+        Storage::fake();
+
+        [$admin, , , $officeA] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
+
+        try {
+            app(ActaTraceabilityService::class)->crear($admin, [
+                'tipo' => Acta::TIPO_PRESTAMO,
+                'fecha' => now()->toDateString(),
+                'receptor_nombre' => 'Persona prueba',
+                'equipos' => [
+                    ['equipo_id' => $equipo->id, 'cantidad' => 1],
+                    ['equipo_id' => $equipo->id, 'cantidad' => 1],
+                ],
+            ]);
+
+            $this->fail('Expected ValidationException was not thrown.');
+        } catch (ValidationException $exception) {
+            $this->assertSame(
+                ['No puede repetir el mismo equipo dentro de la misma acta.'],
+                $exception->errors()['equipos'] ?? null
+            );
+        }
+
+        $this->assertDatabaseCount('actas', 0);
+        $this->assertDatabaseCount('acta_equipo', 0);
+    }
     public function test_admin_bloquea_solo_equipo_fuera_de_alcance_con_mensaje_claro(): void
     {
         Storage::fake();
