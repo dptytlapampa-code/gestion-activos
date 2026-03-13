@@ -316,6 +316,107 @@ class SearchControllerTest extends TestCase
         $this->assertSame(['Oficina B1'], $labels);
     }
 
+    public function test_acta_search_no_carga_resultados_sin_criterios(): void
+    {
+        $response = $this->actingAs($this->createUser(User::ROLE_ADMIN))
+            ->get('/api/search/acta-equipos');
+
+        $response->assertOk()
+            ->assertJsonCount(0, 'items')
+            ->assertJsonPath('meta.searched', false);
+    }
+
+    public function test_acta_search_permite_buscar_por_filtros_sin_texto_y_por_uuid(): void
+    {
+        $institution = Institution::create(['nombre' => 'Hospital Actas']);
+        $service = Service::create(['nombre' => 'Laboratorio', 'institution_id' => $institution->id]);
+        $office = Office::create(['nombre' => 'Sala 1', 'service_id' => $service->id]);
+        $tipo = TipoEquipo::create(['nombre' => 'Monitor']);
+
+        $equipo = Equipo::create([
+            'uuid' => '32dcff4a-9954-4dd1-9a9b-11e8f78ee001',
+            'tipo' => $tipo->nombre,
+            'tipo_equipo_id' => $tipo->id,
+            'marca' => 'Philips',
+            'modelo' => 'MX450',
+            'numero_serie' => 'SER-ACTA-01',
+            'bien_patrimonial' => 'BP-ACTA-01',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => now()->toDateString(),
+            'oficina_id' => $office->id,
+        ]);
+
+        $user = $this->createUser(User::ROLE_SUPERADMIN);
+
+        $filterResponse = $this->actingAs($user)
+            ->get('/api/search/acta-equipos?institution_id='.$institution->id.'&service_id='.$service->id.'&office_id='.$office->id.'&tipo_equipo_id='.$tipo->id.'&estado='.Equipo::ESTADO_OPERATIVO);
+
+        $filterResponse->assertOk()
+            ->assertJsonCount(1, 'items')
+            ->assertJsonPath('items.0.id', $equipo->id)
+            ->assertJsonPath('meta.searched', true);
+
+        $uuidResponse = $this->actingAs($user)
+            ->get('/api/search/acta-equipos?q=32dcff4a-9954-4dd1-9a9b-11e8f78ee001');
+
+        $uuidResponse->assertOk()
+            ->assertJsonCount(1, 'items')
+            ->assertJsonPath('items.0.uuid', '32dcff4a-9954-4dd1-9a9b-11e8f78ee001');
+    }
+
+    public function test_acta_search_respeta_permisos_de_instituciones_accesibles(): void
+    {
+        $institutionA = Institution::create(['nombre' => 'Hospital A']);
+        $institutionB = Institution::create(['nombre' => 'Hospital B']);
+        $institutionC = Institution::create(['nombre' => 'Hospital C']);
+
+        $serviceB = Service::create(['nombre' => 'Diagnostico', 'institution_id' => $institutionB->id]);
+        $serviceC = Service::create(['nombre' => 'Diagnostico', 'institution_id' => $institutionC->id]);
+        $officeB = Office::create(['nombre' => 'Sala B', 'service_id' => $serviceB->id]);
+        $officeC = Office::create(['nombre' => 'Sala C', 'service_id' => $serviceC->id]);
+        $tipo = TipoEquipo::create(['nombre' => 'ECG']);
+
+        Equipo::create([
+            'tipo' => $tipo->nombre,
+            'tipo_equipo_id' => $tipo->id,
+            'marca' => 'GE',
+            'modelo' => 'B-1',
+            'numero_serie' => 'PERM-B-01',
+            'bien_patrimonial' => 'BP-PERM-B',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => now()->toDateString(),
+            'oficina_id' => $officeB->id,
+        ]);
+
+        Equipo::create([
+            'tipo' => $tipo->nombre,
+            'tipo_equipo_id' => $tipo->id,
+            'marca' => 'GE',
+            'modelo' => 'C-1',
+            'numero_serie' => 'PERM-C-01',
+            'bien_patrimonial' => 'BP-PERM-C',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => now()->toDateString(),
+            'oficina_id' => $officeC->id,
+        ]);
+
+        $admin = $this->createUser(User::ROLE_ADMIN, $institutionA->id);
+        $admin->permittedInstitutions()->attach($institutionB->id);
+
+        $allowedResponse = $this->actingAs($admin)
+            ->get('/api/search/acta-equipos?institution_id='.$institutionB->id.'&q=PERM');
+
+        $allowedResponse->assertOk()
+            ->assertJsonCount(1, 'items')
+            ->assertJsonPath('items.0.institucion', 'Hospital B');
+
+        $blockedResponse = $this->actingAs($admin)
+            ->get('/api/search/acta-equipos?institution_id='.$institutionC->id.'&q=PERM');
+
+        $blockedResponse->assertOk()
+            ->assertJsonCount(0, 'items');
+    }
+
     private function createUser(string $role, ?int $institutionId = null): User
     {
         return User::create([

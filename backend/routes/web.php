@@ -69,6 +69,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('services', [SearchController::class, 'searchServices']);
         Route::get('offices', [SearchController::class, 'searchOffices']);
         Route::get('equipos', [SearchController::class, 'searchEquipos']);
+        Route::get('acta-equipos', [SearchController::class, 'searchActaEquipos'])->name('api.search.acta-equipos');
     });
 });
 
