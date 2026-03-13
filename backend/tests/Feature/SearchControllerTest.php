@@ -366,6 +366,34 @@ class SearchControllerTest extends TestCase
             ->assertJsonPath('items.0.uuid', '32dcff4a-9954-4dd1-9a9b-11e8f78ee001');
     }
 
+    public function test_acta_search_permite_buscar_por_nombre_de_tipo_equipo(): void
+    {
+        $institution = Institution::create(['nombre' => 'Hospital Tipo']);
+        $service = Service::create(['nombre' => 'Imagenes', 'institution_id' => $institution->id]);
+        $office = Office::create(['nombre' => 'Sala 2', 'service_id' => $service->id]);
+        $tipo = TipoEquipo::create(['nombre' => 'Monitor Multiparametrico']);
+
+        $equipo = Equipo::create([
+            'tipo' => $tipo->nombre,
+            'tipo_equipo_id' => $tipo->id,
+            'marca' => 'Mindray',
+            'modelo' => 'iMEC',
+            'numero_serie' => 'SER-TIPO-01',
+            'bien_patrimonial' => 'BP-TIPO-01',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => now()->toDateString(),
+            'oficina_id' => $office->id,
+        ]);
+
+        $response = $this->actingAs($this->createUser(User::ROLE_SUPERADMIN))
+            ->get('/api/search/acta-equipos?q=Multiparametrico');
+
+        $response->assertOk()
+            ->assertJsonCount(1, 'items')
+            ->assertJsonPath('items.0.id', $equipo->id)
+            ->assertJsonPath('items.0.tipo_equipo_id', $tipo->id);
+    }
+
     public function test_acta_search_respeta_permisos_de_instituciones_accesibles(): void
     {
         $institutionA = Institution::create(['nombre' => 'Hospital A']);

@@ -77,7 +77,7 @@ class ActaEquipoSearchService
             'equipos.numero_serie',
             'equipos.bien_patrimonial',
             'equipos.estado',
-            'tipo_equipos.nombre as tipo_equipo_nombre',
+            'tipos_equipos.nombre as tipo_equipo_nombre',
             'offices.id as oficina_id',
             'offices.nombre as oficina_nombre',
             'services.id as servicio_id',
@@ -103,7 +103,7 @@ class ActaEquipoSearchService
             ->join('offices', 'offices.id', '=', 'equipos.oficina_id')
             ->join('services', 'services.id', '=', 'offices.service_id')
             ->join('institutions', 'institutions.id', '=', 'services.institution_id')
-            ->leftJoin('tipo_equipos', 'tipo_equipos.id', '=', 'equipos.tipo_equipo_id')
+            ->leftJoin('tipos_equipos', 'tipos_equipos.id', '=', 'equipos.tipo_equipo_id')
             ->when($allowedInstitutionIds !== null, fn (Builder $builder) => $builder->whereIn('institutions.id', $allowedInstitutionIds->all()))
             ->when($institutionId !== null, fn (Builder $builder) => $builder->where('institutions.id', $institutionId))
             ->when($serviceId !== null, fn (Builder $builder) => $builder->where('services.id', $serviceId))
@@ -164,7 +164,7 @@ class ActaEquipoSearchService
                 ->orWhere('equipos.marca', 'ilike', $like)
                 ->orWhere('equipos.modelo', 'ilike', $like)
                 ->orWhere('equipos.tipo', 'ilike', $like)
-                ->orWhere('tipo_equipos.nombre', 'ilike', $like)
+                ->orWhere('tipos_equipos.nombre', 'ilike', $like)
                 ->orWhere('institutions.nombre', 'ilike', $like)
                 ->orWhere('services.nombre', 'ilike', $like)
                 ->orWhere('offices.nombre', 'ilike', $like);
