@@ -1,0 +1,58 @@
+@extends('layouts.app')
+
+@section('title', 'Nuevo tipo de equipo')
+@section('header', 'Nuevo tipo de equipo')
+
+@section('content')
+    <div class="max-w-3xl">
+        <div class="mb-6">
+            <h3 class="text-xl font-semibold text-surface-900">Crear tipo de equipo</h3>
+            <p class="text-sm text-surface-500">Registre una categoria reutilizable para el inventario hospitalario.</p>
+        </div>
+
+        @if ($errors->any())
+            <div class="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <p class="font-semibold">Se encontraron errores en el formulario:</p>
+                <ul class="mt-2 list-disc space-y-1 pl-5">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <form method="POST" action="{{ route('tipos-equipos.store') }}" enctype="multipart/form-data" class="space-y-6 rounded-2xl border border-surface-200 bg-white p-6 shadow-sm">
+            @csrf
+
+            <div>
+                <label for="nombre" class="text-sm font-semibold text-surface-700">Nombre</label>
+                <input type="text" id="nombre" name="nombre" value="{{ old('nombre') }}" maxlength="100" class="form-control @error('nombre') form-control-error @enderror" required>
+                @error('nombre') <p class="form-error">{{ $message }}</p> @enderror
+            </div>
+
+            <div>
+                <label for="descripcion" class="text-sm font-semibold text-surface-700">Descripcion</label>
+                <textarea id="descripcion" name="descripcion" rows="4" class="form-control @error('descripcion') form-control-error @enderror">{{ old('descripcion') }}</textarea>
+                @error('descripcion') <p class="form-error">{{ $message }}</p> @enderror
+            </div>
+
+            <div class="space-y-2">
+                <label for="imagen_png" class="text-sm font-semibold text-surface-700">Imagen PNG (opcional)</label>
+                <input type="file" id="imagen_png" name="imagen_png" accept="image/png" class="form-control @error('imagen_png') form-control-error @enderror">
+                <p class="text-xs text-surface-500">Formato permitido: PNG. Tamano maximo: 2 MB.</p>
+                @error('imagen_png') <p class="form-error">{{ $message }}</p> @enderror
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700">
+                    <x-icon name="plus" class="h-4 w-4" />
+                    Guardar tipo
+                </button>
+                <a href="{{ route('tipos-equipos.index') }}" class="inline-flex items-center gap-2 rounded-xl border border-surface-200 px-4 py-2 text-sm text-surface-600 transition hover:border-surface-300 hover:text-surface-900">
+                    <x-icon name="x" class="h-4 w-4" />
+                    Cancelar
+                </a>
+            </div>
+        </form>
+    </div>
+@endsection

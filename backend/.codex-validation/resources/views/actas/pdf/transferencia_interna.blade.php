@@ -1,0 +1,1 @@
+@include('actas.pdf._template', ['clausula' => 'La presente acta acredita la transferencia interna del equipamiento dentro de la misma institución, manteniéndose su trazabilidad patrimonial y técnica.'])

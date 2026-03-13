@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<style>
+    @page { margin: 18mm 12mm 14mm 12mm; }
+    body {
+        font-family: DejaVu Sans, sans-serif;
+        font-size: 12px;
+        color: #111827;
+        margin: 0;
+        line-height: 1.25;
+    }
+
+    .page {
+        position: relative;
+    }
+
+    .watermark {
+        position: fixed;
+        top: 42%;
+        left: 5%;
+        width: 90%;
+        text-align: center;
+        font-size: 70px;
+        font-weight: 700;
+        color: #ef4444;
+        opacity: 0.2;
+        transform: rotate(-32deg);
+        z-index: 0;
+    }
+
+    .content {
+        position: relative;
+        z-index: 1;
+    }
+    .document-header {
+        border: 1px solid #374151;
+        margin-bottom: 8px;
+        padding: 8px 6px;
+        text-align: center;
+    }
+
+    .document-top-logo {
+        margin-bottom: 6px;
+    }
+
+    .document-top-logo img {
+        max-width: 180px;
+        max-height: 64px;
+    }
+
+    .document-title-wrap {
+        text-align: center;
+    }
+
+    .institution-name {
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+    }
+
+    .title {
+        font-size: 15px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .section {
+        border: 1px solid #374151;
+        padding: 7px;
+        margin-bottom: 8px;
+    }
+
+    .section-title {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 5px;
+    }
+
+    .destinatario-prestamo {
+        border: 2px solid #1d4ed8;
+        background: #eff6ff;
+    }
+
+    .destinatario-note {
+        margin-top: 6px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #1e3a8a;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+    }
+
+    .meta-table td {
+        border: 1px solid #6b7280;
+        padding: 4px 6px;
+        vertical-align: top;
+        font-size: 12px;
+    }
+
+    .detail-table th,
+    .detail-table td {
+        border: 1px solid #6b7280;
+        padding: 3px 4px;
+        vertical-align: top;
+        font-size: 9px;
+        line-height: 1.2;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        word-break: break-word;
+        white-space: normal;
+    }
+
+    .detail-table th {
+        background-color: #f3f4f6;
+        text-align: left;
+    }
+
+    .detail-col-equipo {
+        width: 12%;
+    }
+
+    .detail-col-marca-modelo {
+        width: 16%;
+    }
+
+    .detail-col-serie {
+        width: 14%;
+    }
+
+    .detail-col-patrimonial {
+        width: 14%;
+    }
+
+    .detail-col-origen {
+        width: 20%;
+    }
+
+    .detail-col-destino {
+        width: 18%;
+    }
+
+    .detail-col-cantidad {
+        width: 6%;
+    }
+
+    .detail-cell-equipo,
+    .detail-cell-serie,
+    .detail-cell-patrimonial,
+    .detail-cell-cantidad {
+        text-align: center;
+    }
+
+    .detail-cell-marca-modelo .detail-primary,
+    .detail-cell-marca-modelo .detail-secondary {
+        display: block;
+    }
+
+    .detail-cell-marca-modelo .detail-secondary {
+        margin-top: 1px;
+    }
+
+    .detail-cell-serie,
+    .detail-cell-patrimonial {
+        font-family: DejaVu Sans Mono, DejaVu Sans, sans-serif;
+        font-size: 8.5px;
+        word-break: break-all;
+    }
+
+    .event-table td {
+        border: 1px solid #6b7280;
+        padding: 4px 6px;
+        vertical-align: top;
+        font-size: 12px;
+    }
+
+    .label {
+        font-weight: 700;
+        display: block;
+        margin-bottom: 1px;
+    }
+
+    .block-text {
+        text-align: justify;
+    }
+
+    .signatures td {
+        width: 50%;
+        padding-top: 24px;
+        text-align: center;
+        font-size: 12px;
+    }
+
+    .line {
+        border-top: 1px solid #111827;
+        margin: 0 auto 4px;
+        width: 80%;
+    }
+
+    .qr-table td {
+        vertical-align: middle;
+    }
+
+    .qr-code {
+        width: 120px;
+    }
+
+    .qr-code svg {
+        width: 120px;
+        height: 120px;
+    }
+
+    .qr-text {
+        padding-left: 10px;
+        font-size: 11px;
+    }
+
+    .qr-url {
+        margin-top: 4px;
+        font-size: 9px;
+        color: #374151;
+        word-break: break-all;
+    }
+
+    .footer {
+        margin-top: 6px;
+        text-align: center;
+        font-size: 10px;
+        color: #374151;
+    }
+</style>
+</head>
+<body>
+<div class="page">
+    
+    
+    <div class="content">
+        <div class="document-header">
+                        <div class="document-title-wrap">
+                <div class="institution-name">Hospital Dr. Lucio Molas</div>
+                <div class="title">ACTA DE PRESTAMO DE EQUIPAMIENTO INFORMATICO</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <table class="meta-table">
+                <tr>
+                    <td><span class="label">Codigo</span>ACTA-2026-000999</td>
+                    <td><span class="label">Tipo</span>PRESTAMO</td>
+                    <td><span class="label">Fecha</span>13/03/2026</td>
+                </tr>
+                <tr>
+                    <td colspan="2">
+                        <span class="label">Institucion origen</span>
+                                                    Hospital Dr. Lucio Molas
+                                            </td>
+                                            <td><span class="label">Destinatario del prestamo</span>Ing. Carolina Veronica Fernandez Altamirano</td>
+                                    </tr>
+            </table>
+        </div>
+
+                    <div class="section destinatario-prestamo">
+                <div class="section-title">Destinatario del prestamo</div>
+                <table class="event-table">
+                    <tr>
+                        <td><span class="label">Nombre y apellido</span>Ing. Carolina Veronica Fernandez Altamirano</td>
+                        <td><span class="label">DNI</span>27.456.789</td>
+                        <td><span class="label">Cargo</span>Coordinadora Operativa Externa de Dispositivos Criticos</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"><span class="label">Dependencia</span>Programa Regional de Soporte y Contingencias Hospitalarias</td>
+                        <td><span class="label">Destino institucional complementario</span>-</td>
+                    </tr>
+                </table>
+                <div class="destinatario-note">Este bloque identifica al DESTINATARIO DEL PRESTAMO.</div>
+            </div>
+        
+        <div class="section">
+            <div class="section-title">Detalle de equipamiento</div>
+            <table class="detail-table">
+                <colgroup>
+                    <col class="detail-col-equipo">
+                    <col class="detail-col-marca-modelo">
+                    <col class="detail-col-serie">
+                    <col class="detail-col-patrimonial">
+                    <col class="detail-col-origen">
+                    <col class="detail-col-destino">
+                    <col class="detail-col-cantidad">
+                </colgroup>
+                <thead>
+                <tr>
+                    <th class="detail-col-equipo">Equipo</th>
+                    <th class="detail-col-marca-modelo">Marca / Modelo</th>
+                    <th class="detail-col-serie">Serie</th>
+                    <th class="detail-col-patrimonial">Patrimonial</th>
+                    <th class="detail-col-origen">Origen snapshot</th>
+                    <th class="detail-col-destino">Destino</th>
+                    <th class="detail-col-cantidad">Cant.</th>
+                </tr>
+                </thead>
+                <tbody>
+                                                        <tr>
+                        <td class="detail-cell-equipo">Notebook</td>
+                        <td class="detail-cell-marca-modelo">
+                            <span class="detail-primary">Dell</span>
+                            <span class="detail-secondary">Latitude 7450 Rugged Clinical Edition</span>
+                        </td>
+                        <td class="detail-cell-serie">SN-2026-ULTRA-LARGA-ALFA-BRAVO-CHARLIE-DELTA-0000000001</td>
+                        <td class="detail-cell-patrimonial">PAT-2026-000000000000000000000000000000000001-A</td>
+                        <td>Hospital Gobernador Centeno / Unidad de Terapia Intensiva Adultos / Puesto de Monitoreo Clinico 01</td>
+                        <td>Ing. Carolina Veronica Fernandez Altamirano | DNI 27.456.789 | Coordinadora Operativa Externa de Dispositivos Criticos | Programa Regional de Soporte y Contingencias Hospitalarias</td>
+                        <td class="detail-cell-cantidad">1</td>
+                    </tr>
+                                                        <tr>
+                        <td class="detail-cell-equipo">Monitor multiparametrico</td>
+                        <td class="detail-cell-marca-modelo">
+                            <span class="detail-primary">Philips</span>
+                            <span class="detail-secondary">IntelliVue MX550 con modulo de expansion neonatal</span>
+                        </td>
+                        <td class="detail-cell-serie">SN-MX550-2026-SECUNDARIA-LARGA-XYZ-9876543210-EXTRA</td>
+                        <td class="detail-cell-patrimonial">BP-HOSP-NEO-2026-000000000000000000000009876543210</td>
+                        <td>Hospital Lucio Molas / Area de Informatica Biomedica y Soporte Tecnico / Deposito de Equipamiento de Resguardo</td>
+                        <td>Ing. Carolina Veronica Fernandez Altamirano | DNI 27.456.789 | Coordinadora Operativa Externa de Dispositivos Criticos | Programa Regional de Soporte y Contingencias Hospitalarias</td>
+                        <td class="detail-cell-cantidad">1</td>
+                    </tr>
+                                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Datos del evento</div>
+            <table class="event-table">
+                <tr>
+                    <td><span class="label">Receptor</span>Ing. Carolina Veronica Fernandez Altamirano</td>
+                    <td><span class="label">DNI</span>27.456.789</td>
+                    <td><span class="label">Cargo</span>Coordinadora Operativa Externa de Dispositivos Criticos</td>
+                </tr>
+                <tr>
+                    <td colspan="3"><span class="label">Dependencia</span>Programa Regional de Soporte y Contingencias Hospitalarias</td>
+                </tr>
+                                    <tr>
+                        <td colspan="3"><span class="label">Destinatario del prestamo</span>Ing. Carolina Veronica Fernandez Altamirano | DNI 27.456.789 | Coordinadora Operativa Externa de Dispositivos Criticos | Programa Regional de Soporte y Contingencias Hospitalarias</td>
+                    </tr>
+                                <tr>
+                    <td colspan="2"><span class="label">Servicio origen</span>-</td>
+                    <td><span class="label">Oficina origen</span>-</td>
+                </tr>
+                <tr>
+                    <td colspan="2"><span class="label">Servicio destino</span>-</td>
+                    <td><span class="label">Oficina destino</span>-</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Declaracion institucional</div>
+            <div class="block-text">
+                Se documenta el prestamo del equipamiento, quedando el receptor como responsable de custodia hasta su devolucion.
+                <br><br>
+                El responsable receptor declara recibir los bienes en el estado indicado, comprometiendose a su uso adecuado, conservacion y custodia, conforme a las normas institucionales vigentes de administracion de activos tecnologicos.
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Observaciones</div>
+            <div>Validacion visual de PDF con campos largos para Serie y Patrimonial.</div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Registro administrativo</div>
+            <div class="block-text">
+                El presente documento forma parte del Sistema Institucional de Gestion de Activos Informaticos, quedando registrado para fines de trazabilidad, control patrimonial y auditoria administrativa.
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Firmas</div>
+            <table class="signatures">
+                <tr>
+                    <td>
+                        <div class="line"></div>
+                        Responsable que entrega
+                    </td>
+                    <td>
+                        <div class="line"></div>
+                        Responsable que recibe
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Validacion de ficha publica</div>
+                            <div class="qr-text">No fue posible generar el QR para esta acta.</div>
+                    </div>
+
+        <div class="footer">
+            Documento generado por el Sistema de Gestion de Activos Informaticos<br>
+            Hospital Dr. Lucio Molas - Ministerio de Salud - Provincia de La Pampa
+        </div>
+    </div>
+</div>
+</body>
+</html>
+
