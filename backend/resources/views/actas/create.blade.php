@@ -897,8 +897,20 @@
                     }
 
                     const payload = await response.json();
-                    const items = Array.isArray(payload.items) ? payload.items : [];
-                    const meta = payload.meta || {};
+                    const isLegacyArray = Array.isArray(payload);
+                    const items = isLegacyArray
+                        ? payload
+                        : (Array.isArray(payload.items) ? payload.items : []);
+                    const meta = isLegacyArray
+                        ? {
+                            searched: true,
+                            message: items.length ? null : 'No encontramos equipos con los criterios indicados.',
+                            page,
+                            per_page: items.length,
+                            has_more: false,
+                            next_page: null,
+                        }
+                        : (payload.meta || {});
 
                     this.searchMeta = {
                         searched: Boolean(meta.searched),
