@@ -16,7 +16,7 @@
         @endif
     </div>
 
-    <form method="GET" class="card mt-6">
+    <form method="GET" class="app-filter-panel mt-6 p-6">
         <x-listing.toolbar
             :search="$listing->search"
             :per-page="$listing->perPage"
@@ -28,9 +28,9 @@
         />
     </form>
 
-    <div class="mt-6 overflow-hidden rounded-2xl border border-surface-200 bg-white shadow-sm">
-        <table class="min-w-full divide-y divide-surface-200">
-            <thead class="bg-surface-50">
+    <div class="mt-6 app-table-panel">
+        <table class="app-table">
+            <thead>
                 <tr>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-surface-500">Codigo</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-surface-500">Nombre</th>
@@ -38,7 +38,7 @@
                     <th scope="col" class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wide text-surface-500">Acciones</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-surface-100">
+            <tbody>
                 @forelse ($institutions as $institution)
                     <tr>
                         <td class="px-6 py-4 text-sm font-semibold text-surface-900">{{ $institution->codigo ?? 'Pendiente' }}</td>

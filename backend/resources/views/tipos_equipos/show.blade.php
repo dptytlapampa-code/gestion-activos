@@ -4,7 +4,7 @@
 @section('header', 'Detalle tipo de equipo')
 
 @section('content')
-    <div class="max-w-3xl rounded-2xl border border-surface-200 bg-white p-6 shadow-sm">
+    <div class="max-w-3xl card">
         <div class="flex items-start justify-between gap-4">
             <div class="flex items-start gap-4">
                 <x-tipo-equipo-image :tipo-equipo="$tipo_equipo" size="lg" class="rounded-xl" />
@@ -25,3 +25,4 @@
         </div>
     </div>
 @endsection
+

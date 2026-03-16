@@ -62,7 +62,7 @@
             </div>
         </div>
 
-        <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <div class="app-subcard p-4">
             <p class="text-xs uppercase tracking-wide text-slate-500">Ultima accion</p>
             @if ($ultimaAccion)
                 <p class="mt-1 text-sm font-medium text-slate-800">
@@ -77,27 +77,27 @@
         <div>
             <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-600">Actas asociadas</h2>
 
-            <div class="mt-2 overflow-hidden rounded-lg border border-slate-200">
-                <table class="min-w-full divide-y divide-slate-200 text-sm">
-                    <thead class="bg-slate-50">
+            <div class="app-table-panel mt-2 rounded-lg">
+                <table class="app-table text-sm">
+                    <thead>
                         <tr>
-                            <th class="px-3 py-2 text-left font-medium text-slate-600">Codigo</th>
-                            <th class="px-3 py-2 text-left font-medium text-slate-600">Tipo</th>
-                            <th class="px-3 py-2 text-left font-medium text-slate-600">Fecha</th>
-                            <th class="px-3 py-2 text-left font-medium text-slate-600">Estado</th>
+                            <th>Codigo</th>
+                            <th>Tipo</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 bg-white">
+                    <tbody>
                         @forelse ($actas as $acta)
                             <tr>
-                                <td class="px-3 py-2 text-slate-700">{{ $acta->codigo }}</td>
-                                <td class="px-3 py-2 text-slate-700">{{ $acta->tipo_label }}</td>
-                                <td class="px-3 py-2 text-slate-700">{{ $acta->fecha?->format('d/m/Y') ?: '-' }}</td>
-                                <td class="px-3 py-2 text-slate-700">{{ strtoupper((string) ($acta->status ?? '-')) }}</td>
+                                <td>{{ $acta->codigo }}</td>
+                                <td>{{ $acta->tipo_label }}</td>
+                                <td>{{ $acta->fecha?->format('d/m/Y') ?: '-' }}</td>
+                                <td>{{ strtoupper((string) ($acta->status ?? '-')) }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="px-3 py-4 text-center text-slate-500">No hay actas asociadas.</td>
+                                <td colspan="4" class="py-4 text-center text-slate-500">No hay actas asociadas.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -106,3 +106,4 @@
         </div>
     </section>
 @endsection
+

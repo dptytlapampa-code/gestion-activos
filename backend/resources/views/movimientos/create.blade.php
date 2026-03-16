@@ -4,7 +4,7 @@
 @section('header', 'Movimiento / Transferir')
 
 @section('content')
-<div class="mx-auto max-w-4xl rounded-xl border border-slate-200 bg-white p-6" x-data="{
+<div class="mx-auto max-w-4xl card" x-data="{
     tipo_movimiento: @js(old('tipo_movimiento', '')),
     institucion_destino_id: @js((string) old('institucion_destino_id', '')),
     servicio_destino_id: @js((string) old('servicio_destino_id', '')),
@@ -110,3 +110,4 @@
     </form>
 </div>
 @endsection
+

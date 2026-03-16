@@ -6,7 +6,7 @@
     $nextStepsText = $nextSteps ?? ($error['next_steps'] ?? 'Intente nuevamente en unos minutos.');
 @endphp
 
-<div class="w-full rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+<div class="card w-full p-8">
     <div class="mb-6 flex items-start justify-between gap-4">
         <div>
             <p class="text-sm font-semibold uppercase tracking-wide text-slate-500">Error {{ $statusCode }}</p>

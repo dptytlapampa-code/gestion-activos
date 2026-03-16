@@ -101,7 +101,7 @@
                         <p class="form-error">{{ $message }}</p>
                     @enderror
 
-                    <div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <div class="mt-4 app-subcard p-4">
                         <p class="text-sm font-medium text-slate-700">Logo institucional actual</p>
                         @if (! empty($settings->logo_institucional_url))
                             <img src="{{ $settings->logo_institucional_url }}" alt="Logo institucional" class="mt-3 h-16 w-auto rounded bg-white p-2 shadow-sm">
@@ -125,7 +125,7 @@
                         <p class="form-error">{{ $message }}</p>
                     @enderror
 
-                    <div class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <div class="mt-4 app-subcard p-4">
                         <p class="text-sm font-medium text-slate-700">Logo PDF actual</p>
                         @if (! empty($settings->logo_pdf_url))
                             <img src="{{ $settings->logo_pdf_url }}" alt="Logo PDF" class="mt-3 h-16 w-auto rounded bg-white p-2 shadow-sm">
@@ -136,7 +136,7 @@
                 </div>
             </div>
 
-            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+            <div class="app-subcard p-4 text-xs text-slate-600">
                 Para exponer los archivos publicamente, ejecute <code>php artisan storage:link</code>. Las URLs quedaran bajo <code>/storage/logos/...</code>.
             </div>
 
@@ -146,3 +146,4 @@
         </form>
     </section>
 @endsection
+

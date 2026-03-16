@@ -13,7 +13,7 @@
 
     <div class="card">
         <div class="flex flex-col items-center text-center">
-            <img src="{{ $loginLogoUrl }}" alt="Logo institucional" class="h-16 w-auto rounded-lg bg-slate-100 p-2">
+            <img src="{{ $loginLogoUrl }}" alt="Logo institucional" class="h-16 w-auto rounded-lg bg-surface-100 p-2">
             <h1 class="mt-3 text-xl font-semibold text-surface-800">{{ $siteName }}</h1>
             <p class="mt-1 text-sm text-surface-500">Acceso al sistema</p>
             <p class="mt-1 text-sm text-surface-500">Ingresa con tus credenciales institucionales.</p>

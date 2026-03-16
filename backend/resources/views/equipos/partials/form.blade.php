@@ -23,7 +23,7 @@
 @endphp
 
 <div
-    class="rounded-2xl border border-slate-200 bg-white shadow-sm"
+    class="app-panel"
     x-data="{
         selectedInstitutionId: @js((string) ($institutionSelected ?? '')),
         selectedServiceId: @js((string) ($serviceSelected ?? '')),

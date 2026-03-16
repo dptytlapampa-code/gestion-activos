@@ -145,7 +145,7 @@
         @focus="if (results.length > 0) { is_open = true; }"
         placeholder="{{ $placeholder }}"
         autocomplete="off"
-        class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+        class="form-control mt-1 px-3 py-2"
     />
 
     <input type="hidden" name="{{ $name }}" x-ref="hidden_input" :value="selected_id" />
@@ -158,7 +158,7 @@
     <div
         x-show="is_open"
         x-cloak
-        class="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg"
+        class="app-table-panel absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded-xl"
     >
         <ul class="py-1">
             <template x-for="item in results" :key="item.id">
@@ -166,7 +166,7 @@
                     <button
                         type="button"
                         @click="selectItem(item)"
-                        class="flex w-full items-center px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-slate-100"
+                        class="flex w-full items-center px-3 py-2 text-left text-sm text-slate-700 transition hover:bg-surface-100"
                         x-text="item.label"
                     ></button>
                 </li>
