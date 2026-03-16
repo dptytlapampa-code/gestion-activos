@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\Auditing\Auditable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -142,6 +143,59 @@ class Acta extends Model
     public function getTipoLabelAttribute(): string
     {
         return self::LABELS[$this->tipo] ?? strtoupper((string) $this->tipo);
+    }
+
+    public function scopeVisibleToUser(Builder $query, ?User $user): Builder
+    {
+        return $query->when(
+            $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+            fn (Builder $builder) => $builder->whereIn('institution_id', $user->accessibleInstitutionIds()->all())
+        );
+    }
+
+    /**
+     * @param array{tipo?:mixed,fecha_desde?:mixed,fecha_hasta?:mixed} $filters
+     */
+    public function scopeApplyIndexFilters(Builder $query, array $filters): Builder
+    {
+        $tipo = (string) ($filters['tipo'] ?? '');
+        $fechaDesde = (string) ($filters['fecha_desde'] ?? '');
+        $fechaHasta = (string) ($filters['fecha_hasta'] ?? '');
+
+        return $query
+            ->when(in_array($tipo, self::TIPOS, true), fn (Builder $builder) => $builder->where('tipo', $tipo))
+            ->when($fechaDesde !== '', fn (Builder $builder) => $builder->whereDate('fecha', '>=', $fechaDesde))
+            ->when($fechaHasta !== '', fn (Builder $builder) => $builder->whereDate('fecha', '<=', $fechaHasta));
+    }
+
+    public function scopeSearchIndex(Builder $query, string $search): Builder
+    {
+        $search = trim($search);
+
+        if ($search === '') {
+            return $query;
+        }
+
+        $like = "%{$search}%";
+
+        return $query->where(function (Builder $builder) use ($like): void {
+            $builder
+                ->whereRaw(
+                    "concat('ACTA-', to_char(fecha, 'YYYY'), '-', lpad(actas.id::text, 6, '0')) ilike ?",
+                    [$like]
+                )
+                ->orWhere('tipo', 'ilike', $like)
+                ->orWhere('status', 'ilike', $like)
+                ->orWhere('receptor_nombre', 'ilike', $like)
+                ->orWhere('receptor_dni', 'ilike', $like)
+                ->orWhere('receptor_cargo', 'ilike', $like)
+                ->orWhere('receptor_dependencia', 'ilike', $like)
+                ->orWhere('motivo_baja', 'ilike', $like)
+                ->orWhere('observaciones', 'ilike', $like)
+                ->orWhereHas('creator', fn (Builder $creatorQuery) => $creatorQuery->where('name', 'ilike', $like))
+                ->orWhereHas('institution', fn (Builder $institutionQuery) => $institutionQuery->where('nombre', 'ilike', $like))
+                ->orWhereHas('institucionDestino', fn (Builder $institutionQuery) => $institutionQuery->where('nombre', 'ilike', $like));
+        });
     }
 }
 

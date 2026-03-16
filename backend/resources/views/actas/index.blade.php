@@ -5,37 +5,55 @@
 
 @section('content')
 <div class="space-y-6">
-    <div class="card">
-        <form method="GET" class="grid gap-4 md:grid-cols-4">
-            <div>
-                <label for="tipo" class="block text-sm font-medium text-slate-700">Tipo</label>
-                <select id="tipo" name="tipo" class="mt-1 w-full rounded-xl border-slate-300">
-                    <option value="">Todos</option>
-                    @foreach ($tipos as $tipo)
-                        <option value="{{ $tipo }}" @selected(($filters['tipo'] ?? null) === $tipo)>{{ $tipoLabels[$tipo] ?? strtoupper($tipo) }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div>
-                <label for="fecha_desde" class="block text-sm font-medium text-slate-700">Fecha desde</label>
-                <input type="date" id="fecha_desde" name="fecha_desde" value="{{ $filters['fecha_desde'] ?? '' }}" class="mt-1 w-full rounded-xl border-slate-300">
-            </div>
-            <div>
-                <label for="fecha_hasta" class="block text-sm font-medium text-slate-700">Fecha hasta</label>
-                <input type="date" id="fecha_hasta" name="fecha_hasta" value="{{ $filters['fecha_hasta'] ?? '' }}" class="mt-1 w-full rounded-xl border-slate-300">
-            </div>
-            <div class="flex items-end gap-2">
-                <button type="submit" class="min-h-[48px] rounded-xl bg-primary-600 px-4 text-sm font-semibold text-white">Filtrar</button>
-                <a href="{{ route('actas.index') }}" class="min-h-[48px] rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700">Limpiar</a>
-            </div>
-        </form>
-    </div>
-
-    <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-slate-900">Listado</h3>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <h3 class="text-xl font-semibold text-slate-900">Listado de actas</h3>
+            <p class="text-sm text-slate-500">Busqueda compartible y paginacion preparada para volumen alto.</p>
+        </div>
         @can('create', \App\Models\Acta::class)
             <a href="{{ route('actas.create') }}" class="min-h-[48px] rounded-xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white">Nueva acta</a>
         @endcan
+    </div>
+
+    <div class="card">
+        <form method="GET" class="space-y-4">
+            <x-listing.toolbar
+                :search="$listing->search"
+                :per-page="$listing->perPage"
+                search-id="actas-search"
+                per-page-id="actas-per-page"
+                search-label="Busqueda rapida"
+                search-placeholder="Codigo, receptor, DNI, tipo o institucion"
+                :clear-url="route('actas.index')"
+            />
+
+            <div class="grid gap-4 md:grid-cols-3">
+                <div>
+                    <label for="tipo" class="mb-2 block text-sm font-medium text-slate-700">Tipo</label>
+                    <select id="tipo" name="tipo" class="app-input w-full">
+                        <option value="">Todos</option>
+                        @foreach ($tipos as $tipo)
+                            <option value="{{ $tipo }}" @selected(($filters['tipo'] ?? null) === $tipo)>{{ $tipoLabels[$tipo] ?? strtoupper($tipo) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label for="fecha_desde" class="mb-2 block text-sm font-medium text-slate-700">Fecha desde</label>
+                    <input type="date" id="fecha_desde" name="fecha_desde" value="{{ $filters['fecha_desde'] ?? '' }}" class="app-input w-full">
+                </div>
+                <div>
+                    <label for="fecha_hasta" class="mb-2 block text-sm font-medium text-slate-700">Fecha hasta</label>
+                    <input type="date" id="fecha_hasta" name="fecha_hasta" value="{{ $filters['fecha_hasta'] ?? '' }}" class="app-input w-full">
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p class="text-xs text-slate-500">
+                    La busqueda rapida se aplica sola. Use tipo y fechas para acotar el periodo.
+                </p>
+                <button type="submit" class="min-h-[44px] rounded-xl bg-primary-600 px-4 text-sm font-semibold text-white">Aplicar filtros</button>
+            </div>
+        </form>
     </div>
 
     <div class="card overflow-x-auto">
@@ -78,9 +96,7 @@
             </tbody>
         </table>
 
-        <div class="mt-4">
-            {{ $actas->links() }}
-        </div>
+        <x-listing.pagination :paginator="$actas" />
     </div>
 </div>
 @endsection

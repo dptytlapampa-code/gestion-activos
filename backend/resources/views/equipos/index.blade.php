@@ -18,25 +18,49 @@
         @endcan
     </div>
 
-    <form method="GET" class="card grid gap-4 md:grid-cols-5">
-        <input name="tipo" value="{{ request('tipo') }}" placeholder="Tipo" class="app-input" />
-        <input name="marca" value="{{ request('marca') }}" placeholder="Marca" class="app-input" />
-        <input name="modelo" value="{{ request('modelo') }}" placeholder="Modelo" class="app-input" />
-        <select name="estado" class="app-input">
-            <option value="">Todos los estados</option>
-            @foreach($estados as $estado)
-                <option value="{{ $estado }}" @selected(request('estado')===$estado)>{{ strtoupper(str_replace('_', ' ', $estado)) }}</option>
-            @endforeach
-        </select>
-        <div class="flex items-center gap-2">
+    <form method="GET" class="card space-y-4">
+        <x-listing.toolbar
+            :search="$listing->search"
+            :per-page="$listing->perPage"
+            search-id="equipos-search"
+            per-page-id="equipos-per-page"
+            search-label="Busqueda rapida"
+            search-placeholder="Tipo, marca, serie, patrimonial o ubicacion"
+            :clear-url="route('equipos.index')"
+        />
+
+        <div class="grid gap-4 md:grid-cols-4">
+            <div>
+                <label for="tipo" class="mb-2 block text-sm font-medium text-slate-700">Tipo</label>
+                <input id="tipo" name="tipo" value="{{ $filters['tipo'] }}" placeholder="Ej. Monitor" class="app-input w-full" />
+            </div>
+            <div>
+                <label for="marca" class="mb-2 block text-sm font-medium text-slate-700">Marca</label>
+                <input id="marca" name="marca" value="{{ $filters['marca'] }}" placeholder="Ej. Philips" class="app-input w-full" />
+            </div>
+            <div>
+                <label for="modelo" class="mb-2 block text-sm font-medium text-slate-700">Modelo</label>
+                <input id="modelo" name="modelo" value="{{ $filters['modelo'] }}" placeholder="Ej. IntelliVue" class="app-input w-full" />
+            </div>
+            <div>
+                <label for="estado" class="mb-2 block text-sm font-medium text-slate-700">Estado</label>
+                <select id="estado" name="estado" class="app-input w-full">
+                    <option value="">Todos los estados</option>
+                    @foreach($estados as $estado)
+                        <option value="{{ $estado }}" @selected($filters['estado'] === $estado)>{{ strtoupper(str_replace('_', ' ', $estado)) }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p class="text-xs text-slate-500">
+                Use la busqueda rapida para encontrar equipos al instante y estos filtros para refinar el listado.
+            </p>
             <button class="btn btn-primary gap-2">
                 <x-icon name="search" class="h-4 w-4" />
-                Buscar
+                Aplicar filtros
             </button>
-            <a href="{{ route('equipos.index') }}" class="btn btn-neutral gap-2">
-                <x-icon name="x" class="h-4 w-4" />
-                Limpiar
-            </a>
         </div>
     </form>
 
@@ -99,7 +123,8 @@
                             @endcan
                             @can('delete', $equipo)
                                 <form method="POST" action="{{ route('equipos.destroy',$equipo) }}" onsubmit="return confirm('Eliminar equipo?')">
-                                    @csrf @method('DELETE')
+                                    @csrf
+                                    @method('DELETE')
                                     <button class="btn btn-danger !px-3 !py-1.5 gap-1.5">
                                         <x-icon name="trash-2" class="h-4 w-4" />
                                         Eliminar
@@ -110,14 +135,14 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="7" class="py-10 text-center text-slate-500">Sin resultados.</td></tr>
+                <tr>
+                    <td colspan="7" class="py-10 text-center text-slate-500">Sin resultados.</td>
+                </tr>
             @endforelse
             </tbody>
         </table>
     </div>
 
-    <div class="pt-2">
-        {{ $equipos->links() }}
-    </div>
+    <x-listing.pagination :paginator="$equipos" />
 </div>
 @endsection

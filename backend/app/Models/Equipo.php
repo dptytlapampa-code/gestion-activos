@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\Auditing\Auditable;
 use App\Services\EquipoStatusResolver;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -148,5 +149,65 @@ class Equipo extends Model
     public function isBaja(): bool
     {
         return $this->equipoStatus?->code === EquipoStatus::CODE_BAJA;
+    }
+
+    public function scopeVisibleToUser(Builder $query, ?User $user): Builder
+    {
+        return $query->when(
+            $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+            function (Builder $builder) use ($user): void {
+                $builder->whereHas('oficina.service', function (Builder $serviceQuery) use ($user): void {
+                    $serviceQuery->where('institution_id', $user->institution_id);
+                });
+            }
+        );
+    }
+
+    /**
+     * @param array{tipo?:mixed,marca?:mixed,modelo?:mixed,estado?:mixed} $filters
+     */
+    public function scopeApplyIndexFilters(Builder $query, array $filters): Builder
+    {
+        $tipo = trim((string) ($filters['tipo'] ?? ''));
+        $marca = trim((string) ($filters['marca'] ?? ''));
+        $modelo = trim((string) ($filters['modelo'] ?? ''));
+        $estado = (string) ($filters['estado'] ?? '');
+
+        return $query
+            ->when($tipo !== '', fn (Builder $builder) => $builder->where('tipo', 'ilike', "%{$tipo}%"))
+            ->when($marca !== '', fn (Builder $builder) => $builder->where('marca', 'ilike', "%{$marca}%"))
+            ->when($modelo !== '', fn (Builder $builder) => $builder->where('modelo', 'ilike', "%{$modelo}%"))
+            ->when(in_array($estado, self::ESTADOS, true), fn (Builder $builder) => $builder->where('estado', $estado));
+    }
+
+    public function scopeSearchIndex(Builder $query, string $search): Builder
+    {
+        $search = trim($search);
+
+        if ($search === '') {
+            return $query;
+        }
+
+        $like = "%{$search}%";
+
+        return $query->where(function (Builder $builder) use ($like): void {
+            $builder
+                ->where('tipo', 'ilike', $like)
+                ->orWhere('marca', 'ilike', $like)
+                ->orWhere('modelo', 'ilike', $like)
+                ->orWhere('numero_serie', 'ilike', $like)
+                ->orWhere('bien_patrimonial', 'ilike', $like)
+                ->orWhere('mac_address', 'ilike', $like)
+                ->orWhere('codigo_interno', 'ilike', $like)
+                ->orWhereHas('oficina', function (Builder $officeQuery) use ($like): void {
+                    $officeQuery
+                        ->where('nombre', 'ilike', $like)
+                        ->orWhereHas('service', function (Builder $serviceQuery) use ($like): void {
+                            $serviceQuery
+                                ->where('nombre', 'ilike', $like)
+                                ->orWhereHas('institution', fn (Builder $institutionQuery) => $institutionQuery->where('nombre', 'ilike', $like));
+                        });
+                });
+        });
     }
 }
