@@ -147,7 +147,7 @@
                 @endcan
 
                 <div class="app-table-panel overflow-x-auto rounded-lg">
-                    <table class="min-w-full text-sm">
+                    <table class="app-table text-sm">
                         <thead class="bg-slate-50 text-left text-xs uppercase text-slate-600">
                             <tr>
                                 <th class="px-4 py-3">Fecha</th>
@@ -160,9 +160,9 @@
                                 <th class="px-4 py-3">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100 bg-white">
+                        <tbody>
                         @forelse($mantenimientos as $mantenimiento)
-                            <tr class="transition hover:bg-slate-50/80">
+                            <tr>
                                 <td class="px-4 py-4 text-slate-700">{{ $mantenimiento->fecha?->format('d/m/Y') }}</td>
                                 <td class="px-4 py-4 text-slate-700">{{ ucfirst($mantenimiento->tipo) }}</td>
                                 <td class="px-4 py-4 font-medium text-slate-900">{{ $mantenimiento->titulo }}</td>
@@ -212,7 +212,7 @@
                 @endcan
 
                 <div class="app-table-panel overflow-x-auto rounded-lg">
-                    <table class="min-w-full divide-y divide-slate-200 text-sm">
+                    <table class="app-table text-sm">
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-4 py-3 text-left font-semibold text-slate-700">Fecha</th>
@@ -223,7 +223,7 @@
                                 <th class="px-4 py-3 text-left font-semibold text-slate-700">Observacion</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100 bg-white">
+                        <tbody>
                             @forelse ($equipo->movimientos as $movimiento)
                                 @php
                                     $origen = $offices->get($movimiento->oficina_origen_id);
@@ -235,7 +235,7 @@
                                         ? $destino->service?->institution?->nombre.' / '.$destino->service?->nombre.' / '.$destino->nombre
                                         : '-';
                                 @endphp
-                                <tr class="transition hover:bg-slate-50/80">
+                                <tr>
                                     <td class="px-4 py-4 text-slate-700">{{ $movimiento->fecha?->format('d/m/Y H:i') }}</td>
                                     <td class="px-4 py-4 font-medium text-slate-900">{{ ucfirst($movimiento->tipo_movimiento) }}</td>
                                     <td class="px-4 py-4 text-slate-700">{{ $movimiento->user?->name ?? '-' }}</td>
