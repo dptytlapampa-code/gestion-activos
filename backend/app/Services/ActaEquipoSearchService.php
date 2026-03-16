@@ -170,7 +170,7 @@ class ActaEquipoSearchService
                 ->orWhere('offices.nombre', 'ilike', $like);
 
             if ($hasUuid) {
-                $builder->orWhere('equipos.uuid', 'ilike', $like);
+                $builder->orWhereRaw('(equipos.uuid)::text ilike ?', [$like]);
             }
 
             if ($hasMacAddress) {
@@ -189,29 +189,29 @@ class ActaEquipoSearchService
         $startsWith = $needle.'%';
 
         $cases = [
-            ['lower(equipos.numero_serie) = ?', $needle],
-            ['lower(equipos.bien_patrimonial) = ?', $needle],
-            ['lower(equipos.marca) = ?', $needle],
-            ['lower(equipos.modelo) = ?', $needle],
-            ['lower(equipos.tipo) = ?', $needle],
+            [$this->lowerTextExpression('equipos.numero_serie').' = ?', $needle],
+            [$this->lowerTextExpression('equipos.bien_patrimonial').' = ?', $needle],
+            [$this->lowerTextExpression('equipos.marca').' = ?', $needle],
+            [$this->lowerTextExpression('equipos.modelo').' = ?', $needle],
+            [$this->lowerTextExpression('equipos.tipo').' = ?', $needle],
         ];
 
         if ($hasUuid) {
-            $cases[] = ['lower(equipos.uuid) = ?', $needle];
+            $cases[] = [$this->lowerTextExpression('equipos.uuid').' = ?', $needle];
         }
 
         if ($hasMacAddress) {
-            $cases[] = ['lower(equipos.mac_address) = ?', $needle];
+            $cases[] = [$this->lowerTextExpression('equipos.mac_address').' = ?', $needle];
         }
 
         if ($hasCodigoInterno) {
-            $cases[] = ['lower(equipos.codigo_interno) = ?', $needle];
+            $cases[] = [$this->lowerTextExpression('equipos.codigo_interno').' = ?', $needle];
         }
 
-        $cases[] = ['lower(equipos.numero_serie) like ?', $startsWith];
-        $cases[] = ['lower(equipos.bien_patrimonial) like ?', $startsWith];
-        $cases[] = ['lower(equipos.marca) like ?', $startsWith];
-        $cases[] = ['lower(equipos.modelo) like ?', $startsWith];
+        $cases[] = [$this->lowerTextExpression('equipos.numero_serie').' like ?', $startsWith];
+        $cases[] = [$this->lowerTextExpression('equipos.bien_patrimonial').' like ?', $startsWith];
+        $cases[] = [$this->lowerTextExpression('equipos.marca').' like ?', $startsWith];
+        $cases[] = [$this->lowerTextExpression('equipos.modelo').' like ?', $startsWith];
 
         $sql = 'CASE ';
         $bindings = [];
@@ -225,6 +225,12 @@ class ActaEquipoSearchService
 
         $query->orderByRaw($sql, $bindings);
     }
+
+    private function lowerTextExpression(string $column): string
+    {
+        return sprintf('lower((%s)::text)', $column);
+    }
+
 
     /**
      * @return array<string, mixed>
