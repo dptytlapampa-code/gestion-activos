@@ -11,6 +11,7 @@ use App\Models\TipoEquipo;
 use App\Models\User;
 use App\Services\ActaPdfDataService;
 use App\Services\ActaTraceabilityService;
+use App\Support\Listings\ListingState;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class ActaController extends Controller
 {
@@ -26,11 +28,11 @@ class ActaController extends Controller
         private readonly ActaPdfDataService $actaPdfDataService,
     ) {}
 
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $this->authorize('viewAny', Acta::class);
 
-        $user = $request->user();
+        $listing = ListingState::fromRequest($request);
         $validated = $request->validate([
             'tipo' => ['nullable', Rule::in(Acta::TIPOS)],
             'fecha_desde' => ['nullable', 'date'],
@@ -40,16 +42,12 @@ class ActaController extends Controller
         $actas = Acta::query()
             ->withCount('equipos')
             ->with(['creator:id,name'])
-            ->when(
-                ! $user->hasRole(User::ROLE_SUPERADMIN),
-                fn (Builder $query) => $query->whereIn('institution_id', $user->accessibleInstitutionIds())
-            )
-            ->when($validated['tipo'] ?? null, fn (Builder $query, string $tipo) => $query->where('tipo', $tipo))
-            ->when($validated['fecha_desde'] ?? null, fn (Builder $query, string $fechaDesde) => $query->whereDate('fecha', '>=', $fechaDesde))
-            ->when($validated['fecha_hasta'] ?? null, fn (Builder $query, string $fechaHasta) => $query->whereDate('fecha', '<=', $fechaHasta))
+            ->visibleToUser($request->user())
+            ->searchIndex($listing->search)
+            ->applyIndexFilters($validated)
             ->latest('fecha')
             ->latest('id')
-            ->paginate(15)
+            ->paginate($listing->perPage)
             ->withQueryString();
 
         return view('actas.index', [
@@ -57,6 +55,7 @@ class ActaController extends Controller
             'tipos' => Acta::TIPOS,
             'tipoLabels' => Acta::LABELS,
             'filters' => $validated,
+            'listing' => $listing,
         ]);
     }
 

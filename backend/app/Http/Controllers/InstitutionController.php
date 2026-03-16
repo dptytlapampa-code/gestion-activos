@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Institution;
 use App\Models\User;
+use App\Support\Listings\ListingState;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,18 +23,17 @@ class InstitutionController extends Controller
 
     public function index(Request $request): View
     {
-        $user = $request->user();
-
+        $listing = ListingState::fromRequest($request);
         $institutions = Institution::query()
-            ->when(
-                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-                fn ($query) => $query->where('id', $user->institution_id)
-            )
+            ->visibleToUser($request->user())
+            ->searchIndex($listing->search)
             ->orderBy('nombre')
-            ->paginate(10);
+            ->paginate($listing->perPage)
+            ->withQueryString();
 
         return view('institutions.index', [
             'institutions' => $institutions,
+            'listing' => $listing,
         ]);
     }
 

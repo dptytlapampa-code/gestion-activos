@@ -4,40 +4,6 @@
 @section('header', 'Panel general')
 
 @section('content')
-    @php
-        $user = auth()->user();
-
-        $instituciones = \App\Models\Institution::query()
-            ->when(
-                ! $user->hasRole(\App\Models\User::ROLE_SUPERADMIN),
-                fn ($query) => $query->whereKey($user->institution_id)
-            )
-            ->count();
-
-        $oficinas = \App\Models\Office::query()
-            ->join('services', 'services.id', '=', 'offices.service_id')
-            ->when(
-                ! $user->hasRole(\App\Models\User::ROLE_SUPERADMIN),
-                fn ($query) => $query->where('services.institution_id', $user->institution_id)
-            )
-            ->count('offices.id');
-
-        $equiposEnMantenimiento = $equiposPorEstado[\App\Models\EquipoStatus::CODE_EN_SERVICIO_TECNICO] ?? 0;
-
-        $equiposRecientes = \App\Models\Equipo::query()
-            ->with(['oficina:id,nombre', 'equipoStatus:id,code,name', 'tipoEquipo:id,nombre,image_path'])
-            ->join('offices', 'offices.id', '=', 'equipos.oficina_id')
-            ->join('services', 'services.id', '=', 'offices.service_id')
-            ->when(
-                ! $user->hasRole(\App\Models\User::ROLE_SUPERADMIN),
-                fn ($query) => $query->where('services.institution_id', $user->institution_id)
-            )
-            ->select('equipos.*')
-            ->latest('equipos.created_at')
-            ->limit(10)
-            ->get();
-    @endphp
-
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <div class="flex items-center gap-4 rounded-xl bg-white p-6 shadow-sm transition hover:shadow-md">
             <div class="rounded-xl bg-indigo-50 p-2.5 text-indigo-600">
@@ -74,7 +40,7 @@
                 <x-icon name="stethoscope" class="h-6 w-6" />
             </div>
             <div>
-                <p class="text-3xl font-semibold text-slate-800">{{ $equiposEnMantenimiento }}</p>
+                <p class="text-3xl font-semibold text-slate-800">{{ $equiposPorEstado[\App\Models\EquipoStatus::CODE_EN_SERVICIO_TECNICO] ?? 0 }}</p>
                 <p class="text-sm text-slate-500">Equipos en mantenimiento</p>
             </div>
         </div>
@@ -82,7 +48,10 @@
 
     <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <section class="rounded-xl bg-white p-6 shadow-sm lg:col-span-2">
-            <h3 class="mb-4 text-lg font-semibold">Equipos recientes</h3>
+            <div class="mb-4 flex items-center justify-between gap-3">
+                <h3 class="text-lg font-semibold">Equipos recientes</h3>
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">Maximo 5 registros</span>
+            </div>
 
             <div class="overflow-x-auto">
                 <table class="min-w-full text-sm">
@@ -138,7 +107,10 @@
         </section>
 
         <aside class="rounded-xl bg-white p-6 shadow-sm lg:col-span-1">
-            <h3 class="mb-4 text-lg font-semibold">Actas recientes</h3>
+            <div class="mb-4 flex items-center justify-between gap-3">
+                <h3 class="text-lg font-semibold">Actas recientes</h3>
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">Maximo 5 registros</span>
+            </div>
 
             <div class="space-y-3">
                 @forelse ($actas as $acta)

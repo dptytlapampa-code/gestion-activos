@@ -82,7 +82,7 @@ class EquipoModuleTest extends TestCase
         $tipoEquipo = TipoEquipo::create(['nombre' => 'Laptop']);
         $tipoEquipo2 = TipoEquipo::create(['nombre' => 'Impresora']);
 
-        for ($i = 1; $i <= 20; $i++) {
+        for ($i = 1; $i <= 21; $i++) {
             $selectedTipoEquipo = $i % 2 === 0 ? $tipoEquipo : $tipoEquipo2;
 
             Equipo::create([
@@ -100,9 +100,73 @@ class EquipoModuleTest extends TestCase
 
         $user = $this->crearUsuario(User::ROLE_SUPERADMIN);
 
-        $this->actingAs($user)->get(route('equipos.index'))->assertOk()->assertSee('NS-1')->assertSee('NS-15')->assertDontSee('NS-16');
-        $this->actingAs($user)->get(route('equipos.index', ['tipo' => 'Laptop', 'marca' => 'Dell', 'estado' => Equipo::ESTADO_OPERATIVO]))
-            ->assertOk()->assertSee('Laptop')->assertDontSee('Impresora');
+        $response = $this->actingAs($user)->get(route('equipos.index'));
+        $response->assertOk();
+
+        $paginator = $response->viewData('equipos');
+
+        $this->assertSame(20, $paginator->perPage());
+        $this->assertCount(20, $paginator->items());
+        $this->assertTrue(collect($paginator->items())->contains(fn (Equipo $equipo): bool => $equipo->numero_serie === 'NS-1'));
+        $this->assertFalse(collect($paginator->items())->contains(fn (Equipo $equipo): bool => $equipo->numero_serie === 'NS-21'));
+
+        $filteredResponse = $this->actingAs($user)->get(route('equipos.index', [
+            'search' => 'Dell',
+            'tipo' => 'Laptop',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+        ]));
+
+        $filteredResponse->assertOk();
+
+        $filteredPaginator = $filteredResponse->viewData('equipos');
+
+        $this->assertGreaterThan(0, $filteredPaginator->total());
+        $this->assertTrue(
+            collect($filteredPaginator->items())->every(
+                fn (Equipo $equipo): bool => $equipo->tipo === 'Laptop'
+                    && $equipo->marca === 'Dell'
+                    && $equipo->estado === Equipo::ESTADO_OPERATIVO
+            )
+        );
+    }
+
+    public function test_per_page_invalido_vuelve_a_20_y_la_paginacion_conserva_query_string(): void
+    {
+        $institution = Institution::create(['nombre' => 'Hospital Query']);
+        $service = Service::create(['nombre' => 'Clinica', 'institution_id' => $institution->id]);
+        $office = Office::create(['nombre' => 'Sala', 'service_id' => $service->id]);
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Monitor']);
+
+        for ($i = 1; $i <= 8; $i++) {
+            Equipo::create([
+                'tipo' => $tipoEquipo->nombre,
+                'tipo_equipo_id' => $tipoEquipo->id,
+                'marca' => 'Dell',
+                'modelo' => 'Serie-'.$i,
+                'numero_serie' => 'QUERY-'.$i,
+                'bien_patrimonial' => 'BP-QUERY-'.$i,
+                'estado' => Equipo::ESTADO_OPERATIVO,
+                'fecha_ingreso' => now()->toDateString(),
+                'oficina_id' => $office->id,
+            ]);
+        }
+
+        $user = $this->crearUsuario(User::ROLE_SUPERADMIN);
+
+        $invalidResponse = $this->actingAs($user)->get(route('equipos.index', ['per_page' => 999]));
+
+        $invalidResponse->assertOk();
+        $this->assertSame(20, $invalidResponse->viewData('equipos')->perPage());
+
+        $paginatedResponse = $this->actingAs($user)->get(route('equipos.index', [
+            'search' => 'Dell',
+            'per_page' => 5,
+        ]));
+
+        $paginatedResponse->assertOk()
+            ->assertSee('search=Dell', false)
+            ->assertSee('per_page=5', false)
+            ->assertSee('page=2', false);
     }
 
     public function test_permisos_por_hospital_para_admin_hospital(): void

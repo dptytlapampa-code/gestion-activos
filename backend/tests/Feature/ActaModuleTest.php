@@ -629,6 +629,44 @@ class ActaModuleTest extends TestCase
         ]);
     }
 
+    public function test_listado_de_actas_aplica_busqueda_por_codigo_y_per_page_whitelist(): void
+    {
+        [$admin, $institution] = $this->crearEscenarioBase();
+
+        for ($i = 1; $i <= 21; $i++) {
+            Acta::create([
+                'institution_id' => $institution->id,
+                'tipo' => $i % 2 === 0 ? Acta::TIPO_ENTREGA : Acta::TIPO_TRASLADO,
+                'fecha' => now()->subDays(21 - $i)->toDateString(),
+                'receptor_nombre' => 'Receptor '.$i,
+                'observaciones' => 'Observacion '.$i,
+                'created_by' => $admin->id,
+            ]);
+        }
+
+        $defaultResponse = $this->actingAs($admin)->get(route('actas.index'));
+
+        $defaultResponse->assertOk();
+        $this->assertSame(20, $defaultResponse->viewData('actas')->perPage());
+        $this->assertCount(20, $defaultResponse->viewData('actas')->items());
+
+        $target = Acta::query()->where('receptor_nombre', 'Receptor 21')->firstOrFail();
+
+        $searchResponse = $this->actingAs($admin)->get(route('actas.index', ['search' => $target->codigo]));
+
+        $searchResponse->assertOk();
+
+        $searchPaginator = $searchResponse->viewData('actas');
+
+        $this->assertSame(1, $searchPaginator->total());
+        $this->assertSame($target->id, collect($searchPaginator->items())->first()?->id);
+
+        $invalidResponse = $this->actingAs($admin)->get(route('actas.index', ['per_page' => 999]));
+
+        $invalidResponse->assertOk();
+        $this->assertSame(20, $invalidResponse->viewData('actas')->perPage());
+    }
+
     private function crearEscenarioBase(string $suffix = 'A'): array
     {
         $institution = Institution::create(['nombre' => 'Hospital '.$suffix]);

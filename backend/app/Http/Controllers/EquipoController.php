@@ -11,6 +11,7 @@ use App\Models\Office;
 use App\Models\Service;
 use App\Models\TipoEquipo;
 use App\Models\User;
+use App\Support\Listings\ListingState;
 use App\Services\EquipoStatusResolver;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
@@ -30,28 +31,31 @@ class EquipoController extends Controller
     {
         $this->authorize('viewAny', Equipo::class);
 
-        $user = $request->user();
+        $listing = ListingState::fromRequest($request);
+        $normalizeQueryValue = static fn (mixed $value): string => is_scalar($value) ? trim((string) $value) : '';
+        $filters = [
+            'tipo' => $normalizeQueryValue($request->query('tipo')),
+            'marca' => $normalizeQueryValue($request->query('marca')),
+            'modelo' => $normalizeQueryValue($request->query('modelo')),
+            'estado' => $normalizeQueryValue($request->query('estado')),
+        ];
 
-        $equiposQuery = Equipo::query()->with(['oficina.service.institution', 'tipoEquipo', 'equipoStatus']);
-
-        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN)) {
-            $equiposQuery->whereHas('oficina.service', function ($query) use ($user): void {
-                $query->where('institution_id', $user->institution_id);
-            });
-        }
-
-        $equiposQuery
-            ->when($request->filled('tipo'), fn ($query) => $query->where('tipo', 'ilike', '%'.$request->string('tipo').'%'))
-            ->when($request->filled('marca'), fn ($query) => $query->where('marca', 'ilike', '%'.$request->string('marca').'%'))
-            ->when($request->filled('modelo'), fn ($query) => $query->where('modelo', 'ilike', '%'.$request->string('modelo').'%'))
-            ->when($request->filled('estado'), fn ($query) => $query->where('estado', $request->string('estado')))
+        $equipos = Equipo::query()
+            ->with(['oficina.service.institution', 'tipoEquipo', 'equipoStatus'])
+            ->visibleToUser($request->user())
+            ->searchIndex($listing->search)
+            ->applyIndexFilters($filters)
             ->orderBy('tipo')
             ->orderBy('marca')
-            ->orderBy('modelo');
+            ->orderBy('modelo')
+            ->paginate($listing->perPage)
+            ->withQueryString();
 
         return view('equipos.index', [
-            'equipos' => $equiposQuery->paginate(15)->withQueryString(),
+            'equipos' => $equipos,
             'estados' => Equipo::ESTADOS,
+            'filters' => $filters,
+            'listing' => $listing,
         ]);
     }
 
