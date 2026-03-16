@@ -109,7 +109,7 @@
             </div>
 
             @if ($hasDestinoInstitucional)
-                <div class="mt-4 rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm text-slate-700">
+                <div class="app-subcard mt-4 border-blue-200 px-4 py-3 text-sm text-slate-700">
                     <p class="font-semibold text-blue-900">Destino institucional complementario</p>
                     <p class="mt-1">{{ $destinoInstitucionalTexto }}</p>
                 </div>
@@ -117,23 +117,25 @@
         </div>
     @endif
 
-    <div class="card overflow-x-auto">
-        <h3 class="mb-3 text-base font-semibold text-slate-900">Equipos del acta</h3>
-        <table class="min-w-full divide-y divide-slate-200 text-sm">
+    <div class="app-table-panel overflow-x-auto">
+        <div class="border-b border-slate-200 px-5 py-4">
+            <h3 class="text-base font-semibold text-slate-900">Equipos del acta</h3>
+        </div>
+        <table class="app-table text-sm">
             <thead>
-            <tr class="text-left text-slate-600">
-                <th class="px-4 py-3">Tipo</th>
-                <th class="px-4 py-3">Marca</th>
-                <th class="px-4 py-3">Modelo</th>
-                <th class="px-4 py-3">Serie</th>
-                <th class="px-4 py-3">Patrimonial</th>
-                <th class="px-4 py-3">Origen snapshot</th>
-                <th class="px-4 py-3">Destino</th>
-                <th class="px-4 py-3">Cantidad</th>
-                <th class="px-4 py-3">Accesorios</th>
+            <tr>
+                <th>Tipo</th>
+                <th>Marca</th>
+                <th>Modelo</th>
+                <th>Serie</th>
+                <th>Patrimonial</th>
+                <th>Origen snapshot</th>
+                <th>Destino</th>
+                <th>Cantidad</th>
+                <th>Accesorios</th>
             </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
+            <tbody>
             @foreach ($acta->equipos as $equipo)
                 @php
                     $origenEquipo = trim(implode(' / ', [
@@ -155,46 +157,48 @@
                     }
                 @endphp
                 <tr>
-                    <td class="px-4 py-3">{{ $equipo->tipo }}</td>
-                    <td class="px-4 py-3">{{ $equipo->marca }}</td>
-                    <td class="px-4 py-3">{{ $equipo->modelo }}</td>
-                    <td class="px-4 py-3">{{ $equipo->numero_serie }}</td>
-                    <td class="px-4 py-3">{{ $equipo->bien_patrimonial }}</td>
-                    <td class="px-4 py-3">{{ $origenEquipo }}</td>
-                    <td class="px-4 py-3">{{ $destinoEquipo }}</td>
-                    <td class="px-4 py-3">{{ $equipo->pivot->cantidad }}</td>
-                    <td class="px-4 py-3">{{ $equipo->pivot->accesorios ?: '-' }}</td>
+                    <td>{{ $equipo->tipo }}</td>
+                    <td>{{ $equipo->marca }}</td>
+                    <td>{{ $equipo->modelo }}</td>
+                    <td>{{ $equipo->numero_serie }}</td>
+                    <td>{{ $equipo->bien_patrimonial }}</td>
+                    <td>{{ $origenEquipo }}</td>
+                    <td>{{ $destinoEquipo }}</td>
+                    <td>{{ $equipo->pivot->cantidad }}</td>
+                    <td>{{ $equipo->pivot->accesorios ?: '-' }}</td>
                 </tr>
             @endforeach
             </tbody>
         </table>
     </div>
 
-    <div class="card overflow-x-auto">
-        <h3 class="mb-3 text-base font-semibold text-slate-900">Historial generado</h3>
-        <table class="min-w-full divide-y divide-slate-200 text-sm">
+    <div class="app-table-panel overflow-x-auto">
+        <div class="border-b border-slate-200 px-5 py-4">
+            <h3 class="text-base font-semibold text-slate-900">Historial generado</h3>
+        </div>
+        <table class="app-table text-sm">
             <thead>
-                <tr class="text-left text-slate-600">
-                    <th class="px-4 py-3">Equipo</th>
-                    <th class="px-4 py-3">Estado anterior</th>
-                    <th class="px-4 py-3">Estado nuevo</th>
-                    <th class="px-4 py-3">Ubicacion anterior</th>
-                    <th class="px-4 py-3">Ubicacion nueva</th>
-                    <th class="px-4 py-3">Usuario</th>
+                <tr>
+                    <th>Equipo</th>
+                    <th>Estado anterior</th>
+                    <th>Estado nuevo</th>
+                    <th>Ubicacion anterior</th>
+                    <th>Ubicacion nueva</th>
+                    <th>Usuario</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
+            <tbody>
                 @forelse ($acta->historial as $item)
                     <tr>
-                        <td class="px-4 py-3">{{ $item->equipo?->tipo }} ({{ $item->equipo?->numero_serie }})</td>
-                        <td class="px-4 py-3">{{ strtoupper(str_replace('_', ' ', $item->estado_anterior ?: '-')) }}</td>
-                        <td class="px-4 py-3">{{ strtoupper(str_replace('_', ' ', $item->estado_nuevo ?: '-')) }}</td>
-                        <td class="px-4 py-3">{{ $item->institucionAnterior?->nombre ?: '-' }} / {{ $item->servicioAnterior?->nombre ?: '-' }} / {{ $item->oficinaAnterior?->nombre ?: '-' }}</td>
-                        <td class="px-4 py-3">{{ $item->institucionNueva?->nombre ?: '-' }} / {{ $item->servicioNuevo?->nombre ?: '-' }} / {{ $item->oficinaNueva?->nombre ?: '-' }}</td>
-                        <td class="px-4 py-3">{{ $item->usuario?->name ?: '-' }}</td>
+                        <td>{{ $item->equipo?->tipo }} ({{ $item->equipo?->numero_serie }})</td>
+                        <td>{{ strtoupper(str_replace('_', ' ', $item->estado_anterior ?: '-')) }}</td>
+                        <td>{{ strtoupper(str_replace('_', ' ', $item->estado_nuevo ?: '-')) }}</td>
+                        <td>{{ $item->institucionAnterior?->nombre ?: '-' }} / {{ $item->servicioAnterior?->nombre ?: '-' }} / {{ $item->oficinaAnterior?->nombre ?: '-' }}</td>
+                        <td>{{ $item->institucionNueva?->nombre ?: '-' }} / {{ $item->servicioNuevo?->nombre ?: '-' }} / {{ $item->oficinaNueva?->nombre ?: '-' }}</td>
+                        <td>{{ $item->usuario?->name ?: '-' }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="6" class="px-4 py-4 text-center text-slate-500">Sin historial asociado.</td></tr>
+                    <tr><td colspan="6" class="py-4 text-center text-slate-500">Sin historial asociado.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -206,7 +210,7 @@
                 <form method="POST" action="{{ route('actas.anular', $acta) }}" class="flex flex-col gap-2 md:w-[420px]" onsubmit="return confirm('Esta accion no puede deshacerse. Desea anular el acta?');">
                     @csrf
                     <label for="motivo_anulacion" class="text-xs font-medium text-slate-600">Motivo de anulacion</label>
-                    <textarea id="motivo_anulacion" name="motivo_anulacion" rows="2" required class="rounded-xl border-slate-300 text-sm" placeholder="Detalle el motivo administrativo"></textarea>
+                    <textarea id="motivo_anulacion" name="motivo_anulacion" rows="2" required class="app-input text-sm" placeholder="Detalle el motivo administrativo"></textarea>
                     <button type="submit" class="min-h-[48px] rounded-xl bg-red-600 px-5 py-3 font-semibold text-white">Anular acta</button>
                 </form>
             @endif

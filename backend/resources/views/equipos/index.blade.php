@@ -40,7 +40,7 @@
         </div>
     </form>
 
-    <div class="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div class="app-table-panel overflow-x-auto">
         <table class="app-table">
             <thead>
                 <tr>
@@ -121,3 +121,4 @@
     </div>
 </div>
 @endsection
+

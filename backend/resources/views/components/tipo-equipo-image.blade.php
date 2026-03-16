@@ -17,7 +17,7 @@
     $imageLabel = $tipoEquipo?->nombre ?? 'Tipo de equipo';
 @endphp
 
-<div {{ $attributes->class([$sizeClass, 'overflow-hidden rounded-xl border border-slate-200 bg-slate-50']) }}>
+<div {{ $attributes->class([$sizeClass, 'app-subcard overflow-hidden rounded-xl']) }}>
     @if ($imageUrl)
         <img
             src="{{ $imageUrl }}"

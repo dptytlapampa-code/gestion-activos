@@ -25,7 +25,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('tipos-equipos.update', $tipo_equipo) }}" enctype="multipart/form-data" class="space-y-6 rounded-2xl border border-surface-200 bg-white p-6 shadow-sm">
+        <form method="POST" action="{{ route('tipos-equipos.update', $tipo_equipo) }}" enctype="multipart/form-data" class="card space-y-6">
             @csrf
             @method('PUT')
 
@@ -112,3 +112,4 @@
         </form>
     </div>
 @endsection
+

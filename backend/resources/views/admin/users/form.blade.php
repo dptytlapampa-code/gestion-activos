@@ -5,31 +5,32 @@
         isset($user) ? $user->permittedInstitutions->pluck('id')->all() : []
     ))->map(fn ($id) => (string) $id);
 @endphp
+
 <div class="grid gap-4 md:grid-cols-2">
     <div>
-        <label class="text-sm" for="name">Nombre</label>
-        <input id="name" name="name" value="{{ old('name', $user->name ?? '') }}" class="mt-1 w-full rounded border px-3 py-2 @error('name') border-red-300 @else border-slate-300 @enderror" />
+        <label class="text-sm font-medium text-slate-700" for="name">Nombre</label>
+        <input id="name" name="name" value="{{ old('name', $user->name ?? '') }}" class="form-control @error('name') form-control-error @enderror" />
         @error('name')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
     </div>
 
     <div>
-        <label class="text-sm" for="email">Email</label>
-        <input id="email" name="email" value="{{ old('email', $user->email ?? '') }}" class="mt-1 w-full rounded border px-3 py-2 @error('email') border-red-300 @else border-slate-300 @enderror" />
+        <label class="text-sm font-medium text-slate-700" for="email">Email</label>
+        <input id="email" name="email" value="{{ old('email', $user->email ?? '') }}" class="form-control @error('email') form-control-error @enderror" />
         @error('email')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
     </div>
 
-    @if(!isset($user))
+    @if (! isset($user))
         <div>
-            <label class="text-sm" for="password">Password</label>
-            <input id="password" type="password" name="password" class="mt-1 w-full rounded border px-3 py-2 @error('password') border-red-300 @else border-slate-300 @enderror" />
+            <label class="text-sm font-medium text-slate-700" for="password">Password</label>
+            <input id="password" type="password" name="password" class="form-control @error('password') form-control-error @enderror" />
             @error('password')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
         </div>
     @endif
 
     <div>
-        <label class="text-sm" for="role">Rol</label>
-        <select id="role" name="role" class="mt-1 w-full rounded border px-3 py-2 @error('role') border-red-300 @else border-slate-300 @enderror">
-            @foreach($roles as $role)
+        <label class="text-sm font-medium text-slate-700" for="role">Rol</label>
+        <select id="role" name="role" class="form-control @error('role') form-control-error @enderror">
+            @foreach ($roles as $role)
                 <option value="{{ $role }}" @selected(old('role', $user->role ?? '') === $role)>{{ $role }}</option>
             @endforeach
         </select>
@@ -37,10 +38,10 @@
     </div>
 
     <div>
-        <label class="text-sm" for="institution_id">Institucion principal</label>
-        <select id="institution_id" name="institution_id" class="mt-1 w-full rounded border px-3 py-2 @error('institution_id') border-red-300 @else border-slate-300 @enderror">
+        <label class="text-sm font-medium text-slate-700" for="institution_id">Institucion principal</label>
+        <select id="institution_id" name="institution_id" class="form-control @error('institution_id') form-control-error @enderror">
             <option value="">Sin institucion</option>
-            @foreach($institutions as $institution)
+            @foreach ($institutions as $institution)
                 <option value="{{ $institution->id }}" @selected((string) old('institution_id', $user->institution_id ?? '') === (string) $institution->id)>{{ $institution->nombre }}</option>
             @endforeach
         </select>
@@ -48,10 +49,10 @@
     </div>
 
     <div class="md:col-span-2">
-        <label class="text-sm" for="accessible_institution_ids">Instituciones adicionales habilitadas (opcional)</label>
+        <label class="text-sm font-medium text-slate-700" for="accessible_institution_ids">Instituciones adicionales habilitadas (opcional)</label>
         <p class="mt-1 text-xs text-slate-500">Estas instituciones se suman a la principal para permisos operativos.</p>
-        <div id="accessible_institution_ids" class="mt-2 grid gap-2 rounded border border-slate-200 p-3 md:grid-cols-2">
-            @foreach($institutions as $institution)
+        <div id="accessible_institution_ids" class="app-subcard mt-2 grid gap-2 p-3 md:grid-cols-2">
+            @foreach ($institutions as $institution)
                 <label class="flex items-center gap-2 text-sm text-slate-700">
                     <input
                         type="checkbox"
@@ -67,4 +68,5 @@
         @error('accessible_institution_ids.*')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
     </div>
 </div>
-<button class="mt-4 rounded bg-indigo-600 px-4 py-2 text-white">Guardar</button>
+
+<button class="btn btn-primary mt-4">Guardar</button>

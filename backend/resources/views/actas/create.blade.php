@@ -54,7 +54,7 @@
                         <input type="date" name="fecha" x-model="fecha" class="mt-1 w-full rounded-xl border-slate-300" required>
                         @error('fecha') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
-                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <div class="app-subcard p-4">
                         <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Seleccionados</p>
                         <p class="mt-2 text-3xl font-semibold text-slate-900" x-text="selected.length"></p>
                         <p class="text-sm text-slate-500">equipos listos para el acta</p>
@@ -143,7 +143,7 @@
 
                     <p class="text-sm text-slate-500" x-text="searchStatusMessage()"></p>
 
-                    <div x-show="filtersOpen" x-cloak class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <div x-show="filtersOpen" x-cloak class="app-subcard p-4">
                         <div class="mb-4 flex items-center justify-between">
                             <div>
                                 <h4 class="text-sm font-semibold text-slate-900">Filtros avanzados</h4>
@@ -233,7 +233,7 @@
                         </template>
                     </div>
 
-                    <div class="overflow-hidden rounded-2xl border border-slate-200">
+                    <div class="app-table-panel">
                         <div class="border-b border-slate-200 bg-slate-50 px-4 py-3">
                             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
@@ -245,18 +245,18 @@
                         </div>
 
                         <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-slate-200">
-                                <thead class="bg-white">
-                                    <tr class="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                        <th class="px-4 py-3">Equipo</th>
-                                        <th class="px-4 py-3">Serie</th>
-                                        <th class="px-4 py-3">Patrimonial</th>
-                                        <th class="px-4 py-3">Ubicacion actual</th>
-                                        <th class="px-4 py-3">Estado</th>
-                                        <th class="px-4 py-3 text-right">Accion</th>
+                            <table class="app-table">
+                                <thead>
+                                    <tr>
+                                        <th>Equipo</th>
+                                        <th>Serie</th>
+                                        <th>Patrimonial</th>
+                                        <th>Ubicacion actual</th>
+                                        <th>Estado</th>
+                                        <th class="text-right">Accion</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-slate-200 bg-white text-sm">
+                                <tbody class="text-sm">
                                     <template x-if="!results.length">
                                         <tr>
                                             <td colspan="6" class="px-4 py-12 text-center">
@@ -270,21 +270,21 @@
 
                                     <template x-for="item in results" :key="`result-${item.id}`">
                                         <tr class="align-top">
-                                            <td class="px-4 py-3">
+                                            <td>
                                                 <div class="font-semibold text-slate-900" x-text="item.tipo || item.label"></div>
                                                 <div class="mt-1 text-slate-600" x-text="joinLabel([item.marca, item.modelo]) || '-'"></div>
                                             </td>
-                                            <td class="px-4 py-3 text-slate-700" x-text="item.numero_serie || '-'"></td>
-                                            <td class="px-4 py-3 text-slate-700" x-text="item.bien_patrimonial || '-'"></td>
-                                            <td class="px-4 py-3">
+                                            <td x-text="item.numero_serie || '-'"></td>
+                                            <td x-text="item.bien_patrimonial || '-'"></td>
+                                            <td>
                                                 <div class="text-slate-900" x-text="item.institucion || '-'"></div>
                                                 <div class="text-slate-600" x-text="item.servicio || '-'"></div>
                                                 <div class="text-slate-500" x-text="item.oficina || '-'"></div>
                                             </td>
-                                            <td class="px-4 py-3">
+                                            <td>
                                                 <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700" x-text="item.estado_label || humanizeEstado(item.estado)"></span>
                                             </td>
-                                            <td class="px-4 py-3 text-right">
+                                            <td class="text-right">
                                                 <button
                                                     type="button"
                                                     @click="addSelected(item)"
@@ -327,7 +327,7 @@
                         <span class="inline-flex h-10 min-w-10 items-center justify-center rounded-2xl bg-primary-50 px-3 text-sm font-bold text-primary-700" x-text="selected.length"></span>
                     </div>
 
-                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <div class="app-subcard p-4">
                         <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Destino del acta</p>
                         <div class="mt-3 space-y-1 text-sm text-slate-700">
                             <p class="font-medium" x-text="getDestinoPreview().institucion"></p>
@@ -336,7 +336,7 @@
                         </div>
                     </div>
 
-                    <div x-show="selectedOriginGroups().length" x-cloak class="rounded-2xl border border-slate-200 p-4">
+                    <div x-show="selectedOriginGroups().length" x-cloak class="app-subcard p-4">
                         <div class="flex items-start justify-between gap-3">
                             <div>
                                 <p class="text-sm font-semibold text-slate-900">Origen de los equipos</p>
@@ -361,7 +361,7 @@
                     </div>
 
                     <template x-if="!selected.length">
-                        <div class="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-6 text-center">
+                        <div class="app-subcard border-dashed px-4 py-6 text-center">
                             <p class="text-base font-semibold text-slate-900">Todavia no agrego equipos</p>
                             <p class="mt-2 text-sm text-slate-500">Busque, verifique la fila y use el boton Agregar. El listado quedara aqui.</p>
                         </div>
@@ -369,7 +369,7 @@
 
                     <div class="space-y-3" x-show="selected.length" x-cloak>
                         <template x-for="(item, index) in selected" :key="`selected-${item.id}`">
-                            <article class="rounded-2xl border border-slate-200 p-4">
+                            <article class="app-subcard p-4">
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="min-w-0">
                                         <p class="truncate font-semibold text-slate-900" x-text="item.label || item.tipo"></p>
@@ -1177,3 +1177,4 @@
     }
 </script>
 @endsection
+

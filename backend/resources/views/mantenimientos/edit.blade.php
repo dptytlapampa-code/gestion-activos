@@ -4,7 +4,7 @@
 @section('header', 'Editar mantenimiento')
 
 @section('content')
-<div class="rounded-xl border border-slate-200 bg-white p-6">
+<div class="card">
     <form method="POST" action="{{ route('mantenimientos.update', $mantenimiento) }}" class="grid gap-4 md:grid-cols-2">
         @csrf
         @method('PUT')
@@ -24,3 +24,4 @@
     </form>
 </div>
 @endsection
+

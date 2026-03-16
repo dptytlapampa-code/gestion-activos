@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" class="bg-surface-100">
+<html lang="es">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -20,7 +20,7 @@
         }
     </style>
 </head>
-<body class="min-h-screen bg-surface-100 text-surface-900">
+<body class="hospital-body min-h-screen text-surface-900">
     <div class="flex min-h-screen items-center justify-center px-6">
         <div class="w-full max-w-md space-y-4">
             <x-flash-alerts />

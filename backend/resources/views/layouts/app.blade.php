@@ -22,21 +22,21 @@
         }
     </style>
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-800">
-    <div class="flex min-h-screen gap-6 p-6">
+<body class="hospital-body min-h-screen text-slate-800">
+    <div class="hospital-layout flex min-h-screen gap-6 p-6">
         @include('layouts.sidebar', ['siteName' => $siteName, 'logoInstitucionalUrl' => $logoInstitucionalUrl, 'systemLogoUrl' => $systemLogoUrl])
 
         <div class="flex flex-1 flex-col gap-6">
-            <header class="flex items-center justify-between rounded-2xl bg-white p-6 shadow-sm">
+            <header class="app-page-header">
                 <div>
                     <h2 class="text-2xl font-semibold text-slate-800">@yield('header', 'Panel')</h2>
                     <p class="text-sm text-slate-500">{{ now()->translatedFormat('l, j \\d\\e F Y') }}</p>
                 </div>
                 <div class="flex items-center gap-3">
-                    <span class="rounded-lg bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700">{{ auth()->user()->name }}</span>
+                    <span class="app-user-chip">{{ auth()->user()->name }}</span>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700">Cerrar sesion</button>
+                        <button type="submit" class="btn btn-neutral">Cerrar sesion</button>
                     </form>
                 </div>
             </header>
