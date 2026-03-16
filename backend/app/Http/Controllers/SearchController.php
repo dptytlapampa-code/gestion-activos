@@ -299,6 +299,20 @@ class SearchController extends Controller
             ])
             ->values();
 
+        if ($actaContext) {
+            return response()->json([
+                'items' => $items,
+                'meta' => [
+                    'searched' => true,
+                    'message' => $items->isEmpty() ? 'No encontramos equipos con los criterios indicados.' : null,
+                    'page' => 1,
+                    'per_page' => $items->count(),
+                    'has_more' => false,
+                    'next_page' => null,
+                ],
+            ]);
+        }
+
         return response()->json($items);
     }
 

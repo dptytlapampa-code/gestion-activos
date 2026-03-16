@@ -465,6 +465,43 @@ class SearchControllerTest extends TestCase
             ]);
     }
 
+    public function test_acta_context_en_search_equipos_devuelve_formato_paginado_compatible(): void
+    {
+        $institution = Institution::create(['nombre' => 'Hospital Compat']);
+        $service = Service::create(['nombre' => 'Bioingenieria', 'institution_id' => $institution->id]);
+        $office = Office::create(['nombre' => 'Taller', 'service_id' => $service->id]);
+        $tipo = TipoEquipo::create(['nombre' => 'Bomba de infusion']);
+
+        $equipo = Equipo::create([
+            'tipo' => $tipo->nombre,
+            'tipo_equipo_id' => $tipo->id,
+            'marca' => 'Baxter',
+            'modelo' => 'X1',
+            'numero_serie' => 'SER-COMP-01',
+            'bien_patrimonial' => 'BP-COMP-01',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => now()->toDateString(),
+            'oficina_id' => $office->id,
+        ]);
+
+        $response = $this->actingAs($this->createUser(User::ROLE_ADMIN, $institution->id))
+            ->get('/api/search/equipos?q=SER-COMP-01&acta_context=1');
+
+        $response->assertOk()
+            ->assertJsonPath('items.0.id', $equipo->id)
+            ->assertJsonPath('meta.searched', true)
+            ->assertJsonPath('meta.has_more', false);
+    }
+
+    public function test_acta_search_rechaza_usuarios_sin_permiso_para_crear_actas(): void
+    {
+        $response = $this->actingAs($this->createUser(User::ROLE_VIEWER))
+            ->get('/api/search/acta-equipos?q=SER-123');
+
+        $response->assertForbidden();
+    }
+
+
     private function createUser(string $role, ?int $institutionId = null): User
     {
         return User::create([
