@@ -50,7 +50,11 @@
         <section class="card lg:col-span-2">
             <div class="mb-4 flex items-center justify-between gap-3">
                 <h3 class="text-lg font-semibold">Equipos recientes</h3>
+<<<<<<< HEAD
                 <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">Maximo 5 registros</span>
+=======
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">Ultimos 10 registros</span>
+>>>>>>> e6cedd66b7f15e73fe2750a6630dd75a82aaa1b0
             </div>
 
             <div class="overflow-x-auto">
@@ -109,7 +113,11 @@
         <aside class="card lg:col-span-1">
             <div class="mb-4 flex items-center justify-between gap-3">
                 <h3 class="text-lg font-semibold">Actas recientes</h3>
+<<<<<<< HEAD
                 <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">Maximo 5 registros</span>
+=======
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">Ultimos 5 registros</span>
+>>>>>>> e6cedd66b7f15e73fe2750a6630dd75a82aaa1b0
             </div>
 
             <div class="space-y-3">

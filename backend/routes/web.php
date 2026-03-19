@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EquipoController;
+use App\Http\Controllers\EquipoExportController;
 use App\Http\Controllers\EquipoPublicController;
 use App\Http\Controllers\InstitutionController;
 use App\Http\Controllers\MantenimientoController;
@@ -32,6 +33,7 @@ Route::middleware('auth')->group(function (): void {
     Route::resource('offices', OfficeController::class)->except('show');
     Route::resource('tipos-equipos', TipoEquipoController::class)->parameters(['tipos-equipos' => 'tipo_equipo']);
 
+    Route::get('equipos/export/csv', EquipoExportController::class)->name('equipos.export.csv');
     Route::resource('equipos', EquipoController::class);
     Route::get('movimientos/create', [MovimientoController::class, 'create'])->name('movimientos.create');
     Route::post('equipos/{equipo}/movimientos', [MovimientoController::class, 'store'])->name('equipos.movimientos.store');

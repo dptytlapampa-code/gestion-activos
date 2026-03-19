@@ -4,6 +4,11 @@
 @section('header', 'Equipos')
 
 @section('content')
+@php
+    $resultExportQuery = array_merge(request()->except('page'), ['scope' => \App\Enums\ExportScope::RESULTS->value]);
+    $allExportQuery = ['scope' => \App\Enums\ExportScope::ALL->value];
+@endphp
+
 <div class="space-y-8">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -63,6 +68,14 @@
             </button>
         </div>
     </form>
+
+    @can('export', \App\Models\Equipo::class)
+        <x-listing.export-actions
+            :results-url="route('equipos.export.csv', $resultExportQuery)"
+            :all-url="route('equipos.export.csv', $allExportQuery)"
+            :has-active-filters="$hasActiveFilters"
+        />
+    @endcan
 
     <div class="app-table-panel overflow-x-auto">
         <table class="app-table">
