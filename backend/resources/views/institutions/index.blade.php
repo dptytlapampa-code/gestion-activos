@@ -16,7 +16,6 @@
         @endif
     </div>
 
-<<<<<<< HEAD
     <form method="GET" class="app-filter-panel mt-6 p-6">
         <x-listing.toolbar
             :search="$listing->search"
@@ -28,9 +27,6 @@
             :clear-url="route('institutions.index')"
         />
     </form>
-
-=======
->>>>>>> e6cedd66b7f15e73fe2750a6630dd75a82aaa1b0
     <div class="mt-6 app-table-panel">
         <table class="app-table">
             <thead>
