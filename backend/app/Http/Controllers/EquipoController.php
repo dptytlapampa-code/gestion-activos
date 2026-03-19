@@ -11,7 +11,7 @@ use App\Models\Office;
 use App\Models\Service;
 use App\Models\TipoEquipo;
 use App\Models\User;
-use App\Support\Listings\ListingState;
+use App\Services\EquipoListingService;
 use App\Services\EquipoStatusResolver;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
@@ -22,8 +22,10 @@ class EquipoController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct(private readonly EquipoStatusResolver $equipoStatusResolver)
-    {
+    public function __construct(
+        private readonly EquipoStatusResolver $equipoStatusResolver,
+        private readonly EquipoListingService $equipoListingService,
+    ) {
         $this->authorizeResource(Equipo::class, 'equipo');
     }
 
@@ -31,23 +33,11 @@ class EquipoController extends Controller
     {
         $this->authorize('viewAny', Equipo::class);
 
-        $listing = ListingState::fromRequest($request);
-        $normalizeQueryValue = static fn (mixed $value): string => is_scalar($value) ? trim((string) $value) : '';
-        $filters = [
-            'tipo' => $normalizeQueryValue($request->query('tipo')),
-            'marca' => $normalizeQueryValue($request->query('marca')),
-            'modelo' => $normalizeQueryValue($request->query('modelo')),
-            'estado' => $normalizeQueryValue($request->query('estado')),
-        ];
+        $listing = $this->equipoListingService->listingState($request);
+        $filters = $this->equipoListingService->filtersFromRequest($request);
 
-        $equipos = Equipo::query()
-            ->with(['oficina.service.institution', 'tipoEquipo', 'equipoStatus'])
-            ->visibleToUser($request->user())
-            ->searchIndex($listing->search)
-            ->applyIndexFilters($filters)
-            ->orderBy('tipo')
-            ->orderBy('marca')
-            ->orderBy('modelo')
+        $equipos = $this->equipoListingService
+            ->buildIndexQuery($request->user(), $listing->search, $filters)
             ->paginate($listing->perPage)
             ->withQueryString();
 
@@ -56,6 +46,7 @@ class EquipoController extends Controller
             'estados' => Equipo::ESTADOS,
             'filters' => $filters,
             'listing' => $listing,
+            'hasActiveFilters' => $this->equipoListingService->hasActiveFilters($listing->search, $filters),
         ]);
     }
 

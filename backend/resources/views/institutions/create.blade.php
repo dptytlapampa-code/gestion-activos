@@ -21,7 +21,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('institutions.store') }}" class="space-y-6 rounded-2xl border border-surface-200 bg-white p-6 shadow-sm">
+        <form method="POST" action="{{ route('institutions.store') }}" class="card space-y-6">
             @csrf
 
             <div class="grid gap-6 md:grid-cols-2">
@@ -190,3 +190,4 @@
         </form>
     </div>
 @endsection
+

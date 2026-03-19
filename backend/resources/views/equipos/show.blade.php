@@ -4,8 +4,8 @@
 @section('header', 'Detalle equipo')
 
 @section('content')
-<div class="space-y-6 bg-slate-50/70 p-1" x-data="{ activeTab: 'informacion', tipo: @js(old('tipo', 'interno')), showMantenimientoForm: {{ old('fecha') || old('titulo') || old('detalle') ? 'true' : 'false' }}, showDocumentoForm: {{ old('note') || old('file') ? 'true' : 'false' }} }">
-    <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+<div class="space-y-6" x-data="{ activeTab: 'informacion', tipo: @js(old('tipo', 'interno')), showMantenimientoForm: {{ old('fecha') || old('titulo') || old('detalle') ? 'true' : 'false' }}, showDocumentoForm: {{ old('note') || old('file') ? 'true' : 'false' }} }">
+    <div class="card">
         <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div class="space-y-3">
                 <div class="flex items-start gap-4">
@@ -50,7 +50,7 @@
         </div>
     </div>
 
-    <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <div class="card">
         <div class="border-b border-slate-200">
             <nav class="-mb-px flex flex-wrap gap-2 md:gap-6">
                 <button type="button" @click="activeTab = 'informacion'" :class="activeTab === 'informacion' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'" class="border-b-2 px-1 pb-3 text-sm font-semibold transition">Informacion</button>
@@ -63,7 +63,7 @@
         <div class="pt-6">
             <section x-show="activeTab === 'informacion'" x-cloak class="space-y-4">
                 <dl class="grid gap-4 md:grid-cols-2">
-                    <div class="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+                    <div class="app-subcard p-4">
                         <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tipo</dt>
                         <dd class="mt-1 text-base font-semibold text-slate-900">
                             <div class="flex items-center gap-3">
@@ -72,23 +72,23 @@
                             </div>
                         </dd>
                     </div>
-                    <div class="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+                    <div class="app-subcard p-4">
                         <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Marca</dt>
                         <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->marca }}</dd>
                     </div>
-                    <div class="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+                    <div class="app-subcard p-4">
                         <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Modelo</dt>
                         <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->modelo }}</dd>
                     </div>
-                    <div class="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+                    <div class="app-subcard p-4">
                         <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Estado actual</dt>
                         <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->equipoStatus?->name ?? ucfirst($equipo->estado) }}</dd>
                     </div>
-                    <div class="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+                    <div class="app-subcard p-4">
                         <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Fecha ingreso</dt>
                         <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->fecha_ingreso?->format('d/m/Y') }}</dd>
                     </div>
-                    <div class="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+                    <div class="app-subcard p-4">
                         <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Ubicacion</dt>
                         <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->oficina?->service?->institution?->nombre }} / {{ $equipo->oficina?->service?->nombre }} / {{ $equipo->oficina?->nombre }}</dd>
                     </div>
@@ -104,7 +104,7 @@
                         </button>
                     </div>
 
-                    <div x-show="showMantenimientoForm" class="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+                    <div x-show="showMantenimientoForm" class="app-subcard p-4">
                         <form method="POST" action="{{ route('equipos.mantenimientos.store', $equipo) }}" class="grid gap-4 md:grid-cols-2">
                             @csrf
                             <div>
@@ -146,8 +146,12 @@
                     </div>
                 @endcan
 
-                <div class="overflow-x-auto rounded-lg border border-slate-200">
+                <div class="app-table-panel overflow-x-auto rounded-lg">
+<<<<<<< HEAD
+                    <table class="app-table text-sm">
+=======
                     <table class="min-w-full text-sm">
+>>>>>>> e6cedd66b7f15e73fe2750a6630dd75a82aaa1b0
                         <thead class="bg-slate-50 text-left text-xs uppercase text-slate-600">
                             <tr>
                                 <th class="px-4 py-3">Fecha</th>
@@ -160,9 +164,9 @@
                                 <th class="px-4 py-3">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100 bg-white">
+                        <tbody>
                         @forelse($mantenimientos as $mantenimiento)
-                            <tr class="transition hover:bg-slate-50/80">
+                            <tr>
                                 <td class="px-4 py-4 text-slate-700">{{ $mantenimiento->fecha?->format('d/m/Y') }}</td>
                                 <td class="px-4 py-4 text-slate-700">{{ ucfirst($mantenimiento->tipo) }}</td>
                                 <td class="px-4 py-4 font-medium text-slate-900">{{ $mantenimiento->titulo }}</td>
@@ -211,8 +215,12 @@
                     </div>
                 @endcan
 
-                <div class="overflow-x-auto rounded-lg border border-slate-200">
+                <div class="app-table-panel overflow-x-auto rounded-lg">
+<<<<<<< HEAD
+                    <table class="app-table text-sm">
+=======
                     <table class="min-w-full divide-y divide-slate-200 text-sm">
+>>>>>>> e6cedd66b7f15e73fe2750a6630dd75a82aaa1b0
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-4 py-3 text-left font-semibold text-slate-700">Fecha</th>
@@ -223,7 +231,7 @@
                                 <th class="px-4 py-3 text-left font-semibold text-slate-700">Observacion</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100 bg-white">
+                        <tbody>
                             @forelse ($equipo->movimientos as $movimiento)
                                 @php
                                     $origen = $offices->get($movimiento->oficina_origen_id);
@@ -235,7 +243,7 @@
                                         ? $destino->service?->institution?->nombre.' / '.$destino->service?->nombre.' / '.$destino->nombre
                                         : '-';
                                 @endphp
-                                <tr class="transition hover:bg-slate-50/80">
+                                <tr>
                                     <td class="px-4 py-4 text-slate-700">{{ $movimiento->fecha?->format('d/m/Y H:i') }}</td>
                                     <td class="px-4 py-4 font-medium text-slate-900">{{ ucfirst($movimiento->tipo_movimiento) }}</td>
                                     <td class="px-4 py-4 text-slate-700">{{ $movimiento->user?->name ?? '-' }}</td>
@@ -254,7 +262,7 @@
                                         @endif
                                         <div class="mt-2 space-y-2">
                                             @forelse($movimiento->documents as $documento_mov)
-                                                <div class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs">
+                                                <div class="app-panel flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-xs">
                                                     <div class="flex min-w-0 items-center gap-2 text-slate-700">
                                                         <x-icon name="file-text" class="h-4 w-4 shrink-0 text-rose-500" />
                                                         <span class="max-w-56 truncate font-medium text-slate-900" title="{{ $documento_mov->original_name }}">{{ $documento_mov->original_name }}</span>
@@ -275,7 +283,7 @@
                                             @endforelse
                                         </div>
                                         @if(auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO))
-                                            <form method="POST" action="{{ route('movimientos.documents.store', $movimiento) }}" enctype="multipart/form-data" x-data="{ selectedFileName: '' }" class="mt-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                                            <form method="POST" action="{{ route('movimientos.documents.store', $movimiento) }}" enctype="multipart/form-data" x-data="{ selectedFileName: '' }" class="mt-3 app-subcard p-3">
                                                 @csrf
                                                 <div class="flex flex-wrap items-end gap-3">
                                                     <div class="min-w-[11rem]">
@@ -325,7 +333,7 @@
                         </button>
                     </div>
 
-                    <div x-show="showDocumentoForm" class="rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+                    <div x-show="showDocumentoForm" class="app-subcard p-4">
                         <form method="POST" action="{{ route('equipos.documents.store', $equipo) }}" enctype="multipart/form-data" class="grid gap-3 md:grid-cols-4">
                             @csrf
                             <select name="type" class="rounded border px-3 py-2" required>
@@ -346,7 +354,7 @@
 
                 <div class="space-y-3">
                     @forelse($equipo->documents as $document)
-                        <article class="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
+                        <article class="app-panel flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
                             <div class="flex items-center gap-3">
                                 <div class="rounded-lg bg-rose-50 p-2 text-rose-600">
                                     <x-icon name="file-text" class="h-6 w-6" />
@@ -382,3 +390,5 @@
     </div>
 </div>
 @endsection
+
+

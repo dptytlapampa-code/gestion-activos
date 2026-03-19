@@ -9,11 +9,6 @@ class EquipoPolicy
 {
     public function before(User $user, string $ability): ?bool
     {
-        // Temporary development bypass to unblock module integration.
-        if (app()->isLocal()) {
-            return true;
-        }
-
         if ($user->hasRole(User::ROLE_SUPERADMIN)) {
             return true;
         }
@@ -50,5 +45,10 @@ class EquipoPolicy
     {
         return $user->hasRole(User::ROLE_ADMIN)
             && (int) $equipo->oficina?->service?->institution_id === (int) $user->institution_id;
+    }
+
+    public function export(User $user): bool
+    {
+        return $user->hasRole(User::ROLE_ADMIN);
     }
 }

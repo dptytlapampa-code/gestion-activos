@@ -17,7 +17,7 @@
         @endif
     </div>
 
-    <div class="mt-6 rounded-2xl border border-surface-200 bg-white p-4 shadow-sm">
+    <div class="mt-6 app-filter-panel p-4">
         <form method="GET" action="{{ route('tipos-equipos.index') }}" class="grid gap-3 sm:grid-cols-[1fr_auto]">
             <div class="relative">
                 <label for="q" class="sr-only">Buscar por nombre</label>
@@ -38,9 +38,9 @@
         </form>
     </div>
 
-    <div class="mt-6 overflow-hidden rounded-2xl border border-surface-200 bg-white shadow-sm">
-        <table class="min-w-full divide-y divide-surface-200">
-            <thead class="bg-surface-50">
+    <div class="mt-6 app-table-panel">
+        <table class="app-table">
+            <thead>
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-surface-500">Imagen</th>
                     <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-surface-500">Nombre</th>
@@ -48,7 +48,7 @@
                     <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wide text-surface-500">Acciones</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-surface-100">
+            <tbody>
                 @forelse ($tipos_equipos as $tipo_equipo)
                     <tr>
                         <td class="px-6 py-4">
@@ -92,3 +92,5 @@
         {{ $tipos_equipos->links() }}
     </div>
 @endsection
+
+

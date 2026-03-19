@@ -16,9 +16,9 @@
         @endif
     </div>
 
-    <div class="mt-6 overflow-hidden rounded-2xl border border-surface-200 bg-white shadow-sm">
-        <table class="min-w-full divide-y divide-surface-200">
-            <thead class="bg-surface-50">
+    <div class="mt-6 app-table-panel">
+        <table class="app-table">
+            <thead>
                 <tr>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-surface-500">Nombre</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-surface-500">Institución</th>
@@ -26,7 +26,7 @@
                     <th scope="col" class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wide text-surface-500">Acciones</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-surface-100">
+            <tbody>
                 @forelse ($services as $service)
                     <tr>
                         <td class="px-6 py-4 text-sm font-medium text-surface-900">{{ $service->nombre }}</td>
@@ -66,3 +66,5 @@
         {{ $services->links() }}
     </div>
 @endsection
+
+

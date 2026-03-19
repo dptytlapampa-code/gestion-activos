@@ -6,7 +6,7 @@
 <form
     method="POST"
     action="{{ $action }}"
-    class="space-y-6 rounded-2xl border border-surface-200 bg-white p-6 shadow-sm"
+    class="card space-y-6"
     x-data="{
         selectedInstitutionId: @js((string) ($selectedInstitutionId ?? '')),
         selectedServiceId: @js((string) ($selectedServiceId ?? '')),
@@ -55,7 +55,7 @@
         @method($method)
     @endif
 
-    <div class="rounded-xl border border-surface-200 bg-surface-50 px-4 py-3 text-sm text-surface-700">
+    <div class="app-subcard px-4 py-3 text-sm text-surface-700">
         Complete en este orden: <span class="font-semibold">Institucion -> Servicio -> Oficina</span>.
     </div>
 
@@ -138,3 +138,4 @@
         </a>
     </div>
 </form>
+
