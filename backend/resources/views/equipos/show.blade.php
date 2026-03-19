@@ -147,11 +147,7 @@
                 @endcan
 
                 <div class="app-table-panel overflow-x-auto rounded-lg">
-<<<<<<< HEAD
                     <table class="app-table text-sm">
-=======
-                    <table class="min-w-full text-sm">
->>>>>>> e6cedd66b7f15e73fe2750a6630dd75a82aaa1b0
                         <thead class="bg-slate-50 text-left text-xs uppercase text-slate-600">
                             <tr>
                                 <th class="px-4 py-3">Fecha</th>
@@ -216,11 +212,7 @@
                 @endcan
 
                 <div class="app-table-panel overflow-x-auto rounded-lg">
-<<<<<<< HEAD
                     <table class="app-table text-sm">
-=======
-                    <table class="min-w-full divide-y divide-slate-200 text-sm">
->>>>>>> e6cedd66b7f15e73fe2750a6630dd75a82aaa1b0
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-4 py-3 text-left font-semibold text-slate-700">Fecha</th>

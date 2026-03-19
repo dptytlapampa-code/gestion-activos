@@ -5,7 +5,6 @@
 
 @section('content')
 <div class="space-y-6">
-<<<<<<< HEAD
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h3 class="text-xl font-semibold text-slate-900">Listado de actas</h3>
@@ -53,44 +52,10 @@
                     La busqueda rapida se aplica sola. Use tipo y fechas para acotar el periodo.
                 </p>
                 <button type="submit" class="btn btn-primary min-h-[44px]">Aplicar filtros</button>
-=======
-    <div class="app-filter-panel p-6">
-        <form method="GET" class="grid gap-4 md:grid-cols-4">
-            <div>
-                <label for="tipo" class="block text-sm font-medium text-slate-700">Tipo</label>
-                <select id="tipo" name="tipo" class="app-input mt-1 w-full">
-                    <option value="">Todos</option>
-                    @foreach ($tipos as $tipo)
-                        <option value="{{ $tipo }}" @selected(($filters['tipo'] ?? null) === $tipo)>{{ $tipoLabels[$tipo] ?? strtoupper($tipo) }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div>
-                <label for="fecha_desde" class="block text-sm font-medium text-slate-700">Fecha desde</label>
-                <input type="date" id="fecha_desde" name="fecha_desde" value="{{ $filters['fecha_desde'] ?? '' }}" class="app-input mt-1 w-full">
-            </div>
-            <div>
-                <label for="fecha_hasta" class="block text-sm font-medium text-slate-700">Fecha hasta</label>
-                <input type="date" id="fecha_hasta" name="fecha_hasta" value="{{ $filters['fecha_hasta'] ?? '' }}" class="app-input mt-1 w-full">
-            </div>
-            <div class="flex items-end gap-2">
-                <button type="submit" class="btn btn-primary min-h-[48px]">Filtrar</button>
-                <a href="{{ route('actas.index') }}" class="btn btn-neutral min-h-[48px]">Limpiar</a>
->>>>>>> e6cedd66b7f15e73fe2750a6630dd75a82aaa1b0
             </div>
         </form>
     </div>
 
-<<<<<<< HEAD
-=======
-    <div class="flex items-center justify-between">
-        <h3 class="text-lg font-semibold text-slate-900">Listado</h3>
-        @can('create', \App\Models\Acta::class)
-            <a href="{{ route('actas.create') }}" class="btn btn-primary min-h-[48px]">Nueva acta</a>
-        @endcan
-    </div>
-
->>>>>>> e6cedd66b7f15e73fe2750a6630dd75a82aaa1b0
     <div class="app-table-panel overflow-x-auto">
         <table class="app-table text-sm">
             <thead>
@@ -131,13 +96,8 @@
             </tbody>
         </table>
 
-<<<<<<< HEAD
         <div class="border-t border-slate-200 px-5">
             <x-listing.pagination :paginator="$actas" />
-=======
-        <div class="border-t border-slate-200 px-5 py-4">
-            {{ $actas->links() }}
->>>>>>> e6cedd66b7f15e73fe2750a6630dd75a82aaa1b0
         </div>
     </div>
 </div>
