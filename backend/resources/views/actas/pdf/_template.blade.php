@@ -12,29 +12,28 @@
         line-height: 1.25;
     }
 
-    .acta-page {
+    .page {
         position: relative;
-        overflow: visible;
     }
 
-    .acta-watermark {
-        position: absolute;
+    .watermark {
+        position: fixed;
         top: 50%;
         left: 50%;
         width: 140%;
         text-align: center;
         white-space: nowrap;
-        font-size: 78px;
+        font-size: 70px;
         font-weight: 700;
         line-height: 1;
-        color: #dc2626;
-        opacity: 0.12;
+        color: #ef4444;
+        opacity: 0.2;
         transform: translate(-50%, -50%) rotate(-32deg);
         transform-origin: center center;
         z-index: 0;
     }
 
-    .acta-content {
+    .content {
         position: relative;
         z-index: 1;
     }
@@ -246,11 +245,12 @@
 </style>
 </head>
 <body>
-<div class="acta-page">
+<div class="page">
     @php
         $isAnulada = ($acta->status ?? \App\Models\Acta::STATUS_ACTIVA) === \App\Models\Acta::STATUS_ANULADA;
         $documentTitle = $pdfDocumentTitle ?? strtoupper((string) ($titulo ?? 'ACTA DE EQUIPAMIENTO INFORMATICO'));
         $institutionName = $pdfInstitutionName ?? ($acta->institution?->nombre ?: 'Institucion');
+        $footerInstitutionName = $pdfFooterInstitutionName ?? $institutionName;
         $clausulaTexto = $clausula ?? 'Se deja constancia institucional del evento de trazabilidad registrado sobre el equipamiento detallado en el presente documento.';
         $origenMultiple = (bool) data_get($acta->evento_payload, 'origen_multiple', false);
         $institucionesOrigenCount = count(data_get($acta->evento_payload, 'instituciones_origen_ids', []));
@@ -313,10 +313,10 @@
     @endphp
 
     @if ($isAnulada)
-        <div class="acta-watermark">ACTA ANULADA</div>
+        <div class="watermark">ACTA ANULADA</div>
     @endif
 
-    <div class="acta-content">
+    <div class="content">
         <div class="document-header">
             @if (! empty($pdfHeaderLogoPath))
                 <div class="document-top-logo">
@@ -517,7 +517,7 @@
 
         <div class="footer">
             Documento generado por el Sistema de Gestion de Activos Informaticos<br>
-            Hospital Dr. Lucio Molas - Ministerio de Salud - Provincia de La Pampa
+            {{ $footerInstitutionName }} - Ministerio de Salud - Provincia de La Pampa
         </div>
     </div>
 </div>
