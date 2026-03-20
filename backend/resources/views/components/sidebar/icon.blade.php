@@ -13,6 +13,7 @@
         'equipos-group' => 'boxes',
         'tipos-equipo' => 'layers',
         'equipos' => 'monitor',
+        'mantenimiento' => 'wrench',
         'actas' => 'file-text',
         'administracion' => 'shield-check',
         'usuarios' => 'users',

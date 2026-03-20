@@ -10,7 +10,8 @@
             <p class="text-sm text-surface-500">Administre el catalogo de hospitales y organismos.</p>
         </div>
         @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN))
-            <a href="{{ route('institutions.create') }}" class="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700">
+            <a href="{{ route('institutions.create') }}" class="btn btn-primary gap-2">
+                <x-icon name="plus" class="h-4 w-4" />
                 Nueva institucion
             </a>
         @endif
@@ -45,14 +46,16 @@
                         <td class="px-6 py-4 text-sm text-surface-500">{{ $institution->descripcion ?? 'Sin descripcion' }}</td>
                         <td class="px-6 py-4 text-right text-sm text-surface-500">
                             @if (auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN))
-                                <div class="flex justify-end gap-2">
-                                    <a href="{{ route('institutions.edit', $institution) }}" class="rounded-lg border border-surface-200 px-3 py-1 text-xs font-semibold text-surface-700 transition hover:border-surface-300 hover:text-surface-900">
+                                <div class="flex flex-wrap justify-end gap-2">
+                                    <a href="{{ route('institutions.edit', $institution) }}" class="btn btn-neutral !px-3 !py-1.5 gap-1.5">
+                                        <x-icon name="pencil" class="h-4 w-4" />
                                         Editar
                                     </a>
                                     <form method="POST" action="{{ route('institutions.destroy', $institution) }}" onsubmit="return confirm('Desea eliminar esta institucion?');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="rounded-lg border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700">
+                                        <button type="submit" class="btn btn-danger !px-3 !py-1.5 gap-1.5">
+                                            <x-icon name="trash-2" class="h-4 w-4" />
                                             Eliminar
                                         </button>
                                     </form>

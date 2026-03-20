@@ -36,8 +36,8 @@
         </div>
 
         <div class="app-stat-card flex items-center gap-4 p-6">
-            <div class="rounded-xl bg-indigo-50 p-2.5 text-indigo-600">
-                <x-icon name="stethoscope" class="h-6 w-6" />
+            <div class="rounded-xl bg-amber-50 p-2.5 text-amber-600">
+                <x-icon name="wrench" class="h-6 w-6" />
             </div>
             <div>
                 <p class="text-3xl font-semibold text-slate-800">{{ $equiposPorEstado[\App\Models\EquipoStatus::CODE_EN_SERVICIO_TECNICO] ?? 0 }}</p>

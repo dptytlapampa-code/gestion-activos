@@ -89,6 +89,12 @@
         </svg>
         @break
 
+    @case('wrench')
+        <svg {{ $iconAttributes }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $strokeWidth }}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m14.7 6.3 2.9-2.8a4 4 0 0 1-5.2 5.9L6.7 15a1.5 1.5 0 1 0 2.1 2.1l5.6-5.7a4 4 0 0 1 5.9-5.2l-2.8 2.9-.6 2.6-2.6.6-2.6-2.6.6-2.6Z" />
+        </svg>
+        @break
+
     @case('file-text')
         <svg {{ $iconAttributes }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $strokeWidth }}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7l-5-5Z" />
@@ -142,6 +148,30 @@
     @case('chevron-down')
         <svg {{ $iconAttributes }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $strokeWidth }}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="m6 9 6 6 6-6" />
+        </svg>
+        @break
+
+    @case('menu')
+        <svg {{ $iconAttributes }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $strokeWidth }}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 7h16" />
+            <path d="M4 12h16" />
+            <path d="M4 17h16" />
+        </svg>
+        @break
+
+    @case('panel-left-close')
+        <svg {{ $iconAttributes }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $strokeWidth }}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <path d="M9 4v16" />
+            <path d="m14.5 9-3 3 3 3" />
+        </svg>
+        @break
+
+    @case('panel-left-open')
+        <svg {{ $iconAttributes }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $strokeWidth }}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <path d="M9 4v16" />
+            <path d="m11.5 9 3 3-3 3" />
         </svg>
         @break
 

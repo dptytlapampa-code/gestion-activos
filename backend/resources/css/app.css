@@ -22,7 +22,8 @@
     }
 
     body {
-        @apply text-[#374151] antialiased;
+        @apply antialiased;
+        color: #374151;
         background-color: var(--app-shell-bg);
         background-image:
             radial-gradient(circle at top right, rgba(148, 163, 184, 0.14), transparent 28%),
@@ -84,7 +85,7 @@
     }
 
     .app-page-header {
-        @apply flex items-center justify-between rounded-3xl border p-6;
+        @apply flex rounded-3xl border p-5 sm:p-6;
         border-color: rgba(217, 226, 236, 0.95);
         background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(248, 250, 252, 0.92) 100%);
         box-shadow: var(--app-header-shadow);
@@ -94,6 +95,16 @@
         @apply rounded-xl px-3 py-2 text-sm font-medium text-slate-700;
         border: 1px solid rgba(217, 226, 236, 0.95);
         background-color: rgba(243, 247, 252, 0.92);
+    }
+
+    .app-sidebar-backdrop {
+        @apply fixed inset-0 z-30 bg-slate-950/50 backdrop-blur-sm;
+    }
+
+    .app-mobile-nav-toggle {
+        @apply inline-flex h-11 w-11 items-center justify-center rounded-2xl border bg-white text-slate-700 shadow-sm transition-all duration-200 hover:-translate-y-px hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2;
+        border-color: rgba(217, 226, 236, 0.95);
+        outline-color: rgba(var(--primary-color-rgb), 0.45);
     }
 
     .app-stat-card {
@@ -139,13 +150,53 @@
         border-color: rgba(197, 210, 223, 1);
     }
 
+    .app-sidebar-shell {
+        @apply fixed inset-y-4 left-4 z-40 flex transform transition duration-300 ease-out lg:sticky lg:left-auto lg:bottom-auto lg:top-6 lg:z-20 lg:flex-shrink-0 lg:self-start;
+        width: 18rem;
+        max-width: calc(100vw - 2rem);
+        max-height: calc(100vh - 3rem);
+        transition-property: transform, width;
+    }
+
     .app-sidebar {
-        @apply flex w-64 flex-col rounded-2xl p-4 text-white shadow-sm;
+        @apply relative flex h-full w-full flex-col overflow-hidden rounded-3xl border border-white/10 p-4 text-white transition-all duration-300 ease-out;
         background-color: var(--sidebar-color);
+        box-shadow: 0 32px 60px -32px rgba(15, 23, 42, 0.52), 0 18px 26px -24px rgba(15, 23, 42, 0.3);
+    }
+
+    .app-sidebar-logo {
+        @apply h-12 w-auto rounded-xl bg-white/95 object-contain p-1.5 shadow-sm transition-all duration-300 ease-out;
+    }
+
+    .app-sidebar-toggle {
+        @apply inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60;
+    }
+
+    .app-sidebar-toggle:hover {
+        background-color: rgba(255, 255, 255, 0.16);
+    }
+
+    .app-sidebar-nav {
+        @apply relative mt-4 flex-1 space-y-2.5 overflow-y-auto pr-1;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
+    }
+
+    .app-sidebar-nav::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .app-sidebar-nav::-webkit-scrollbar-thumb {
+        border-radius: 9999px;
+        background-color: rgba(255, 255, 255, 0.24);
+    }
+
+    .app-sidebar-nav::-webkit-scrollbar-track {
+        background-color: transparent;
     }
 
     .app-sidebar-link {
-        @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/85 transition-all duration-200 ease-out;
+        @apply relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/85 transition-all duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60;
     }
 
     .app-sidebar-link:hover {
@@ -164,7 +215,7 @@
     }
 
     .app-sidebar-group-button {
-        @apply flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-white/85 transition-all duration-200 ease-out;
+        @apply relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-white/85 transition-all duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60;
     }
 
     .app-sidebar-group-button:hover {
@@ -182,8 +233,18 @@
         @apply ml-auto h-4 w-4 text-white/75 transition-transform duration-300 ease-out;
     }
 
+    .app-sidebar-tooltip {
+        @apply pointer-events-none absolute left-full top-1/2 z-20 ml-3 hidden -translate-y-1/2 whitespace-nowrap rounded-lg bg-slate-900/95 px-3 py-1.5 text-xs font-semibold text-white opacity-0 shadow-lg transition duration-150 lg:block;
+    }
+
+    .group:hover .app-sidebar-tooltip,
+    .group:focus-visible .app-sidebar-tooltip {
+        @apply opacity-100;
+    }
+
     .app-sidebar-submenu {
-        @apply overflow-hidden pl-2 pr-1 transition-[max-height,opacity,margin] duration-300 ease-out;
+        @apply overflow-hidden pl-2 pr-1 duration-300 ease-out;
+        transition-property: max-height, opacity, margin;
     }
 
     .app-sidebar-submenu-inner {
@@ -191,7 +252,7 @@
     }
 
     .app-sidebar-sublink {
-        @apply flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-white/80 transition-all duration-200 ease-out;
+        @apply flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-white/80 transition-all duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60;
     }
 
     .app-sidebar-sublink:hover {
@@ -233,11 +294,21 @@
     }
 
     .btn-info {
-        @apply bg-[#3B82F6] text-white hover:bg-[#2563eb];
+        @apply text-white;
+        background-color: #3B82F6;
+    }
+
+    .btn-info:hover {
+        background-color: #2563eb;
     }
 
     .btn-danger {
-        @apply bg-[#EF4444] text-white hover:bg-red-600;
+        @apply text-white;
+        background-color: #EF4444;
+    }
+
+    .btn-danger:hover {
+        @apply bg-red-600;
     }
 
     .btn-neutral {
@@ -303,7 +374,8 @@
     }
 
     .app-table {
-        @apply min-w-full text-[0.95rem];
+        @apply min-w-full;
+        font-size: 0.95rem;
     }
 
     .app-table thead {
