@@ -12,25 +12,29 @@
         line-height: 1.25;
     }
 
-    .page {
+    .acta-page {
         position: relative;
+        overflow: visible;
     }
 
-    .watermark {
-        position: fixed;
-        top: 42%;
-        left: 5%;
-        width: 90%;
+    .acta-watermark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 140%;
         text-align: center;
-        font-size: 70px;
+        white-space: nowrap;
+        font-size: 78px;
         font-weight: 700;
-        color: #ef4444;
-        opacity: 0.2;
-        transform: rotate(-32deg);
+        line-height: 1;
+        color: #dc2626;
+        opacity: 0.12;
+        transform: translate(-50%, -50%) rotate(-32deg);
+        transform-origin: center center;
         z-index: 0;
     }
 
-    .content {
+    .acta-content {
         position: relative;
         z-index: 1;
     }
@@ -242,7 +246,7 @@
 </style>
 </head>
 <body>
-<div class="page">
+<div class="acta-page">
     @php
         $isAnulada = ($acta->status ?? \App\Models\Acta::STATUS_ACTIVA) === \App\Models\Acta::STATUS_ANULADA;
         $documentTitle = $pdfDocumentTitle ?? strtoupper((string) ($titulo ?? 'ACTA DE EQUIPAMIENTO INFORMATICO'));
@@ -309,10 +313,10 @@
     @endphp
 
     @if ($isAnulada)
-        <div class="watermark">ACTA ANULADA</div>
+        <div class="acta-watermark">ACTA ANULADA</div>
     @endif
 
-    <div class="content">
+    <div class="acta-content">
         <div class="document-header">
             @if (! empty($pdfHeaderLogoPath))
                 <div class="document-top-logo">
