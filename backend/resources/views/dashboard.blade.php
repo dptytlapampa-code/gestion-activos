@@ -17,7 +17,7 @@
 
         <div class="app-stat-card flex items-center gap-4 p-6">
             <div class="rounded-xl bg-indigo-50 p-2.5 text-indigo-600">
-                <x-icon name="map-pin" class="h-6 w-6" />
+                <x-icon name="door-closed" class="h-6 w-6" />
             </div>
             <div>
                 <p class="text-3xl font-semibold text-slate-800">{{ $oficinas }}</p>

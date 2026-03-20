@@ -47,6 +47,16 @@
         </svg>
         @break
 
+    @case('sitemap')
+        <svg {{ $iconAttributes }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $strokeWidth }}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="9" y="3" width="6" height="4" rx="1" />
+            <rect x="3" y="17" width="6" height="4" rx="1" />
+            <rect x="15" y="17" width="6" height="4" rx="1" />
+            <path d="M12 7v4" />
+            <path d="M6 17v-3h12v3" />
+        </svg>
+        @break
+
     @case('stethoscope')
         <svg {{ $iconAttributes }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $strokeWidth }}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M4 3v5a4 4 0 1 0 8 0V3" />
@@ -64,12 +74,30 @@
         </svg>
         @break
 
+    @case('door-closed')
+        <svg {{ $iconAttributes }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $strokeWidth }}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 21h16" />
+            <path d="M7 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16" />
+            <path d="M9 21V7h6v14" />
+            <path d="M13 14h.01" />
+        </svg>
+        @break
+
     @case('boxes')
         <svg {{ $iconAttributes }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $strokeWidth }}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M3 7.5 12 3l9 4.5-9 4.5-9-4.5Z" />
             <path d="M3 12l9 4.5 9-4.5" />
             <path d="M3 16.5 12 21l9-4.5" />
             <path d="M12 12v9" />
+        </svg>
+        @break
+
+    @case('screens')
+        <svg {{ $iconAttributes }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $strokeWidth }}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="12" height="8" rx="2" />
+            <path d="M7 16h4" />
+            <path d="M9 12v4" />
+            <rect x="13" y="10" width="8" height="6" rx="1.5" />
         </svg>
         @break
 
