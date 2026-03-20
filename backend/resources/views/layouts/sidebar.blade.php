@@ -3,7 +3,10 @@
     use App\Models\User;
 
     $systemConfig = system_config();
-    $siteName = $siteName ?? $systemConfig->nombre_sistema;
+    $siteName = trim((string) ($siteName ?? $systemConfig->nombre_sistema));
+    $sidebarHeaderTitle = $sidebarHeaderTitle ?? $systemConfig->sidebar_header_title ?? $siteName;
+    $sidebarHeaderDescription = $sidebarHeaderDescription ?? $systemConfig->sidebar_header_description ?? 'Sistema de Gestion de Activos';
+    $sidebarHeaderSubtitle = $sidebarHeaderSubtitle ?? $systemConfig->sidebar_header_subtitle ?? 'Panel administrativo';
     $logoInstitucionalUrl = $logoInstitucionalUrl ?? $systemConfig->logo_url;
     $systemLogoUrl = $systemLogoUrl ?? $systemConfig->system_logo_url;
     $user = auth()->user();
@@ -56,26 +59,34 @@
                 <span x-cloak x-show="!$store.appShell.isDesktopSidebarCollapsed()" x-transition.opacity.duration.150ms>Cerrar menu</span>
             </button>
 
-            <div class="flex min-w-0 items-center gap-3" :class="$store.appShell.isDesktopSidebarCollapsed() ? 'justify-center items-center text-center' : ''">
-                @if ($logoInstitucionalUrl)
-                    <img
-                        src="{{ $logoInstitucionalUrl }}"
-                        alt="Logo institucional"
-                        class="app-sidebar-logo rounded-2xl"
-                        :class="$store.appShell.isDesktopSidebarCollapsed() ? 'max-w-[3rem]' : 'max-w-[11rem]'"
+            <div class="app-sidebar-brand-card" :class="$store.appShell.isDesktopSidebarCollapsed() ? 'px-2 py-3' : 'px-4 py-4'">
+                <div class="flex" :class="$store.appShell.isDesktopSidebarCollapsed() ? 'justify-center' : 'justify-start'">
+                    <div
+                        class="app-sidebar-brand-mark"
+                        :class="$store.appShell.isDesktopSidebarCollapsed() ? 'min-h-[3.5rem] w-full max-w-[3.5rem] px-2 py-2' : 'min-h-[4.5rem] w-full max-w-[10rem]'"
                     >
-                @else
-                    <img
-                        src="{{ $systemLogoUrl }}"
-                        alt="Logo del sistema"
-                        class="app-sidebar-logo rounded-2xl"
-                        :class="$store.appShell.isDesktopSidebarCollapsed() ? 'max-w-[3rem]' : 'max-w-[11rem]'"
-                    >
-                @endif
+                        @if ($logoInstitucionalUrl)
+                            <img
+                                src="{{ $logoInstitucionalUrl }}"
+                                alt="Logo institucional"
+                                class="app-sidebar-logo"
+                                :class="$store.appShell.isDesktopSidebarCollapsed() ? 'max-h-10 max-w-[2.5rem]' : 'max-h-12 max-w-full'"
+                            >
+                        @else
+                            <img
+                                src="{{ $systemLogoUrl }}"
+                                alt="Logo del sistema"
+                                class="app-sidebar-logo"
+                                :class="$store.appShell.isDesktopSidebarCollapsed() ? 'max-h-10 max-w-[2.5rem]' : 'max-h-12 max-w-full'"
+                            >
+                        @endif
+                    </div>
+                </div>
 
-                <div x-cloak x-show="!$store.appShell.isDesktopSidebarCollapsed()" x-transition.opacity.duration.150ms class="min-w-0">
-                    <h1 class="truncate text-base font-semibold tracking-tight text-white">{{ $siteName }}</h1>
-                    <p class="mt-1 text-xs font-medium uppercase tracking-[0.12em] text-white/70">Panel administrativo</p>
+                <div x-cloak x-show="!$store.appShell.isDesktopSidebarCollapsed()" x-transition.opacity.duration.150ms class="app-sidebar-brand-copy">
+                    <h1 class="text-[1.375rem] font-semibold leading-tight tracking-tight text-white">{{ $sidebarHeaderTitle }}</h1>
+                    <p class="mt-1.5 text-sm leading-5 text-white/80">{{ $sidebarHeaderDescription }}</p>
+                    <p class="mt-2 text-[11px] font-medium tracking-[0.08em] text-white/65">{{ $sidebarHeaderSubtitle }}</p>
                 </div>
             </div>
         </div>

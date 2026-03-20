@@ -11,11 +11,13 @@ if (! function_exists('system_config')) {
     {
         return Cache::remember(system_config_cache_key(), now()->addHour(), static function (): object {
             $defaults = [
-                'nombre_sistema' => 'Gestion de Activos',
+                'nombre_sistema' => 'DPTYT',
                 'color_primario' => '#1f2937',
                 'color_sidebar' => '#1f2937',
                 'logo_institucional' => null,
                 'logo_pdf' => null,
+                'sidebar_header_description' => 'Sistema de Gestion de Activos',
+                'sidebar_header_subtitle' => 'Panel administrativo',
             ];
 
             $row = system_config_read_row();
@@ -37,6 +39,14 @@ if (! function_exists('system_config')) {
                 $row?->logo_institucional ?? $row?->logo_path ?? null
             );
             $logoPdf = system_config_nullable_string($row?->logo_pdf ?? null);
+            $sidebarHeaderDescription = system_config_string(
+                data_get($row, 'sidebar_header_description'),
+                $defaults['sidebar_header_description']
+            );
+            $sidebarHeaderSubtitle = system_config_string(
+                data_get($row, 'sidebar_header_subtitle'),
+                $defaults['sidebar_header_subtitle']
+            );
 
             $logoInstitucionalUrl = system_config_logo_url($logoInstitucional);
             $logoPdfUrl = system_config_logo_url($logoPdf);
@@ -60,6 +70,9 @@ if (! function_exists('system_config')) {
                 'logo_institucional_file_path' => $logoInstitucionalFilePath,
                 'logo_pdf_file_path' => $logoPdfFilePath,
                 'system_logo_url' => asset('images/system/logo-sistema.png'),
+                'sidebar_header_title' => $nombreSistema,
+                'sidebar_header_description' => $sidebarHeaderDescription,
+                'sidebar_header_subtitle' => $sidebarHeaderSubtitle,
                 'primary_color_rgb' => system_config_hex_to_rgb_csv($colorPrimario),
                 'sidebar_color_rgb' => system_config_hex_to_rgb_csv($colorSidebar),
             ];

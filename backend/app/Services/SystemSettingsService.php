@@ -14,7 +14,7 @@ use stdClass;
 class SystemSettingsService
 {
     private const DEFAULTS = [
-        'site_name' => 'Gestion de Activos',
+        'site_name' => 'DPTYT',
         'primary_color' => '#1f2937',
         'sidebar_color' => '#1f2937',
         'logo_path' => null,
