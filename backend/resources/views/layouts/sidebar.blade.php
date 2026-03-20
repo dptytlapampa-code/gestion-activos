@@ -35,103 +35,100 @@
     class="app-sidebar-shell"
     :class="[
         $store.appShell.mobileSidebarOpen ? 'translate-x-0' : '-translate-x-[calc(100%+1.5rem)] lg:translate-x-0',
-        $store.appShell.isCollapsedDesktop() ? 'lg:w-[5.5rem]' : 'lg:w-72',
+        $store.appShell.isDesktopSidebarCollapsed() ? 'lg:w-[5.25rem]' : 'lg:w-72',
     ]"
-    :aria-hidden="(!$store.appShell.isDesktop() && ! $store.appShell.mobileSidebarOpen).toString()"
+    :aria-hidden="(!$store.appShell.isDesktop() && !$store.appShell.mobileSidebarOpen).toString()"
 >
-    <div class="app-sidebar" style="background-color: {{ system_config()->color_sidebar }}">
+    <div class="app-sidebar !px-0 !py-4" style="background-color: {{ $systemConfig->color_sidebar }}">
         <div class="pointer-events-none absolute inset-x-0 top-0 h-36 bg-gradient-to-b from-white/12 to-transparent"></div>
 
-        <div class="relative px-3 py-3" :class="$store.appShell.isCollapsedDesktop() ? 'px-2' : 'px-4'">
-            <div class="flex items-start justify-between gap-3" :class="$store.appShell.isCollapsedDesktop() ? 'flex-col items-center' : ''">
-                <div class="flex min-w-0 items-center gap-3" :class="$store.appShell.isCollapsedDesktop() ? 'flex-col text-center' : ''">
-                    @if ($logoInstitucionalUrl)
-                        <img
-                            src="{{ $logoInstitucionalUrl }}"
-                            alt="Logo institucional"
-                            class="app-sidebar-logo"
-                            :class="$store.appShell.isCollapsedDesktop() ? 'max-w-[3rem]' : 'max-w-[11rem]'"
-                        >
-                    @else
-                        <img
-                            src="{{ $systemLogoUrl }}"
-                            alt="Logo del sistema"
-                            class="app-sidebar-logo"
-                            :class="$store.appShell.isCollapsedDesktop() ? 'max-w-[3rem]' : 'max-w-[11rem]'"
-                        >
-                    @endif
+        <div class="relative flex flex-col gap-4 border-b border-white/10 pb-4" :class="$store.appShell.isDesktopSidebarCollapsed() ? 'px-2' : 'px-4'">
+            <button
+                type="button"
+                class="inline-flex h-11 w-full items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60"
+                :class="$store.appShell.isDesktopSidebarCollapsed() ? 'justify-center px-0' : ''"
+                @click="$store.appShell.toggleSidebar()"
+                :aria-expanded="($store.appShell.isDesktop() ? $store.appShell.isDesktopSidebarOpen() : $store.appShell.mobileSidebarOpen).toString()"
+                :aria-label="$store.appShell.isDesktop() ? ($store.appShell.isDesktopSidebarCollapsed() ? 'Abrir menu lateral' : 'Cerrar menu lateral') : 'Cerrar menu lateral'"
+                :title="$store.appShell.isDesktop() ? ($store.appShell.isDesktopSidebarCollapsed() ? 'Abrir menu lateral' : 'Cerrar menu lateral') : 'Cerrar menu lateral'"
+            >
+                <x-icon name="menu" class="h-5 w-5" />
+                <span x-cloak x-show="!$store.appShell.isDesktopSidebarCollapsed()" x-transition.opacity.duration.150ms>Cerrar menu</span>
+            </button>
 
-                    <div x-cloak x-show="!$store.appShell.isCollapsedDesktop()" x-transition.opacity.duration.150ms class="min-w-0">
-                        <h1 class="truncate text-base font-semibold tracking-tight text-white">{{ $siteName }}</h1>
-                        <p class="mt-1 text-xs font-medium uppercase tracking-[0.12em] text-white/70">Panel administrativo</p>
-                    </div>
+            <div class="flex min-w-0 items-center gap-3" :class="$store.appShell.isDesktopSidebarCollapsed() ? 'justify-center items-center text-center' : ''">
+                @if ($logoInstitucionalUrl)
+                    <img
+                        src="{{ $logoInstitucionalUrl }}"
+                        alt="Logo institucional"
+                        class="app-sidebar-logo rounded-2xl"
+                        :class="$store.appShell.isDesktopSidebarCollapsed() ? 'max-w-[3rem]' : 'max-w-[11rem]'"
+                    >
+                @else
+                    <img
+                        src="{{ $systemLogoUrl }}"
+                        alt="Logo del sistema"
+                        class="app-sidebar-logo rounded-2xl"
+                        :class="$store.appShell.isDesktopSidebarCollapsed() ? 'max-w-[3rem]' : 'max-w-[11rem]'"
+                    >
+                @endif
+
+                <div x-cloak x-show="!$store.appShell.isDesktopSidebarCollapsed()" x-transition.opacity.duration.150ms class="min-w-0">
+                    <h1 class="truncate text-base font-semibold tracking-tight text-white">{{ $siteName }}</h1>
+                    <p class="mt-1 text-xs font-medium uppercase tracking-[0.12em] text-white/70">Panel administrativo</p>
                 </div>
-
-                <button
-                    type="button"
-                    class="app-sidebar-toggle"
-                    @click="$store.appShell.toggleSidebar()"
-                    :aria-label="$store.appShell.isDesktop() ? ($store.appShell.isCollapsedDesktop() ? 'Expandir menu lateral' : 'Colapsar menu lateral') : 'Cerrar menu lateral'"
-                    :title="$store.appShell.isDesktop() ? ($store.appShell.isCollapsedDesktop() ? 'Expandir menu lateral' : 'Colapsar menu lateral') : 'Cerrar menu lateral'"
-                >
-                    <x-icon name="panel-left-close" class="h-5 w-5" x-cloak x-show="$store.appShell.isDesktop() && ! $store.appShell.isCollapsedDesktop()" />
-                    <x-icon name="panel-left-open" class="h-5 w-5" x-cloak x-show="$store.appShell.isDesktop() && $store.appShell.isCollapsedDesktop()" />
-                    <x-icon name="x" class="h-5 w-5" x-cloak x-show="! $store.appShell.isDesktop()" />
-                </button>
             </div>
         </div>
 
-        <nav class="app-sidebar-nav">
+        <nav class="app-sidebar-nav mt-5 space-y-2 px-3 pr-2">
             <a
                 href="{{ route('dashboard') }}"
-                class="app-sidebar-link group {{ request()->routeIs('dashboard') ? 'app-sidebar-link-active' : '' }}"
-                :class="$store.appShell.isCollapsedDesktop() ? 'justify-center px-0' : ''"
-                :aria-label="$store.appShell.isCollapsedDesktop() ? 'Panel' : null"
-                :title="$store.appShell.isCollapsedDesktop() ? 'Panel' : ''"
+                class="app-sidebar-link min-h-[3rem] rounded-2xl {{ request()->routeIs('dashboard') ? 'app-sidebar-link-active' : '' }}"
+                :class="$store.appShell.isDesktopSidebarCollapsed() ? 'justify-center px-0' : ''"
+                :aria-label="$store.appShell.isDesktopSidebarCollapsed() ? 'Panel' : null"
+                :title="$store.appShell.isDesktopSidebarCollapsed() ? 'Panel' : ''"
                 @click="$store.appShell.closeMobileSidebar()"
             >
                 <x-sidebar.icon name="panel" class="h-5 w-5 shrink-0" />
-                <span x-cloak x-show="!$store.appShell.isCollapsedDesktop()" x-transition.opacity.duration.150ms>Panel</span>
-                <span x-cloak x-show="$store.appShell.isCollapsedDesktop()" class="app-sidebar-tooltip">Panel</span>
+                <span x-cloak x-show="!$store.appShell.isDesktopSidebarCollapsed()" x-transition.opacity.duration.150ms>Panel</span>
             </a>
 
             @if ($institucionesGroupVisible)
                 <section class="space-y-1">
                     <button
                         type="button"
-                        class="app-sidebar-group-button group {{ $institucionesGroupActive ? 'app-sidebar-group-button-active' : '' }}"
-                        :class="$store.appShell.isCollapsedDesktop() ? 'justify-center px-0' : ''"
+                        class="app-sidebar-group-button min-h-[3rem] rounded-2xl {{ $institucionesGroupActive ? 'app-sidebar-group-button-active' : '' }}"
+                        :class="$store.appShell.isDesktopSidebarCollapsed() ? 'justify-center px-0' : ''"
                         @click="toggle('instituciones')"
-                        :aria-expanded="(!$store.appShell.isCollapsedDesktop() && isOpen('instituciones')).toString()"
-                        :aria-label="$store.appShell.isCollapsedDesktop() ? 'Instituciones' : null"
-                        :title="$store.appShell.isCollapsedDesktop() ? 'Instituciones' : ''"
+                        :aria-expanded="(!$store.appShell.isDesktopSidebarCollapsed() && isOpen('instituciones')).toString()"
+                        :aria-label="$store.appShell.isDesktopSidebarCollapsed() ? 'Instituciones' : null"
+                        :title="$store.appShell.isDesktopSidebarCollapsed() ? 'Instituciones' : ''"
                         aria-controls="sidebar-group-instituciones"
                     >
                         <x-sidebar.icon name="instituciones" class="h-5 w-5 shrink-0" />
-                        <span x-cloak x-show="!$store.appShell.isCollapsedDesktop()" x-transition.opacity.duration.150ms class="truncate">Instituciones</span>
+                        <span x-cloak x-show="!$store.appShell.isDesktopSidebarCollapsed()" x-transition.opacity.duration.150ms class="truncate">Instituciones</span>
                         <x-icon
                             name="chevron-down"
                             class="app-sidebar-group-chevron"
                             x-cloak
-                            x-show="!$store.appShell.isCollapsedDesktop()"
+                            x-show="!$store.appShell.isDesktopSidebarCollapsed()"
                             x-bind:class="{ 'rotate-180': isOpen('instituciones') }"
                         />
-                        <span x-cloak x-show="$store.appShell.isCollapsedDesktop()" class="app-sidebar-tooltip">Instituciones</span>
                     </button>
 
                     <div
                         id="sidebar-group-instituciones"
                         class="app-sidebar-submenu {{ $institucionesGroupActive ? 'mt-1.5' : 'mt-0' }}"
-                        :class="isOpen('instituciones') && ! $store.appShell.isCollapsedDesktop() ? 'mt-1.5' : 'mt-0'"
+                        :class="isOpen('instituciones') && !$store.appShell.isDesktopSidebarCollapsed() ? 'mt-1.5' : 'mt-0'"
                         style="max-height: {{ $institucionesGroupActive ? '560px' : '0px' }}; opacity: {{ $institucionesGroupActive ? '1' : '0' }};"
                         :style="submenuStyle('instituciones', 'institucionesPanel')"
-                        :aria-hidden="($store.appShell.isCollapsedDesktop() || !isOpen('instituciones')).toString()"
+                        :aria-hidden="($store.appShell.isDesktopSidebarCollapsed() || !isOpen('instituciones')).toString()"
                     >
                         <div x-ref="institucionesPanel" class="app-sidebar-submenu-inner">
                             @if ($canInstitutions)
                                 <a
                                     href="{{ route('institutions.index') }}"
-                                    class="app-sidebar-sublink {{ request()->routeIs('institutions.*') ? 'app-sidebar-sublink-active' : '' }}"
+                                    class="app-sidebar-sublink min-h-[2.75rem] rounded-xl {{ request()->routeIs('institutions.*') ? 'app-sidebar-sublink-active' : '' }}"
                                     :tabindex="submenuTabIndex('instituciones')"
                                     @click="$store.appShell.closeMobileSidebar()"
                                 >
@@ -143,7 +140,7 @@
                             @if ($canServices)
                                 <a
                                     href="{{ route('services.index') }}"
-                                    class="app-sidebar-sublink {{ request()->routeIs('services.*') ? 'app-sidebar-sublink-active' : '' }}"
+                                    class="app-sidebar-sublink min-h-[2.75rem] rounded-xl {{ request()->routeIs('services.*') ? 'app-sidebar-sublink-active' : '' }}"
                                     :tabindex="submenuTabIndex('instituciones')"
                                     @click="$store.appShell.closeMobileSidebar()"
                                 >
@@ -155,7 +152,7 @@
                             @if ($canOffices)
                                 <a
                                     href="{{ route('offices.index') }}"
-                                    class="app-sidebar-sublink {{ request()->routeIs('offices.*') ? 'app-sidebar-sublink-active' : '' }}"
+                                    class="app-sidebar-sublink min-h-[2.75rem] rounded-xl {{ request()->routeIs('offices.*') ? 'app-sidebar-sublink-active' : '' }}"
                                     :tabindex="submenuTabIndex('instituciones')"
                                     @click="$store.appShell.closeMobileSidebar()"
                                 >
@@ -172,39 +169,38 @@
                 <section class="space-y-1">
                     <button
                         type="button"
-                        class="app-sidebar-group-button group {{ $equiposGroupActive ? 'app-sidebar-group-button-active' : '' }}"
-                        :class="$store.appShell.isCollapsedDesktop() ? 'justify-center px-0' : ''"
+                        class="app-sidebar-group-button min-h-[3rem] rounded-2xl {{ $equiposGroupActive ? 'app-sidebar-group-button-active' : '' }}"
+                        :class="$store.appShell.isDesktopSidebarCollapsed() ? 'justify-center px-0' : ''"
                         @click="toggle('equipos')"
-                        :aria-expanded="(!$store.appShell.isCollapsedDesktop() && isOpen('equipos')).toString()"
-                        :aria-label="$store.appShell.isCollapsedDesktop() ? 'Equipos' : null"
-                        :title="$store.appShell.isCollapsedDesktop() ? 'Equipos' : ''"
+                        :aria-expanded="(!$store.appShell.isDesktopSidebarCollapsed() && isOpen('equipos')).toString()"
+                        :aria-label="$store.appShell.isDesktopSidebarCollapsed() ? 'Equipos' : null"
+                        :title="$store.appShell.isDesktopSidebarCollapsed() ? 'Equipos' : ''"
                         aria-controls="sidebar-group-equipos"
                     >
                         <x-sidebar.icon name="equipos-group" class="h-5 w-5 shrink-0" />
-                        <span x-cloak x-show="!$store.appShell.isCollapsedDesktop()" x-transition.opacity.duration.150ms class="truncate">Equipos</span>
+                        <span x-cloak x-show="!$store.appShell.isDesktopSidebarCollapsed()" x-transition.opacity.duration.150ms class="truncate">Equipos</span>
                         <x-icon
                             name="chevron-down"
                             class="app-sidebar-group-chevron"
                             x-cloak
-                            x-show="!$store.appShell.isCollapsedDesktop()"
+                            x-show="!$store.appShell.isDesktopSidebarCollapsed()"
                             x-bind:class="{ 'rotate-180': isOpen('equipos') }"
                         />
-                        <span x-cloak x-show="$store.appShell.isCollapsedDesktop()" class="app-sidebar-tooltip">Equipos</span>
                     </button>
 
                     <div
                         id="sidebar-group-equipos"
                         class="app-sidebar-submenu {{ $equiposGroupActive ? 'mt-1.5' : 'mt-0' }}"
-                        :class="isOpen('equipos') && ! $store.appShell.isCollapsedDesktop() ? 'mt-1.5' : 'mt-0'"
+                        :class="isOpen('equipos') && !$store.appShell.isDesktopSidebarCollapsed() ? 'mt-1.5' : 'mt-0'"
                         style="max-height: {{ $equiposGroupActive ? '460px' : '0px' }}; opacity: {{ $equiposGroupActive ? '1' : '0' }};"
                         :style="submenuStyle('equipos', 'equiposPanel')"
-                        :aria-hidden="($store.appShell.isCollapsedDesktop() || !isOpen('equipos')).toString()"
+                        :aria-hidden="($store.appShell.isDesktopSidebarCollapsed() || !isOpen('equipos')).toString()"
                     >
                         <div x-ref="equiposPanel" class="app-sidebar-submenu-inner">
                             @if ($canTiposEquipos)
                                 <a
                                     href="{{ route('tipos-equipos.index') }}"
-                                    class="app-sidebar-sublink {{ request()->routeIs('tipos-equipos.*') ? 'app-sidebar-sublink-active' : '' }}"
+                                    class="app-sidebar-sublink min-h-[2.75rem] rounded-xl {{ request()->routeIs('tipos-equipos.*') ? 'app-sidebar-sublink-active' : '' }}"
                                     :tabindex="submenuTabIndex('equipos')"
                                     @click="$store.appShell.closeMobileSidebar()"
                                 >
@@ -216,7 +212,7 @@
                             @if ($canEquipos)
                                 <a
                                     href="{{ route('equipos.index') }}"
-                                    class="app-sidebar-sublink {{ request()->routeIs('equipos.*') ? 'app-sidebar-sublink-active' : '' }}"
+                                    class="app-sidebar-sublink min-h-[2.75rem] rounded-xl {{ request()->routeIs('equipos.*') ? 'app-sidebar-sublink-active' : '' }}"
                                     :tabindex="submenuTabIndex('equipos')"
                                     @click="$store.appShell.closeMobileSidebar()"
                                 >
@@ -232,15 +228,14 @@
             @if ($canActas)
                 <a
                     href="{{ route('actas.index') }}"
-                    class="app-sidebar-link group {{ request()->routeIs('actas.*') ? 'app-sidebar-link-active' : '' }}"
-                    :class="$store.appShell.isCollapsedDesktop() ? 'justify-center px-0' : ''"
-                    :aria-label="$store.appShell.isCollapsedDesktop() ? 'Actas' : null"
-                    :title="$store.appShell.isCollapsedDesktop() ? 'Actas' : ''"
+                    class="app-sidebar-link min-h-[3rem] rounded-2xl {{ request()->routeIs('actas.*') ? 'app-sidebar-link-active' : '' }}"
+                    :class="$store.appShell.isDesktopSidebarCollapsed() ? 'justify-center px-0' : ''"
+                    :aria-label="$store.appShell.isDesktopSidebarCollapsed() ? 'Actas' : null"
+                    :title="$store.appShell.isDesktopSidebarCollapsed() ? 'Actas' : ''"
                     @click="$store.appShell.closeMobileSidebar()"
                 >
                     <x-sidebar.icon name="actas" class="h-5 w-5 shrink-0" />
-                    <span x-cloak x-show="!$store.appShell.isCollapsedDesktop()" x-transition.opacity.duration.150ms>Actas</span>
-                    <span x-cloak x-show="$store.appShell.isCollapsedDesktop()" class="app-sidebar-tooltip">Actas</span>
+                    <span x-cloak x-show="!$store.appShell.isDesktopSidebarCollapsed()" x-transition.opacity.duration.150ms>Actas</span>
                 </a>
             @endif
 
@@ -250,38 +245,37 @@
                 <section class="space-y-1">
                     <button
                         type="button"
-                        class="app-sidebar-group-button group {{ $administracionGroupActive ? 'app-sidebar-group-button-active' : '' }}"
-                        :class="$store.appShell.isCollapsedDesktop() ? 'justify-center px-0' : ''"
+                        class="app-sidebar-group-button min-h-[3rem] rounded-2xl {{ $administracionGroupActive ? 'app-sidebar-group-button-active' : '' }}"
+                        :class="$store.appShell.isDesktopSidebarCollapsed() ? 'justify-center px-0' : ''"
                         @click="toggle('administracion')"
-                        :aria-expanded="(!$store.appShell.isCollapsedDesktop() && isOpen('administracion')).toString()"
-                        :aria-label="$store.appShell.isCollapsedDesktop() ? 'Administracion' : null"
-                        :title="$store.appShell.isCollapsedDesktop() ? 'Administracion' : ''"
+                        :aria-expanded="(!$store.appShell.isDesktopSidebarCollapsed() && isOpen('administracion')).toString()"
+                        :aria-label="$store.appShell.isDesktopSidebarCollapsed() ? 'Administracion' : null"
+                        :title="$store.appShell.isDesktopSidebarCollapsed() ? 'Administracion' : ''"
                         aria-controls="sidebar-group-administracion"
                     >
                         <x-sidebar.icon name="administracion" class="h-5 w-5 shrink-0" />
-                        <span x-cloak x-show="!$store.appShell.isCollapsedDesktop()" x-transition.opacity.duration.150ms class="truncate">Administracion</span>
+                        <span x-cloak x-show="!$store.appShell.isDesktopSidebarCollapsed()" x-transition.opacity.duration.150ms class="truncate">Administracion</span>
                         <x-icon
                             name="chevron-down"
                             class="app-sidebar-group-chevron"
                             x-cloak
-                            x-show="!$store.appShell.isCollapsedDesktop()"
+                            x-show="!$store.appShell.isDesktopSidebarCollapsed()"
                             x-bind:class="{ 'rotate-180': isOpen('administracion') }"
                         />
-                        <span x-cloak x-show="$store.appShell.isCollapsedDesktop()" class="app-sidebar-tooltip">Administracion</span>
                     </button>
 
                     <div
                         id="sidebar-group-administracion"
                         class="app-sidebar-submenu {{ $administracionGroupActive ? 'mt-1.5' : 'mt-0' }}"
-                        :class="isOpen('administracion') && ! $store.appShell.isCollapsedDesktop() ? 'mt-1.5' : 'mt-0'"
+                        :class="isOpen('administracion') && !$store.appShell.isDesktopSidebarCollapsed() ? 'mt-1.5' : 'mt-0'"
                         style="max-height: {{ $administracionGroupActive ? '460px' : '0px' }}; opacity: {{ $administracionGroupActive ? '1' : '0' }};"
                         :style="submenuStyle('administracion', 'administracionPanel')"
-                        :aria-hidden="($store.appShell.isCollapsedDesktop() || !isOpen('administracion')).toString()"
+                        :aria-hidden="($store.appShell.isDesktopSidebarCollapsed() || !isOpen('administracion')).toString()"
                     >
                         <div x-ref="administracionPanel" class="app-sidebar-submenu-inner">
                             <a
                                 href="{{ route('admin.users.index') }}"
-                                class="app-sidebar-sublink {{ request()->routeIs('admin.users.*') ? 'app-sidebar-sublink-active' : '' }}"
+                                class="app-sidebar-sublink min-h-[2.75rem] rounded-xl {{ request()->routeIs('admin.users.*') ? 'app-sidebar-sublink-active' : '' }}"
                                 :tabindex="submenuTabIndex('administracion')"
                                 @click="$store.appShell.closeMobileSidebar()"
                             >
@@ -291,7 +285,7 @@
 
                             <a
                                 href="{{ route('admin.audit.index') }}"
-                                class="app-sidebar-sublink {{ request()->routeIs('admin.audit.*') ? 'app-sidebar-sublink-active' : '' }}"
+                                class="app-sidebar-sublink min-h-[2.75rem] rounded-xl {{ request()->routeIs('admin.audit.*') ? 'app-sidebar-sublink-active' : '' }}"
                                 :tabindex="submenuTabIndex('administracion')"
                                 @click="$store.appShell.closeMobileSidebar()"
                             >
@@ -301,7 +295,7 @@
 
                             <a
                                 href="{{ route('admin.configuracion.general.edit') }}"
-                                class="app-sidebar-sublink {{ request()->routeIs('admin.configuracion.general.*') ? 'app-sidebar-sublink-active' : '' }}"
+                                class="app-sidebar-sublink min-h-[2.75rem] rounded-xl {{ request()->routeIs('admin.configuracion.general.*') ? 'app-sidebar-sublink-active' : '' }}"
                                 :tabindex="submenuTabIndex('administracion')"
                                 @click="$store.appShell.closeMobileSidebar()"
                             >

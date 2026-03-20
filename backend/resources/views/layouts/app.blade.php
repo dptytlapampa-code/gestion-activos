@@ -46,13 +46,14 @@
                     <div class="flex min-w-0 items-start gap-3">
                         <button
                             type="button"
-                            class="app-mobile-nav-toggle lg:hidden"
+                            class="app-mobile-nav-toggle w-auto gap-2 px-3 text-sm font-semibold lg:hidden"
                             @click="$store.appShell.toggleSidebar()"
                             aria-controls="app-sidebar"
                             :aria-expanded="$store.appShell.mobileSidebarOpen.toString()"
-                            aria-label="Abrir menu lateral"
+                            :aria-label="$store.appShell.mobileSidebarOpen ? 'Cerrar menu lateral' : 'Abrir menu lateral'"
                         >
                             <x-icon name="menu" class="h-5 w-5" />
+                            <span>Menu</span>
                         </button>
 
                         <div class="min-w-0">
