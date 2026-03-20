@@ -10,7 +10,7 @@ class SystemSettingsSeeder extends Seeder
     public function run(): void
     {
         $defaults = [
-            'site_name' => 'Gestion de Activos',
+            'site_name' => 'DPTYT',
             'primary_color' => '#1f2937',
             'sidebar_color' => '#1f2937',
             'logo_path' => null,

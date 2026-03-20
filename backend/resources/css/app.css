@@ -165,7 +165,21 @@
     }
 
     .app-sidebar-logo {
-        @apply h-12 w-auto rounded-xl bg-white/95 object-contain p-1.5 shadow-sm transition-all duration-300 ease-out;
+        @apply h-12 w-auto object-contain transition-all duration-300 ease-out;
+    }
+
+    .app-sidebar-brand-card {
+        @apply rounded-[1.75rem] border border-white/10 bg-white/5 px-4 py-4 backdrop-blur;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .app-sidebar-brand-mark {
+        @apply inline-flex max-w-full items-center justify-center rounded-2xl bg-white/95 px-3 py-2 shadow-sm;
+        box-shadow: 0 12px 28px -20px rgba(15, 23, 42, 0.55);
+    }
+
+    .app-sidebar-brand-copy {
+        @apply mt-4 min-w-0 border-t border-white/10 pt-4;
     }
 
     .app-sidebar-toggle {
