@@ -11,7 +11,10 @@
             <p class="text-sm text-slate-500">Busqueda compartible y paginacion preparada para volumen alto.</p>
         </div>
         @can('create', \App\Models\Acta::class)
-            <a href="{{ route('actas.create') }}" class="btn btn-primary min-h-[48px]">Nueva acta</a>
+            <a href="{{ route('actas.create') }}" class="btn btn-primary min-h-[48px] gap-2">
+                <x-icon name="plus" class="h-4 w-4" />
+                Nueva acta
+            </a>
         @endcan
     </div>
 
@@ -51,7 +54,10 @@
                 <p class="text-xs text-slate-500">
                     La busqueda rapida se aplica sola. Use tipo y fechas para acotar el periodo.
                 </p>
-                <button type="submit" class="btn btn-primary min-h-[44px]">Aplicar filtros</button>
+                <button type="submit" class="btn btn-primary min-h-[44px] gap-2">
+                    <x-icon name="search" class="h-4 w-4" />
+                    Aplicar filtros
+                </button>
             </div>
         </form>
     </div>
@@ -84,8 +90,16 @@
                         <td>{{ $acta->receptor_nombre ?: '-' }}</td>
                         <td>{{ $acta->equipos_count }}</td>
                         <td class="text-right">
-                            <a href="{{ route('actas.show', $acta) }}" class="text-primary-600 hover:underline">Ver</a>
-                            <a href="{{ route('actas.download', $acta) }}" class="ml-3 text-primary-600 hover:underline">PDF</a>
+                            <div class="flex flex-wrap justify-end gap-2">
+                                <a href="{{ route('actas.show', $acta) }}" class="btn btn-neutral !px-3 !py-1.5 gap-1.5">
+                                    <x-icon name="eye" class="h-4 w-4" />
+                                    Ver
+                                </a>
+                                <a href="{{ route('actas.download', $acta) }}" class="btn btn-primary !px-3 !py-1.5 gap-1.5">
+                                    <x-icon name="download" class="h-4 w-4" />
+                                    PDF
+                                </a>
+                            </div>
                         </td>
                     </tr>
                 @empty

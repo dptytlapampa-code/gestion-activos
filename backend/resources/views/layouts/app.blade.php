@@ -22,29 +22,59 @@
         }
     </style>
 </head>
-<body class="hospital-body min-h-screen text-slate-800">
-    <div class="hospital-layout flex min-h-screen gap-6 p-6">
-        @include('layouts.sidebar', ['siteName' => $siteName, 'logoInstitucionalUrl' => $logoInstitucionalUrl, 'systemLogoUrl' => $systemLogoUrl])
+<body
+    x-data
+    :class="{ 'overflow-hidden': $store.appShell.mobileSidebarOpen }"
+    @keydown.escape.window="$store.appShell.closeMobileSidebar()"
+    class="hospital-body min-h-screen text-slate-800"
+>
+    <div class="hospital-layout min-h-screen p-4 sm:p-5 lg:p-6">
+        <div
+            x-cloak
+            x-show="$store.appShell.mobileSidebarOpen"
+            x-transition.opacity
+            class="app-sidebar-backdrop lg:hidden"
+            @click="$store.appShell.closeMobileSidebar()"
+            aria-hidden="true"
+        ></div>
 
-        <div class="flex flex-1 flex-col gap-6">
-            <header class="app-page-header">
-                <div>
-                    <h2 class="text-2xl font-semibold text-slate-800">@yield('header', 'Panel')</h2>
-                    <p class="text-sm text-slate-500">{{ now()->translatedFormat('l, j \\d\\e F Y') }}</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <span class="app-user-chip">{{ auth()->user()->name }}</span>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="btn btn-neutral">Cerrar sesion</button>
-                    </form>
-                </div>
-            </header>
+        <div class="flex min-h-screen gap-0 lg:gap-6">
+            @include('layouts.sidebar', ['siteName' => $siteName, 'logoInstitucionalUrl' => $logoInstitucionalUrl, 'systemLogoUrl' => $systemLogoUrl])
 
-            <main class="flex-1 space-y-6">
-                <x-flash-alerts />
-                @yield('content')
-            </main>
+            <div class="flex min-w-0 flex-1 flex-col gap-4 lg:gap-6">
+                <header class="app-page-header flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <button
+                            type="button"
+                            class="app-mobile-nav-toggle lg:hidden"
+                            @click="$store.appShell.toggleSidebar()"
+                            aria-controls="app-sidebar"
+                            :aria-expanded="$store.appShell.mobileSidebarOpen.toString()"
+                            aria-label="Abrir menu lateral"
+                        >
+                            <x-icon name="menu" class="h-5 w-5" />
+                        </button>
+
+                        <div class="min-w-0">
+                            <h2 class="text-2xl font-semibold text-slate-800">@yield('header', 'Panel')</h2>
+                            <p class="text-sm text-slate-500">{{ now()->translatedFormat('l, j \\d\\e F Y') }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
+                        <span class="app-user-chip">{{ auth()->user()->name }}</span>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="btn btn-neutral w-full sm:w-auto">Cerrar sesion</button>
+                        </form>
+                    </div>
+                </header>
+
+                <main class="min-w-0 flex-1 space-y-6">
+                    <x-flash-alerts />
+                    @yield('content')
+                </main>
+            </div>
         </div>
     </div>
 </body>
