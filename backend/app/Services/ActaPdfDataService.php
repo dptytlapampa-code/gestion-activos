@@ -31,9 +31,11 @@ class ActaPdfDataService
 
         $destinoInstitucional = $this->buildDestinoInstitucional($acta);
         $prestamoDestinatario = $this->buildPrestamoDestinatario($acta);
+        $institutionName = $this->resolveInstitutionName($acta, $settings->nombre_sistema ?? config('app.name'));
 
         return [
-            'pdfInstitutionName' => $acta->institution?->nombre ?: ($settings->nombre_sistema ?? config('app.name')),
+            'pdfInstitutionName' => $institutionName,
+            'pdfFooterInstitutionName' => $institutionName,
             'pdfHeaderLogoPath' => $headerLogoPath,
             'pdfDocumentTitle' => $this->resolveTitle($acta),
             'equipoPublicUrl' => $equipoPublicUrl,
@@ -41,6 +43,49 @@ class ActaPdfDataService
             'pdfDestinoInstitucional' => $destinoInstitucional,
             'pdfPrestamoDestinatario' => $prestamoDestinatario,
         ];
+    }
+
+    private function resolveInstitutionName(Acta $acta, string $fallback): string
+    {
+        $payloadName = $this->nullableTrim(data_get($acta->evento_payload, 'institution_name'));
+
+        if ($payloadName !== null) {
+            return $payloadName;
+        }
+
+        $institutionId = (int) (data_get($acta->evento_payload, 'institution_id') ?? $acta->institution_id ?? 0);
+        $originSnapshots = collect(data_get($acta->evento_payload, 'origenes_por_equipo', []))
+            ->filter(fn (mixed $item): bool => is_array($item));
+
+        $matchingSnapshotName = $originSnapshots
+            ->first(function (array $item) use ($institutionId): bool {
+                if ($institutionId <= 0) {
+                    return false;
+                }
+
+                return (int) ($item['institucion_id'] ?? 0) === $institutionId
+                    && $this->nullableTrim($item['institucion_nombre'] ?? null) !== null;
+            });
+
+        if (is_array($matchingSnapshotName)) {
+            $resolved = $this->nullableTrim($matchingSnapshotName['institucion_nombre'] ?? null);
+
+            if ($resolved !== null) {
+                return $resolved;
+            }
+        }
+
+        $singleSnapshotName = $originSnapshots
+            ->map(fn (array $item): ?string => $this->nullableTrim($item['institucion_nombre'] ?? null))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($singleSnapshotName->count() === 1) {
+            return (string) $singleSnapshotName->first();
+        }
+
+        return $this->nullableTrim($acta->institution?->nombre) ?? $fallback;
     }
 
     private function resolveEquipoForQr(Acta $acta): ?Equipo

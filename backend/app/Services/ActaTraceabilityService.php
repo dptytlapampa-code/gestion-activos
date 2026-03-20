@@ -468,7 +468,7 @@ class ActaTraceabilityService
 
     /**
      * @param  Collection<int, array{institucion_id:int,institucion_nombre:string,servicio_id:int,servicio_nombre:string,oficina_id:int,oficina_nombre:string}>  $origenesPorEquipo
-     * @return array{institucion_id:int,servicio_id:int|null,oficina_id:int|null,origen_multiple:bool,instituciones_ids:array<int,int>}
+     * @return array{institucion_id:int,institucion_nombre:string,servicio_id:int|null,oficina_id:int|null,origen_multiple:bool,instituciones_ids:array<int,int>}
      */
     private function resolveOrigenActa(User $user, Collection $origenesPorEquipo): array
     {
@@ -502,8 +502,12 @@ class ActaTraceabilityService
             ]);
         }
 
+        $institucionActaNombre = (string) ($origenesPorEquipo
+            ->first(fn (array $item): bool => (int) ($item['institucion_id'] ?? 0) === $institucionActaId)['institucion_nombre'] ?? '-');
+
         return [
             'institucion_id' => $institucionActaId,
+            'institucion_nombre' => $institucionActaNombre,
             'servicio_id' => $servicios->count() === 1 ? (int) $servicios->first() : null,
             'oficina_id' => $oficinas->count() === 1 ? (int) $oficinas->first() : null,
             'origen_multiple' => $instituciones->count() > 1,
@@ -570,7 +574,7 @@ class ActaTraceabilityService
     }
 
     /**
-     * @param  array{institucion_id:int,servicio_id:int|null,oficina_id:int|null,origen_multiple:bool,instituciones_ids:array<int,int>}  $origen
+     * @param  array{institucion_id:int,institucion_nombre:string,servicio_id:int|null,oficina_id:int|null,origen_multiple:bool,instituciones_ids:array<int,int>}  $origen
      * @param  array{institucion_id:int,servicio_id:int,oficina_id:int}|null  $destino
      * @param  Collection<int, array{institucion_id:int,institucion_nombre:string,servicio_id:int,servicio_nombre:string,oficina_id:int,oficina_nombre:string}>  $origenesPorEquipo
      */
@@ -580,6 +584,7 @@ class ActaTraceabilityService
             'tipo' => $data['tipo'] ?? null,
             'fecha' => $data['fecha'] ?? null,
             'institution_id' => $origen['institucion_id'],
+            'institution_name' => $origen['institucion_nombre'],
             'institution_destino_id' => $destino['institucion_id'] ?? null,
             'service_origen_id' => $origen['servicio_id'],
             'office_origen_id' => $origen['oficina_id'],
