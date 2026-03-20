@@ -44,14 +44,17 @@ document.addEventListener('alpine:init', () => {
             return desktopBreakpoint.matches;
         },
 
-        isCollapsedDesktop() {
+        isDesktopSidebarCollapsed() {
             return this.isDesktop() && this.sidebarCollapsed;
+        },
+
+        isDesktopSidebarOpen() {
+            return !this.isDesktopSidebarCollapsed();
         },
 
         toggleSidebar() {
             if (this.isDesktop()) {
-                this.sidebarCollapsed = !this.sidebarCollapsed;
-                persistSidebarPreference(this.sidebarCollapsed);
+                this.toggleDesktopSidebar();
 
                 return;
             }
@@ -59,8 +62,17 @@ document.addEventListener('alpine:init', () => {
             this.mobileSidebarOpen = !this.mobileSidebarOpen;
         },
 
-        expandDesktopSidebar() {
-            if (!this.isDesktop() || !this.sidebarCollapsed) {
+        toggleDesktopSidebar() {
+            if (!this.isDesktop()) {
+                return;
+            }
+
+            this.sidebarCollapsed = !this.sidebarCollapsed;
+            persistSidebarPreference(this.sidebarCollapsed);
+        },
+
+        openDesktopSidebar() {
+            if (!this.isDesktopSidebarCollapsed()) {
                 return;
             }
 
@@ -81,11 +93,12 @@ document.addEventListener('alpine:init', () => {
             equipos: Boolean(initialOpenGroups.equipos),
             administracion: Boolean(initialOpenGroups.administracion),
         },
+        pendingOpenTimer: null,
 
         toggle(group) {
-            if (Alpine.store('appShell').isCollapsedDesktop()) {
-                Alpine.store('appShell').expandDesktopSidebar();
-                this.openGroups[group] = true;
+            if (Alpine.store('appShell').isDesktopSidebarCollapsed()) {
+                Alpine.store('appShell').openDesktopSidebar();
+                this.queueGroupOpen(group);
 
                 return;
             }
@@ -93,12 +106,23 @@ document.addEventListener('alpine:init', () => {
             this.openGroups[group] = !this.openGroups[group];
         },
 
+        queueGroupOpen(group) {
+            if (this.pendingOpenTimer) {
+                window.clearTimeout(this.pendingOpenTimer);
+            }
+
+            this.pendingOpenTimer = window.setTimeout(() => {
+                this.openGroups[group] = true;
+                this.pendingOpenTimer = null;
+            }, 160);
+        },
+
         isOpen(group) {
             return this.openGroups[group] === true;
         },
 
         submenuStyle(group, panelRef) {
-            if (Alpine.store('appShell').isCollapsedDesktop() || !this.isOpen(group)) {
+            if (Alpine.store('appShell').isDesktopSidebarCollapsed() || !this.isOpen(group)) {
                 return 'max-height: 0px; opacity: 0;';
             }
 
@@ -112,7 +136,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         submenuTabIndex(group) {
-            return Alpine.store('appShell').isCollapsedDesktop() || !this.isOpen(group) ? -1 : 0;
+            return Alpine.store('appShell').isDesktopSidebarCollapsed() || !this.isOpen(group) ? -1 : 0;
         },
     }));
 });
