@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -98,6 +99,13 @@ class Equipo extends Model
         return $this->hasMany(Mantenimiento::class)->orderByDesc('fecha')->orderByDesc('id');
     }
 
+    public function mantenimientoExternoAbierto(): HasOne
+    {
+        return $this->hasOne(Mantenimiento::class)
+            ->where('tipo', Mantenimiento::TIPO_EXTERNO)
+            ->whereNull('fecha_egreso_st');
+    }
+
     public function actas(): BelongsToMany
     {
         return $this->belongsToMany(Acta::class, 'acta_equipo')->withPivot(['cantidad', 'accesorios', 'institucion_origen_id', 'institucion_origen_nombre', 'servicio_origen_id', 'servicio_origen_nombre', 'oficina_origen_id', 'oficina_origen_nombre']);
@@ -144,6 +152,15 @@ class Equipo extends Model
     public function isEnServicioTecnico(): bool
     {
         return $this->equipoStatus?->code === EquipoStatus::CODE_EN_SERVICIO_TECNICO;
+    }
+
+    public function tieneMantenimientoExternoAbierto(): bool
+    {
+        if ($this->relationLoaded('mantenimientoExternoAbierto')) {
+            return $this->mantenimientoExternoAbierto !== null;
+        }
+
+        return $this->mantenimientoExternoAbierto()->exists();
     }
 
     public function isBaja(): bool

@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Support\Auditing\Auditable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Mantenimiento extends Model
 {
@@ -15,6 +17,10 @@ class Mantenimiento extends Model
     public const TIPO_ALTA = 'alta';
     public const TIPO_BAJA = 'baja';
     public const TIPO_OTRO = 'otro';
+    public const TIPOS_CIERRE_EXTERNO = [
+        self::TIPO_ALTA,
+        self::TIPO_BAJA,
+    ];
 
     public const TIPOS = [
         self::TIPO_INTERNO,
@@ -36,6 +42,7 @@ class Mantenimiento extends Model
         'fecha_ingreso_st',
         'fecha_egreso_st',
         'dias_en_servicio',
+        'mantenimiento_externo_id',
         'estado_resultante_id',
     ];
 
@@ -63,8 +70,54 @@ class Mantenimiento extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function mantenimientoExterno(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'mantenimiento_externo_id');
+    }
+
+    public function cierreExterno(): HasOne
+    {
+        return $this->hasOne(self::class, 'mantenimiento_externo_id');
+    }
+
     public function estadoResultante(): BelongsTo
     {
         return $this->belongsTo(EquipoStatus::class, 'estado_resultante_id');
+    }
+
+    public function scopeExternos(Builder $query): Builder
+    {
+        return $query->where('tipo', self::TIPO_EXTERNO);
+    }
+
+    public function scopeAbiertos(Builder $query): Builder
+    {
+        return $query->whereNull('fecha_egreso_st');
+    }
+
+    public function scopeCierresExternos(Builder $query): Builder
+    {
+        return $query->whereIn('tipo', self::TIPOS_CIERRE_EXTERNO);
+    }
+
+    public function isExterno(): bool
+    {
+        return $this->tipo === self::TIPO_EXTERNO;
+    }
+
+    public function isCierreExterno(): bool
+    {
+        return in_array($this->tipo, self::TIPOS_CIERRE_EXTERNO, true);
+    }
+
+    public function isExternoAbierto(): bool
+    {
+        return $this->isExterno() && $this->fecha_egreso_st === null;
+    }
+
+    public function canBeManuallyChanged(): bool
+    {
+        return in_array($this->tipo, [self::TIPO_INTERNO, self::TIPO_OTRO], true)
+            && $this->mantenimiento_externo_id === null;
     }
 }

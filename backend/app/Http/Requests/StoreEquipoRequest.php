@@ -7,6 +7,7 @@ use App\Models\Office;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreEquipoRequest extends FormRequest
 {
@@ -86,6 +87,18 @@ class StoreEquipoRequest extends FormRequest
             'fecha_ingreso.required' => 'La fecha de ingreso es obligatoria.',
             'fecha_ingreso.date' => 'La fecha de ingreso debe tener un formato valido.',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            if ((string) $this->input('estado') === Equipo::ESTADO_MANTENIMIENTO) {
+                $validator->errors()->add(
+                    'estado',
+                    'El estado Mantenimiento se registra desde la ficha del equipo, dentro del historial tecnico de mantenimientos.'
+                );
+            }
+        });
     }
 }
 

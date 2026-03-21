@@ -7,6 +7,7 @@ use App\Models\Office;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class UpdateEquipoRequest extends FormRequest
 {
@@ -92,6 +93,35 @@ class UpdateEquipoRequest extends FormRequest
             'fecha_ingreso.required' => 'La fecha de ingreso es obligatoria.',
             'fecha_ingreso.date' => 'La fecha de ingreso debe tener un formato valido.',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            /** @var Equipo|null $equipo */
+            $equipo = $this->route('equipo');
+
+            if (! $equipo instanceof Equipo) {
+                return;
+            }
+
+            $estado = (string) $this->input('estado');
+            $tieneMantenimientoAbierto = $equipo->tieneMantenimientoExternoAbierto();
+
+            if ($estado === Equipo::ESTADO_MANTENIMIENTO && ! $tieneMantenimientoAbierto) {
+                $validator->errors()->add(
+                    'estado',
+                    'El equipo solo puede quedar en Mantenimiento si existe un mantenimiento externo abierto registrado desde su ficha.'
+                );
+            }
+
+            if ($tieneMantenimientoAbierto && $estado !== Equipo::ESTADO_MANTENIMIENTO) {
+                $validator->errors()->add(
+                    'estado',
+                    'No puede cambiar manualmente el estado mientras exista un mantenimiento externo abierto. Registre el alta o la baja desde la ficha del equipo.'
+                );
+            }
+        });
     }
 }
 

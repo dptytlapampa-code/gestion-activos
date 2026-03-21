@@ -4,7 +4,40 @@
 @section('header', 'Detalle equipo')
 
 @section('content')
-<div class="space-y-6" x-data="{ activeTab: 'informacion', tipo: @js(old('tipo', 'interno')), showMantenimientoForm: {{ old('fecha') || old('titulo') || old('detalle') ? 'true' : 'false' }}, showDocumentoForm: {{ old('note') || old('file') ? 'true' : 'false' }} }">
+@php
+    use App\Models\Equipo;
+    use App\Models\Mantenimiento;
+
+    $erroresMantenimiento = collect([
+        'fecha',
+        'tipo',
+        'titulo',
+        'detalle',
+        'proveedor',
+        'fecha_ingreso_st',
+        'fecha_egreso_st',
+        'mantenimiento',
+    ])->contains(fn (string $campo): bool => $errors->has($campo));
+
+    $erroresDocumentos = collect(['note', 'file'])->contains(fn (string $campo): bool => $errors->has($campo));
+
+    $tipoInicialMantenimiento = old(
+        'tipo',
+        $mantenimientoExternoAbierto !== null
+            ? Mantenimiento::TIPO_ALTA
+            : ($tiposMantenimientoDisponibles[0] ?? Mantenimiento::TIPO_INTERNO)
+    );
+@endphp
+
+<div
+    class="space-y-6"
+    x-data="{
+        activeTab: @js($erroresMantenimiento ? 'mantenimiento' : ($erroresDocumentos ? 'documentos' : 'informacion')),
+        tipo: @js($tipoInicialMantenimiento),
+        showMantenimientoForm: @js($erroresMantenimiento || $mantenimientoExternoAbierto !== null),
+        showDocumentoForm: @js($erroresDocumentos),
+    }"
+>
     <div class="card">
         <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div class="space-y-3">
@@ -96,54 +129,172 @@
             </section>
 
             <section x-show="activeTab === 'mantenimiento'" x-cloak class="space-y-5">
-                @can('create', \App\Models\Mantenimiento::class)
-                    <div>
-                        <button type="button" @click="showMantenimientoForm = !showMantenimientoForm" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700">
-                            <x-icon name="plus" class="h-4 w-4" />
-                            Registrar mantenimiento
-                        </button>
+                @if ($hayInconsistenciaMantenimiento)
+                    <div class="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                        <div class="flex items-start gap-3">
+                            <div class="rounded-full bg-rose-100 p-2 text-rose-600">
+                                <x-icon name="alert-circle" class="h-4 w-4" />
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-semibold text-rose-900">Estado tecnico inconsistente</h3>
+                                <p class="mt-1 text-sm text-rose-800">
+                                    El estado actual del equipo no coincide con su historial tecnico. Revise este caso antes de seguir operando sobre el equipo.
+                                </p>
+                            </div>
+                        </div>
                     </div>
+                @endif
 
-                    <div x-show="showMantenimientoForm" class="app-subcard p-4">
-                        <form method="POST" action="{{ route('equipos.mantenimientos.store', $equipo) }}" class="grid gap-4 md:grid-cols-2">
-                            @csrf
-                            <div>
-                                <label class="text-sm font-medium text-slate-700">Fecha</label>
-                                <input type="date" name="fecha" value="{{ old('fecha', now()->toDateString()) }}" class="mt-1 w-full rounded-lg border-slate-300 text-sm" required>
+                @if ($mantenimientoExternoAbierto)
+                    <article class="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                            <div class="space-y-2">
+                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">Mantenimiento externo abierto</p>
+                                <h3 class="text-lg font-semibold text-slate-900">Este equipo se encuentra actualmente en servicio tecnico externo.</h3>
+                                <p class="text-sm text-slate-700">
+                                    Para cerrar este ciclo use <strong>Alta</strong> si vuelve a estado operativo o <strong>Baja</strong> si no regresa al servicio.
+                                </p>
+                            </div>
+                            <span class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                                Abierto desde {{ ($mantenimientoExternoAbierto->fecha_ingreso_st ?? $mantenimientoExternoAbierto->fecha)?->format('d/m/Y') }}
+                            </span>
+                        </div>
+
+                        <dl class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                            <div class="rounded-xl bg-white/70 p-4">
+                                <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Ingreso al ST</dt>
+                                <dd class="mt-1 text-sm font-semibold text-slate-900">{{ ($mantenimientoExternoAbierto->fecha_ingreso_st ?? $mantenimientoExternoAbierto->fecha)?->format('d/m/Y') }}</dd>
+                            </div>
+                            <div class="rounded-xl bg-white/70 p-4">
+                                <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Proveedor</dt>
+                                <dd class="mt-1 text-sm font-semibold text-slate-900">{{ $mantenimientoExternoAbierto->proveedor ?: 'Sin proveedor informado' }}</dd>
+                            </div>
+                            <div class="rounded-xl bg-white/70 p-4">
+                                <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Registrado por</dt>
+                                <dd class="mt-1 text-sm font-semibold text-slate-900">{{ $mantenimientoExternoAbierto->creador?->name ?: 'Sin dato' }}</dd>
+                            </div>
+                            <div class="rounded-xl bg-white/70 p-4">
+                                <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Seguimiento</dt>
+                                <dd class="mt-1 text-sm font-semibold text-slate-900">
+                                    {{ $mantenimientoExternoAbierto->fecha_ingreso_st?->diffForHumans() ?? $mantenimientoExternoAbierto->fecha?->diffForHumans() }}
+                                </dd>
+                            </div>
+                        </dl>
+                    </article>
+                @else
+                    <article class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                        <div class="flex items-start gap-3">
+                            <div class="rounded-full bg-emerald-100 p-2 text-emerald-600">
+                                <x-icon name="check-circle-2" class="h-4 w-4" />
                             </div>
                             <div>
-                                <label class="text-sm font-medium text-slate-700">Tipo</label>
-                                <select name="tipo" x-model="tipo" class="mt-1 w-full rounded-lg border-slate-300 text-sm" required>
-                                    @foreach (\App\Models\Mantenimiento::TIPOS as $tipo)
-                                        <option value="{{ $tipo }}" @selected(old('tipo') === $tipo)>{{ ucfirst($tipo) }}</option>
-                                    @endforeach
-                                </select>
+                                <h3 class="text-sm font-semibold text-emerald-900">Sin mantenimiento externo abierto</h3>
+                                <p class="mt-1 text-sm text-emerald-800">
+                                    Puede registrar un nuevo ingreso a mantenimiento externo desde esta ficha. El equipo no quedara en estado Mantenimiento si falla el registro tecnico.
+                                </p>
                             </div>
-                            <div class="md:col-span-2">
-                                <label class="text-sm font-medium text-slate-700">Titulo</label>
-                                <input type="text" name="titulo" value="{{ old('titulo') }}" class="mt-1 w-full rounded-lg border-slate-300 text-sm" required>
+                        </div>
+                    </article>
+                @endif
+
+                @can('create', \App\Models\Mantenimiento::class)
+                    @if (count($tiposMantenimientoDisponibles) > 0)
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-700">Registrar evento tecnico</h3>
+                                <p class="mt-1 text-sm text-slate-500">
+                                    @if ($mantenimientoExternoAbierto)
+                                        El formulario ya esta listo para cerrar el mantenimiento externo o agregar una nota tecnica complementaria.
+                                    @else
+                                        Ingrese aqui el envio a mantenimiento externo o una nota tecnica interna del equipo.
+                                    @endif
+                                </p>
                             </div>
-                            <div class="md:col-span-2">
-                                <label class="text-sm font-medium text-slate-700">Detalle</label>
-                                <textarea name="detalle" class="mt-1 w-full rounded-lg border-slate-300 text-sm" required>{{ old('detalle') }}</textarea>
-                            </div>
-                            <div x-show="tipo === 'externo'" x-cloak>
-                                <label class="text-sm font-medium text-slate-700">Proveedor</label>
-                                <input type="text" name="proveedor" value="{{ old('proveedor') }}" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
-                            </div>
-                            <div x-show="tipo === 'externo'" x-cloak>
-                                <label class="text-sm font-medium text-slate-700">Fecha ingreso ST</label>
-                                <input type="date" name="fecha_ingreso_st" value="{{ old('fecha_ingreso_st', now()->toDateString()) }}" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
-                            </div>
-                            <div x-show="tipo === 'alta'" x-cloak>
-                                <label class="text-sm font-medium text-slate-700">Fecha egreso ST</label>
-                                <input type="date" name="fecha_egreso_st" value="{{ old('fecha_egreso_st', now()->toDateString()) }}" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
-                            </div>
-                            <div class="md:col-span-2">
-                                <button class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Registrar mantenimiento</button>
-                            </div>
-                        </form>
-                    </div>
+
+                            <button type="button" @click="showMantenimientoForm = !showMantenimientoForm" class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700">
+                                <x-icon name="plus" class="h-4 w-4" />
+                                {{ $mantenimientoExternoAbierto ? 'Registrar cierre o nota' : 'Registrar mantenimiento' }}
+                            </button>
+                        </div>
+
+                        <div x-show="showMantenimientoForm" x-cloak class="app-subcard p-4">
+                            <form method="POST" action="{{ route('equipos.mantenimientos.store', $equipo) }}" class="grid gap-4 md:grid-cols-2">
+                                @csrf
+
+                                <div>
+                                    <label class="text-sm font-medium text-slate-700">Fecha del evento <span class="text-red-600">*</span></label>
+                                    <input type="date" name="fecha" value="{{ old('fecha', now()->toDateString()) }}" class="mt-1 w-full rounded-lg border-slate-300 text-sm" required>
+                                </div>
+
+                                <div>
+                                    <label class="text-sm font-medium text-slate-700">Tipo <span class="text-red-600">*</span></label>
+                                    <select name="tipo" x-model="tipo" class="mt-1 w-full rounded-lg border-slate-300 text-sm" required>
+                                        @foreach ($tiposMantenimientoDisponibles as $tipoDisponible)
+                                            <option value="{{ $tipoDisponible }}" @selected(old('tipo') === $tipoDisponible)>
+                                                {{ match ($tipoDisponible) {
+                                                    Mantenimiento::TIPO_EXTERNO => 'Externo',
+                                                    Mantenimiento::TIPO_ALTA => 'Alta',
+                                                    Mantenimiento::TIPO_BAJA => 'Baja',
+                                                    Mantenimiento::TIPO_INTERNO => 'Interno',
+                                                    default => 'Otro',
+                                                } }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="md:col-span-2">
+                                    <label class="text-sm font-medium text-slate-700">Titulo <span class="text-red-600">*</span></label>
+                                    <input type="text" name="titulo" value="{{ old('titulo') }}" class="mt-1 w-full rounded-lg border-slate-300 text-sm" required>
+                                </div>
+
+                                <div class="md:col-span-2">
+                                    <label class="text-sm font-medium text-slate-700">Detalle <span class="text-red-600">*</span></label>
+                                    <textarea name="detalle" class="mt-1 w-full rounded-lg border-slate-300 text-sm" rows="4" required>{{ old('detalle') }}</textarea>
+                                </div>
+
+                                <div x-show="tipo === 'externo'" x-cloak>
+                                    <label class="text-sm font-medium text-slate-700">Proveedor</label>
+                                    <input type="text" name="proveedor" value="{{ old('proveedor') }}" class="mt-1 w-full rounded-lg border-slate-300 text-sm" x-bind:disabled="tipo !== 'externo'">
+                                </div>
+
+                                <div x-show="tipo === 'externo'" x-cloak>
+                                    <label class="text-sm font-medium text-slate-700">Fecha ingreso ST <span class="text-red-600">*</span></label>
+                                    <input type="date" name="fecha_ingreso_st" value="{{ old('fecha_ingreso_st', now()->toDateString()) }}" class="mt-1 w-full rounded-lg border-slate-300 text-sm" x-bind:required="tipo === 'externo'" x-bind:disabled="tipo !== 'externo'">
+                                </div>
+
+                                <div x-show="tipo === 'alta' || tipo === 'baja'" x-cloak>
+                                    <label class="text-sm font-medium text-slate-700">Fecha egreso ST <span class="text-red-600">*</span></label>
+                                    <input type="date" name="fecha_egreso_st" value="{{ old('fecha_egreso_st', now()->toDateString()) }}" class="mt-1 w-full rounded-lg border-slate-300 text-sm" x-bind:required="tipo === 'alta' || tipo === 'baja'" x-bind:disabled="!(tipo === 'alta' || tipo === 'baja')">
+                                </div>
+
+                                <div class="md:col-span-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+                                    <p x-show="tipo === 'externo'" x-cloak>
+                                        El equipo pasara a estado Mantenimiento solo si el ingreso externo se registra correctamente.
+                                    </p>
+                                    <p x-show="tipo === 'alta'" x-cloak>
+                                        El alta cierra el mantenimiento externo abierto y devuelve el equipo a estado Operativo.
+                                    </p>
+                                    <p x-show="tipo === 'baja'" x-cloak>
+                                        La baja cierra el mantenimiento externo abierto y deja el equipo en estado Baja.
+                                    </p>
+                                    <p x-show="tipo === 'interno' || tipo === 'otro'" x-cloak>
+                                        Esta opcion agrega una nota tecnica al historial sin cambiar el estado actual del equipo.
+                                    </p>
+                                </div>
+
+                                <div class="md:col-span-2">
+                                    <button class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">
+                                        Guardar evento tecnico
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    @else
+                        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                            Este equipo ya se encuentra en baja y no admite nuevos eventos tecnicos.
+                        </div>
+                    @endif
                 @endcan
 
                 <div class="app-table-panel overflow-x-auto rounded-lg">
@@ -152,9 +303,8 @@
                             <tr>
                                 <th class="px-4 py-3">Fecha</th>
                                 <th class="px-4 py-3">Tipo</th>
-                                <th class="px-4 py-3">Titulo</th>
-                                <th class="px-4 py-3">Detalle</th>
-                                <th class="px-4 py-3">Proveedor</th>
+                                <th class="px-4 py-3">Detalle tecnico</th>
+                                <th class="px-4 py-3">Seguimiento</th>
                                 <th class="px-4 py-3">Estado resultante</th>
                                 <th class="px-4 py-3">Duracion</th>
                                 <th class="px-4 py-3">Acciones</th>
@@ -162,38 +312,81 @@
                         </thead>
                         <tbody>
                         @forelse($mantenimientos as $mantenimiento)
+                            @php
+                                $tipoClase = match ($mantenimiento->tipo) {
+                                    Mantenimiento::TIPO_EXTERNO => 'bg-amber-100 text-amber-800',
+                                    Mantenimiento::TIPO_ALTA => 'bg-emerald-100 text-emerald-800',
+                                    Mantenimiento::TIPO_BAJA => 'bg-rose-100 text-rose-800',
+                                    Mantenimiento::TIPO_INTERNO => 'bg-sky-100 text-sky-800',
+                                    default => 'bg-slate-100 text-slate-700',
+                                };
+                            @endphp
                             <tr>
                                 <td class="px-4 py-4 text-slate-700">{{ $mantenimiento->fecha?->format('d/m/Y') }}</td>
-                                <td class="px-4 py-4 text-slate-700">{{ ucfirst($mantenimiento->tipo) }}</td>
-                                <td class="px-4 py-4 font-medium text-slate-900">{{ $mantenimiento->titulo }}</td>
-                                <td class="px-4 py-4 text-slate-700">{{ $mantenimiento->detalle }}</td>
-                                <td class="px-4 py-4 text-slate-700">{{ $mantenimiento->proveedor ?: '-' }}</td>
-                                <td class="px-4 py-4 text-slate-700">{{ $mantenimiento->estadoResultante?->name ?: '-' }}</td>
-                                <td class="px-4 py-4 text-slate-700">{{ $mantenimiento->dias_en_servicio !== null ? $mantenimiento->dias_en_servicio.' dias' : '-' }}</td>
+                                <td class="px-4 py-4 text-slate-700">
+                                    <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $tipoClase }}">
+                                        {{ ucfirst($mantenimiento->tipo) }}
+                                    </span>
+                                </td>
                                 <td class="px-4 py-4">
-                                    <div class="flex items-center gap-2">
-                                        @can('update', $mantenimiento)
-                                            <a href="{{ route('mantenimientos.edit', $mantenimiento) }}" class="inline-flex items-center rounded p-1 text-amber-600 hover:bg-amber-50" title="Editar">
-                                                <x-icon name="pencil" class="h-4 w-4" />
-                                                <span class="sr-only">Editar</span>
-                                            </a>
-                                        @endcan
-                                        @can('delete', $mantenimiento)
-                                            <form method="POST" action="{{ route('mantenimientos.destroy', $mantenimiento) }}" class="inline" onsubmit="return confirm('Eliminar mantenimiento?')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button class="inline-flex items-center rounded p-1 text-rose-600 hover:bg-rose-50" title="Eliminar">
-                                                    <x-icon name="trash-2" class="h-4 w-4" />
-                                                    <span class="sr-only">Eliminar</span>
-                                                </button>
-                                            </form>
-                                        @endcan
-                                    </div>
+                                    <p class="font-medium text-slate-900">{{ $mantenimiento->titulo }}</p>
+                                    <p class="mt-1 text-slate-700">{{ $mantenimiento->detalle }}</p>
+                                    <p class="mt-2 text-xs text-slate-500">
+                                        Proveedor: {{ $mantenimiento->proveedor ?: $mantenimiento->mantenimientoExterno?->proveedor ?: 'No informado' }}
+                                    </p>
+                                </td>
+                                <td class="px-4 py-4 text-slate-700">
+                                    @if ($mantenimiento->tipo === Mantenimiento::TIPO_EXTERNO)
+                                        <p>Ingreso: {{ ($mantenimiento->fecha_ingreso_st ?? $mantenimiento->fecha)?->format('d/m/Y') }}</p>
+                                        <p class="mt-1">
+                                            Egreso:
+                                            {{ $mantenimiento->fecha_egreso_st?->format('d/m/Y') ?: 'Abierto' }}
+                                        </p>
+                                    @elseif ($mantenimiento->mantenimientoExterno)
+                                        <p>Relacionado con externo iniciado el {{ ($mantenimiento->mantenimientoExterno->fecha_ingreso_st ?? $mantenimiento->mantenimientoExterno->fecha)?->format('d/m/Y') }}</p>
+                                        <p class="mt-1">Egreso registrado: {{ $mantenimiento->fecha_egreso_st?->format('d/m/Y') ?: '-' }}</p>
+                                    @else
+                                        <p>Nota tecnica sin ciclo externo asociado.</p>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-4 text-slate-700">{{ $mantenimiento->estadoResultante?->name ?: '-' }}</td>
+                                <td class="px-4 py-4 text-slate-700">
+                                    @if ($mantenimiento->dias_en_servicio !== null)
+                                        {{ $mantenimiento->dias_en_servicio }} dias
+                                    @elseif ($mantenimiento->isExternoAbierto())
+                                        {{ ($mantenimiento->fecha_ingreso_st ?? $mantenimiento->fecha)?->diffInDays(now()) }} dias abiertos
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                                <td class="px-4 py-4">
+                                    @if ($mantenimiento->canBeManuallyChanged())
+                                        <div class="flex items-center gap-2">
+                                            @can('update', $mantenimiento)
+                                                <a href="{{ route('mantenimientos.edit', $mantenimiento) }}" class="inline-flex items-center rounded p-1 text-amber-600 hover:bg-amber-50" title="Editar">
+                                                    <x-icon name="pencil" class="h-4 w-4" />
+                                                    <span class="sr-only">Editar</span>
+                                                </a>
+                                            @endcan
+                                            @can('delete', $mantenimiento)
+                                                <form method="POST" action="{{ route('mantenimientos.destroy', $mantenimiento) }}" class="inline" onsubmit="return confirm('Eliminar nota tecnica?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button class="inline-flex items-center rounded p-1 text-rose-600 hover:bg-rose-50" title="Eliminar">
+                                                        <x-icon name="trash-2" class="h-4 w-4" />
+                                                        <span class="sr-only">Eliminar</span>
+                                                    </button>
+                                                </form>
+                                            @endcan
+                                        </div>
+                                    @else
+                                        <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">Bloqueado por trazabilidad</span>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-4 py-6 text-center text-slate-500">Sin mantenimientos registrados.</td>
+                                <td colspan="7" class="px-4 py-6 text-center text-slate-500">Sin mantenimientos registrados.</td>
                             </tr>
                         @endforelse
                         </tbody>
