@@ -13,6 +13,7 @@ use App\Models\TipoEquipo;
 use App\Models\User;
 use App\Services\EquipoListingService;
 use App\Services\EquipoStatusResolver;
+use App\Services\MantenimientoService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,6 +26,7 @@ class EquipoController extends Controller
     public function __construct(
         private readonly EquipoStatusResolver $equipoStatusResolver,
         private readonly EquipoListingService $equipoListingService,
+        private readonly MantenimientoService $mantenimientoService,
     ) {
         $this->authorizeResource(Equipo::class, 'equipo');
     }
@@ -120,15 +122,25 @@ class EquipoController extends Controller
             'oficina.service.institution',
             'tipoEquipo',
             'equipoStatus',
+            'mantenimientoExternoAbierto.creador',
             'movimientos.user',
             'movimientos.documents',
             'documents.uploadedBy',
         ]);
 
         $mantenimientos = $equipo->mantenimientos()
-            ->with(['creador:id,name', 'estadoResultante:id,name,color'])
+            ->with([
+                'creador:id,name',
+                'estadoResultante:id,name,color',
+                'mantenimientoExterno:id,fecha,fecha_ingreso_st,fecha_egreso_st,proveedor,titulo',
+            ])
             ->limit(30)
             ->get();
+
+        $mantenimientoExternoAbierto = $equipo->mantenimientoExternoAbierto;
+        $tiposMantenimientoDisponibles = $this->mantenimientoService->tiposDisponiblesParaEquipo($equipo);
+        $hayInconsistenciaMantenimiento = ($mantenimientoExternoAbierto !== null && $equipo->estado !== Equipo::ESTADO_MANTENIMIENTO)
+            || ($mantenimientoExternoAbierto === null && $equipo->estado === Equipo::ESTADO_MANTENIMIENTO);
 
         $officeIds = $equipo->movimientos
             ->flatMap(fn (Movimiento $movimiento) => [
@@ -155,6 +167,9 @@ class EquipoController extends Controller
         return view('equipos.show', [
             'equipo' => $equipo,
             'mantenimientos' => $mantenimientos,
+            'mantenimientoExternoAbierto' => $mantenimientoExternoAbierto,
+            'tiposMantenimientoDisponibles' => $tiposMantenimientoDisponibles,
+            'hayInconsistenciaMantenimiento' => $hayInconsistenciaMantenimiento,
             'offices' => $offices,
             'instituciones' => $instituciones,
             'servicios' => $servicios,

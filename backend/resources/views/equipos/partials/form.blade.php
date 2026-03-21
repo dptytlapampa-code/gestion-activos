@@ -261,9 +261,14 @@
                     <select id="estado" name="estado" class="mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 @error('estado') border-red-400 focus:border-red-500 focus:ring-red-100 @else border-slate-300 @enderror" aria-invalid="@error('estado') true @else false @enderror" aria-describedby="@error('estado') estado_error @enderror" required>
                         <option value="">Seleccione un estado</option>
                         @foreach ($estados as $estado)
-                            <option value="{{ $estado }}" @selected($estadoSeleccionado === $estado)>{{ strtoupper(str_replace('_', ' ', $estado)) }}</option>
+                            <option value="{{ $estado }}" @selected($estadoSeleccionado === $estado)>
+                                {{ strtoupper(str_replace('_', ' ', $estado)) }}@if ($estado === \App\Models\Equipo::ESTADO_MANTENIMIENTO) - SOLO DESDE MANTENIMIENTO @endif
+                            </option>
                         @endforeach
                     </select>
+                    <p class="mt-1 text-xs text-slate-500">
+                        El estado Mantenimiento se administra desde la ficha del equipo, en la pestana Mantenimiento, y requiere un mantenimiento externo abierto coherente.
+                    </p>
                     @error('estado')
                         <p id="estado_error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
