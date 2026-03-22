@@ -174,4 +174,4 @@ return new class extends Migration
 
         return substr((string) $value, 0, 10);
     }
-}
+};
