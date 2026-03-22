@@ -34,6 +34,13 @@ class AuthBasicTest extends TestCase
 
         $response->assertRedirect(route('dashboard'));
         $this->assertAuthenticatedAs($user);
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $user->id,
+            'module' => 'auth',
+            'action' => 'login',
+            'entity_type' => 'usuario',
+            'entity_id' => $user->id,
+        ]);
     }
 
     public function test_user_cannot_login_when_inactive(): void
@@ -52,5 +59,33 @@ class AuthBasicTest extends TestCase
         $response->assertRedirect(route('login'));
         $response->assertSessionHasErrors('email');
         $this->assertGuest();
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $user->id,
+            'module' => 'auth',
+            'action' => 'login_failed',
+            'entity_type' => 'usuario',
+            'entity_id' => $user->id,
+        ]);
+    }
+
+    public function test_logout_registra_auditoria(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'logout@local.test',
+            'password' => Hash::make('password123'),
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user)->post(route('logout'))
+            ->assertRedirect(route('login'));
+
+        $this->assertGuest();
+        $this->assertDatabaseHas('audit_logs', [
+            'user_id' => $user->id,
+            'module' => 'auth',
+            'action' => 'logout',
+            'entity_type' => 'usuario',
+            'entity_id' => $user->id,
+        ]);
     }
 }

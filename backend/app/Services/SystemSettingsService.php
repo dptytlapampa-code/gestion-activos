@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\AuditLog;
 use App\Models\SystemSetting;
+use App\Services\Auditing\AuditLogService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -23,6 +25,8 @@ class SystemSettingsService
     ];
 
     private ?stdClass $cachedSettings = null;
+
+    public function __construct(private readonly AuditLogService $auditLogService) {}
 
     public function getCurrentSettings(): stdClass
     {
@@ -62,6 +66,7 @@ class SystemSettingsService
     {
         DB::transaction(function () use ($input, $logoInstitucional, $logoPdf): void {
             $setting = $this->lockSingletonForUpdate();
+            $before = $this->settingsAuditSnapshot($setting);
 
             $payload = [
                 'site_name' => trim((string) $input['site_name']) ?: self::DEFAULTS['site_name'],
@@ -93,6 +98,34 @@ class SystemSettingsService
             SystemSetting::query()
                 ->whereKeyNot($setting->id)
                 ->delete();
+
+            $after = $this->settingsAuditSnapshot($setting->fresh());
+            $changes = $this->auditLogService->diff($before, $after, [
+                'site_name' => 'Nombre del sistema',
+                'primary_color' => 'Color principal',
+                'sidebar_color' => 'Color lateral',
+                'logo_institucional' => 'Logo institucional',
+                'logo_pdf' => 'Logo PDF',
+            ]);
+
+            if ($changes !== []) {
+                $this->auditLogService->record([
+                    'user' => auth()->user(),
+                    'module' => 'configuracion',
+                    'action' => 'configuracion_general_actualizada',
+                    'entity_type' => 'configuracion',
+                    'entity_id' => $setting->id,
+                    'summary' => 'Se actualizo la configuracion general del sistema.',
+                    'before' => $before,
+                    'after' => $after,
+                    'metadata' => [
+                        'details' => $after,
+                        'changes' => $changes,
+                    ],
+                    'level' => AuditLog::LEVEL_CRITICAL,
+                    'is_critical' => true,
+                ]);
+            }
         });
 
         $this->cachedSettings = null;
@@ -223,5 +256,19 @@ class SystemSettingsService
             hexdec(substr($hex, 2, 2)),
             hexdec(substr($hex, 4, 2)),
         );
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function settingsAuditSnapshot(?SystemSetting $setting): array
+    {
+        return [
+            'site_name' => $setting?->site_name ?: self::DEFAULTS['site_name'],
+            'primary_color' => $this->normalizeColor((string) ($setting?->primary_color ?: self::DEFAULTS['primary_color'])),
+            'sidebar_color' => $this->normalizeColor((string) ($setting?->sidebar_color ?: self::DEFAULTS['sidebar_color'])),
+            'logo_institucional' => $setting?->logo_institucional ? 'Configurado' : 'No configurado',
+            'logo_pdf' => $setting?->logo_pdf ? 'Configurado' : 'No configurado',
+        ];
     }
 }

@@ -60,7 +60,9 @@ Route::middleware('auth')->group(function (): void {
         Route::resource('users', UserController::class)->except(['show', 'destroy']);
         Route::patch('users/{user}/toggle-active', [UserController::class, 'toggleActive'])->name('users.toggle_active');
         Route::post('users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset_password');
+        Route::get('auditoria/actividad', [AuditLogController::class, 'live'])->name('audit.live');
         Route::get('auditoria', [AuditLogController::class, 'index'])->name('audit.index');
+        Route::get('auditoria/{auditLog}', [AuditLogController::class, 'show'])->whereNumber('auditLog')->name('audit.show');
 
         Route::get('configuracion/general', [SystemSettingsController::class, 'index'])->name('configuracion.general.edit');
         Route::match(['put', 'patch'], 'configuracion/general', [SystemSettingsController::class, 'update'])->name('configuracion.general.update');

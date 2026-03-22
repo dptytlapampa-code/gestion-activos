@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\Equipo;
 use App\Models\Mantenimiento;
 use App\Models\User;
+use App\Services\Auditing\AuditLogService;
 use Carbon\Carbon;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +14,10 @@ use Illuminate\Validation\ValidationException;
 
 class MantenimientoService
 {
-    public function __construct(private readonly EquipoStatusResolver $equipoStatusResolver) {}
+    public function __construct(
+        private readonly EquipoStatusResolver $equipoStatusResolver,
+        private readonly AuditLogService $auditLogService,
+    ) {}
 
     public function registrar(Equipo $equipo, User $user, array $data): Mantenimiento
     {
@@ -141,6 +145,7 @@ class MantenimientoService
 
         $fecha = Carbon::parse($data['fecha'])->toDateString();
         $fechaIngreso = Carbon::parse($data['fecha_ingreso_st'])->toDateString();
+        $estadoAnterior = $equipo->estado;
         $estadoMantenimientoId = $this->equipoStatusResolver->resolveIdByEstado(Equipo::ESTADO_MANTENIMIENTO, 'mantenimientos');
 
         $mantenimiento = Mantenimiento::query()->create([
@@ -161,19 +166,32 @@ class MantenimientoService
 
         $this->actualizarEstadoEquipo($equipo, Equipo::ESTADO_MANTENIMIENTO);
 
-        AuditLog::query()->create([
-            'user_id' => $user->id,
-            'action' => 'maintenance_external_opened',
-            'auditable_type' => Mantenimiento::class,
-            'auditable_id' => $mantenimiento->id,
-            'before' => null,
-            'after' => [
-                'equipo_id' => $equipo->id,
-                'fecha_ingreso_st' => $fechaIngreso,
-                'estado_equipo' => Equipo::ESTADO_MANTENIMIENTO,
+        $before = $this->maintenanceAuditSnapshot($estadoAnterior);
+        $after = $this->maintenanceAuditSnapshot(Equipo::ESTADO_MANTENIMIENTO);
+
+        $this->auditLogService->record([
+            'user' => $user,
+            'institution_id' => $institutionId,
+            'module' => 'mantenimientos',
+            'action' => 'mantenimiento_externo_abierto',
+            'entity_type' => 'equipo',
+            'entity_id' => $equipo->id,
+            'summary' => sprintf('Se registro mantenimiento externo para el equipo %s.', $this->equipmentReference($equipo)),
+            'before' => $before,
+            'after' => $after,
+            'metadata' => [
+                'details' => [
+                    'mantenimiento_id' => $mantenimiento->id,
+                    'fecha' => $fecha,
+                    'fecha_ingreso_servicio_tecnico' => $fechaIngreso,
+                    'proveedor' => $mantenimiento->proveedor,
+                    'titulo' => $mantenimiento->titulo,
+                    'detalle' => $mantenimiento->detalle,
+                ],
+                'changes' => $this->auditLogService->diff($before, $after, ['estado' => 'Estado']),
             ],
-            'ip' => request()?->ip(),
-            'user_agent' => request()?->userAgent(),
+            'level' => AuditLog::LEVEL_CRITICAL,
+            'is_critical' => true,
         ]);
 
         return $mantenimiento;
@@ -236,23 +254,37 @@ class MantenimientoService
 
         $this->actualizarEstadoEquipo($equipo, $estadoDestino);
 
-        AuditLog::query()->create([
-            'user_id' => $user->id,
-            'action' => 'maintenance_external_closed',
-            'auditable_type' => Mantenimiento::class,
-            'auditable_id' => $externoAbierto->id,
-            'before' => [
-                'fecha_egreso_st' => null,
-                'dias_en_servicio' => null,
+        $before = $this->maintenanceAuditSnapshot(Equipo::ESTADO_MANTENIMIENTO);
+        $after = $this->maintenanceAuditSnapshot($estadoDestino);
+
+        $this->auditLogService->record([
+            'user' => $user,
+            'institution_id' => $institutionId,
+            'module' => 'mantenimientos',
+            'action' => 'mantenimiento_externo_cerrado',
+            'entity_type' => 'equipo',
+            'entity_id' => $equipo->id,
+            'summary' => sprintf(
+                'Se cerro el mantenimiento externo del equipo %s y quedo en estado %s.',
+                $this->equipmentReference($equipo),
+                $after['estado']
+            ),
+            'before' => $before,
+            'after' => $after,
+            'metadata' => [
+                'details' => [
+                    'mantenimiento_externo_id' => $externoAbierto->id,
+                    'mantenimiento_cierre_id' => $cierre->id,
+                    'fecha_ingreso_servicio_tecnico' => $fechaIngreso,
+                    'fecha_egreso_servicio_tecnico' => $fechaEgreso,
+                    'dias_en_servicio' => $dias,
+                    'resultado' => $after['estado'],
+                    'proveedor' => $externoAbierto->proveedor,
+                ],
+                'changes' => $this->auditLogService->diff($before, $after, ['estado' => 'Estado']),
             ],
-            'after' => [
-                'fecha_egreso_st' => $fechaEgreso,
-                'dias_en_servicio' => $dias,
-                'closed_by' => $cierre->id,
-                'estado_equipo' => $estadoDestino,
-            ],
-            'ip' => request()?->ip(),
-            'user_agent' => request()?->userAgent(),
+            'level' => AuditLog::LEVEL_CRITICAL,
+            'is_critical' => true,
         ]);
 
         return $cierre;
@@ -315,5 +347,31 @@ class MantenimientoService
         $trimmed = trim((string) $value);
 
         return $trimmed === '' ? null : $trimmed;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function maintenanceAuditSnapshot(string $estado): array
+    {
+        return [
+            'estado' => match ($estado) {
+                Equipo::ESTADO_OPERATIVO => 'Operativo',
+                Equipo::ESTADO_PRESTADO => 'Prestado',
+                Equipo::ESTADO_MANTENIMIENTO, Equipo::ESTADO_EN_MANTENIMIENTO => 'Mantenimiento',
+                Equipo::ESTADO_FUERA_DE_SERVICIO => 'Fuera de servicio',
+                Equipo::ESTADO_BAJA => 'Baja',
+                default => ucfirst(str_replace('_', ' ', $estado)),
+            },
+        ];
+    }
+
+    private function equipmentReference(Equipo $equipo): string
+    {
+        return collect([
+            $equipo->tipo ?: 'Equipo',
+            $equipo->numero_serie ? 'NS '.$equipo->numero_serie : null,
+            $equipo->bien_patrimonial ? 'BP '.$equipo->bien_patrimonial : null,
+        ])->filter()->implode(' / ');
     }
 }

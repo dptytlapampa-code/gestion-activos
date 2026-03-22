@@ -10,6 +10,7 @@ use App\Models\Movimiento;
 use App\Models\Office;
 use App\Models\Service;
 use App\Models\User;
+use App\Services\Auditing\AuditLogService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +19,11 @@ use Illuminate\Validation\ValidationException;
 
 class ActaTraceabilityService
 {
-    public function __construct(private readonly ActaPdfDataService $actaPdfDataService, private readonly EquipoStatusResolver $equipoStatusResolver) {}
+    public function __construct(
+        private readonly ActaPdfDataService $actaPdfDataService,
+        private readonly EquipoStatusResolver $equipoStatusResolver,
+        private readonly AuditLogService $auditLogService,
+    ) {}
 
     public function crear(User $user, array $data): Acta
     {
@@ -113,19 +118,7 @@ class ActaTraceabilityService
                 $this->applyTransition($equipo, $acta, $user, $destinoOffice, $origenesPorEquipo->get($equipo->id));
             }
 
-            AuditLog::query()->create([
-                'user_id' => $user->id,
-                'action' => 'create',
-                'auditable_type' => 'acta_equipo',
-                'auditable_id' => $acta->id,
-                'before' => null,
-                'after' => [
-                    'tipo' => $acta->tipo,
-                    'equipos' => $pivotPayload,
-                ],
-                'ip' => request()->ip(),
-                'user_agent' => request()->userAgent(),
-            ]);
+            $this->recordActaCreated($acta, $user, $equipos, $pivotPayload);
 
             $acta->load([
                 'institution',
@@ -293,6 +286,11 @@ class ActaTraceabilityService
             'servicio_id' => $origenSnapshot['servicio_id'] ?? null,
             'oficina_id' => $origenSnapshot['oficina_id'] ?? null,
         ];
+        $anteriorNombres = [
+            'institucion' => (string) ($origenSnapshot['institucion_nombre'] ?? 'Sin institucion'),
+            'servicio' => (string) ($origenSnapshot['servicio_nombre'] ?? 'Sin servicio'),
+            'oficina' => (string) ($origenSnapshot['oficina_nombre'] ?? 'Sin oficina'),
+        ];
 
         $estadoAnterior = $equipo->estado;
 
@@ -304,6 +302,7 @@ class ActaTraceabilityService
             'servicio_id' => $anterior['servicio_id'],
             'oficina_id' => $anterior['oficina_id'],
         ];
+        $nuevaUbicacionNombres = $anteriorNombres;
 
         if (in_array($tipo, [Acta::TIPO_ENTREGA, Acta::TIPO_TRASLADO], true) && $destinoOffice !== null) {
             $equipo->oficina_id = $destinoOffice->id;
@@ -311,6 +310,11 @@ class ActaTraceabilityService
                 'institucion_id' => $destinoOffice->service?->institution?->id,
                 'servicio_id' => $destinoOffice->service?->id,
                 'oficina_id' => $destinoOffice->id,
+            ];
+            $nuevaUbicacionNombres = [
+                'institucion' => (string) ($destinoOffice->service?->institution?->nombre ?? 'Sin institucion'),
+                'servicio' => (string) ($destinoOffice->service?->nombre ?? 'Sin servicio'),
+                'oficina' => (string) ($destinoOffice->nombre ?? 'Sin oficina'),
             ];
         }
 
@@ -323,7 +327,19 @@ class ActaTraceabilityService
 
         $equipo->save();
 
-        $this->registrarMovimientoDesdeActa($equipo, $acta, $user, $anterior, $nuevaUbicacion);
+        $before = [
+            'estado' => $this->estadoLabel($estadoAnterior),
+            'institucion' => $anteriorNombres['institucion'],
+            'servicio' => $anteriorNombres['servicio'],
+            'oficina' => $anteriorNombres['oficina'],
+        ];
+        $after = [
+            'estado' => $this->estadoLabel($estadoNuevo),
+            'institucion' => $nuevaUbicacionNombres['institucion'],
+            'servicio' => $nuevaUbicacionNombres['servicio'],
+            'oficina' => $nuevaUbicacionNombres['oficina'],
+        ];
+        $movimiento = $this->registrarMovimientoDesdeActa($equipo, $acta, $user, $anterior, $nuevaUbicacion);
 
         EquipoHistorial::query()->create([
             'equipo_id' => $equipo->id,
@@ -341,23 +357,25 @@ class ActaTraceabilityService
             'fecha' => $acta->fecha?->toDateTimeString() ?? now()->toDateTimeString(),
             'observaciones' => $acta->observaciones,
         ]);
+
+        $this->recordActaEquipmentEvent($equipo, $acta, $user, $before, $after, $movimiento);
     }
 
     /**
      * @param  array{institucion_id:int|null,servicio_id:int|null,oficina_id:int|null}  $origen
      * @param  array{institucion_id:int|null,servicio_id:int|null,oficina_id:int|null}  $destino
      */
-    private function registrarMovimientoDesdeActa(Equipo $equipo, Acta $acta, User $user, array $origen, array $destino): void
+    private function registrarMovimientoDesdeActa(Equipo $equipo, Acta $acta, User $user, array $origen, array $destino): ?Movimiento
     {
         $tipoMovimiento = $this->resolveTipoMovimiento($acta->tipo);
 
         if ($tipoMovimiento === null) {
-            return;
+            return null;
         }
 
         $usaDestino = in_array($acta->tipo, [Acta::TIPO_ENTREGA, Acta::TIPO_TRASLADO, Acta::TIPO_DEVOLUCION], true);
 
-        Movimiento::query()->create([
+        return Movimiento::query()->create([
             'equipo_id' => $equipo->id,
             'user_id' => $user->id,
             'acta_id' => $acta->id,
@@ -624,5 +642,145 @@ class ActaTraceabilityService
         $trimmed = trim((string) $value);
 
         return $trimmed === '' ? null : $trimmed;
+    }
+
+    private function recordActaCreated(Acta $acta, User $user, Collection $equipos, array $pivotPayload): void
+    {
+        $equipmentList = $equipos
+            ->take(10)
+            ->map(fn (Equipo $equipo): string => $this->equipmentReference($equipo))
+            ->values()
+            ->all();
+
+        $this->auditLogService->record([
+            'user' => $user,
+            'institution_id' => $acta->institution_id,
+            'module' => 'actas',
+            'action' => 'acta_creada',
+            'entity_type' => 'acta',
+            'entity_id' => $acta->id,
+            'summary' => sprintf(
+                'Se genero el acta %s %s con %d equipo(s).',
+                $this->actaTypeLabel($acta->tipo),
+                $acta->codigo,
+                count($pivotPayload)
+            ),
+            'after' => [
+                'codigo' => $acta->codigo,
+                'tipo' => $this->actaTypeLabel($acta->tipo),
+                'estado' => ucfirst((string) ($acta->status ?? Acta::STATUS_ACTIVA)),
+                'equipos' => (string) count($pivotPayload),
+            ],
+            'metadata' => [
+                'details' => array_filter([
+                    'codigo' => $acta->codigo,
+                    'tipo' => $this->actaTypeLabel($acta->tipo),
+                    'fecha' => $acta->fecha?->format('d/m/Y'),
+                    'institucion_origen_id' => $acta->institution_id,
+                    'institucion_destino_id' => $acta->institution_destino_id,
+                    'receptor' => $acta->receptor_nombre,
+                    'equipos' => $equipmentList,
+                    'cantidad_equipos' => count($pivotPayload),
+                ], fn (mixed $value): bool => $value !== null && $value !== ''),
+            ],
+            'level' => AuditLog::LEVEL_CRITICAL,
+            'is_critical' => true,
+        ]);
+    }
+
+    /**
+     * @param  array<string, string>  $before
+     * @param  array<string, string>  $after
+     */
+    private function recordActaEquipmentEvent(Equipo $equipo, Acta $acta, User $user, array $before, array $after, ?Movimiento $movimiento): void
+    {
+        $this->auditLogService->record([
+            'user' => $user,
+            'institution_id' => $acta->institution_id,
+            'module' => 'actas',
+            'action' => $this->actaEquipmentAction($acta->tipo),
+            'entity_type' => 'equipo',
+            'entity_id' => $equipo->id,
+            'summary' => $this->actaEquipmentSummary($equipo, $acta),
+            'before' => $before,
+            'after' => $after,
+            'metadata' => [
+                'details' => array_filter([
+                    'acta_id' => $acta->id,
+                    'acta_codigo' => $acta->codigo,
+                    'tipo_acta' => $this->actaTypeLabel($acta->tipo),
+                    'movimiento_id' => $movimiento?->id,
+                    'observaciones' => $acta->observaciones,
+                    'receptor' => $acta->receptor_nombre,
+                ], fn (mixed $value): bool => $value !== null && $value !== ''),
+                'changes' => $this->auditLogService->diff($before, $after, [
+                    'estado' => 'Estado',
+                    'institucion' => 'Institucion',
+                    'servicio' => 'Servicio',
+                    'oficina' => 'Oficina',
+                ]),
+            ],
+            'level' => $this->actaEquipmentLevel($acta->tipo),
+            'is_critical' => $this->actaEquipmentIsCritical($acta->tipo),
+            'is_live_event' => false,
+        ]);
+    }
+
+    private function equipmentReference(Equipo $equipo): string
+    {
+        return collect([
+            $equipo->tipo ?: 'Equipo',
+            $equipo->numero_serie ? 'NS '.$equipo->numero_serie : null,
+            $equipo->bien_patrimonial ? 'BP '.$equipo->bien_patrimonial : null,
+        ])->filter()->implode(' / ');
+    }
+
+    private function actaTypeLabel(string $tipo): string
+    {
+        return ucfirst(strtolower(Acta::LABELS[$tipo] ?? $tipo));
+    }
+
+    private function actaEquipmentAction(string $tipo): string
+    {
+        return 'acta_'.$tipo.'_aplicada';
+    }
+
+    private function actaEquipmentSummary(Equipo $equipo, Acta $acta): string
+    {
+        $reference = $this->equipmentReference($equipo);
+
+        return match ($acta->tipo) {
+            Acta::TIPO_ENTREGA => sprintf('El acta %s registro la entrega del equipo %s.', $acta->codigo, $reference),
+            Acta::TIPO_PRESTAMO => sprintf('El acta %s dejo prestado el equipo %s.', $acta->codigo, $reference),
+            Acta::TIPO_TRASLADO => sprintf('El acta %s traslado el equipo %s.', $acta->codigo, $reference),
+            Acta::TIPO_BAJA => sprintf('El acta %s dio de baja el equipo %s.', $acta->codigo, $reference),
+            Acta::TIPO_DEVOLUCION => sprintf('El acta %s registro la devolucion del equipo %s.', $acta->codigo, $reference),
+            Acta::TIPO_MANTENIMIENTO => sprintf('El acta %s registro mantenimiento para el equipo %s.', $acta->codigo, $reference),
+            default => sprintf('El acta %s afecto al equipo %s.', $acta->codigo, $reference),
+        };
+    }
+
+    private function actaEquipmentLevel(string $tipo): string
+    {
+        return in_array($tipo, [Acta::TIPO_BAJA, Acta::TIPO_MANTENIMIENTO], true)
+            ? AuditLog::LEVEL_WARNING
+            : AuditLog::LEVEL_INFO;
+    }
+
+    private function actaEquipmentIsCritical(string $tipo): bool
+    {
+        return in_array($tipo, [Acta::TIPO_BAJA, Acta::TIPO_MANTENIMIENTO], true);
+    }
+
+    private function estadoLabel(string $estado): string
+    {
+        return match ($estado) {
+            Equipo::ESTADO_OPERATIVO => 'Operativo',
+            Equipo::ESTADO_PRESTADO => 'Prestado',
+            Equipo::ESTADO_EN_MANTENIMIENTO, Equipo::ESTADO_MANTENIMIENTO => 'Mantenimiento',
+            Equipo::ESTADO_FUERA_DE_SERVICIO => 'Fuera de servicio',
+            Equipo::ESTADO_BAJA => 'Baja',
+            default => ucfirst(str_replace('_', ' ', $estado)),
+        };
     }
 }

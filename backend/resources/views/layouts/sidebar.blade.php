@@ -295,7 +295,7 @@
                             </a>
 
                             <a
-                                href="{{ route('admin.audit.index') }}"
+                                href="{{ route('admin.audit.live') }}"
                                 class="app-sidebar-sublink min-h-[2.75rem] rounded-xl {{ request()->routeIs('admin.audit.*') ? 'app-sidebar-sublink-active' : '' }}"
                                 :tabindex="submenuTabIndex('administracion')"
                                 @click="$store.appShell.closeMobileSidebar()"

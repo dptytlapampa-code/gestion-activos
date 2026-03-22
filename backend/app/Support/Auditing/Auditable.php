@@ -2,13 +2,17 @@
 
 namespace App\Support\Auditing;
 
-use App\Models\AuditLog;
+use App\Services\Auditing\AuditLogService;
 use Illuminate\Database\Eloquent\Model;
 
 trait Auditable
 {
     protected static function bootAuditable(): void
     {
+        if (! static::shouldRegisterAuditHooks()) {
+            return;
+        }
+
         /** @var array<int, array<string,mixed>> $beforeStates */
         $beforeStates = [];
 
@@ -36,21 +40,23 @@ trait Auditable
         });
     }
 
+    protected static function shouldRegisterAuditHooks(): bool
+    {
+        return false;
+    }
+
     private function writeAudit(string $action, ?array $before, ?array $after): void
     {
-        if (app()->runningInConsole() && ! app()->runningUnitTests()) {
-            return;
-        }
-
-        AuditLog::query()->create([
+        app(AuditLogService::class)->record([
             'user_id' => auth()->id(),
+            'module' => 'general',
             'action' => $action,
-            'auditable_type' => static::class,
-            'auditable_id' => $this->getKey(),
+            'entity_type' => static::class,
+            'entity_id' => $this->getKey(),
+            'summary' => sprintf('Se registro un cambio automatico sobre %s.', class_basename(static::class)),
             'before' => $before,
             'after' => $after,
-            'ip' => request()?->ip(),
-            'user_agent' => request()?->userAgent(),
+            'is_live_event' => false,
         ]);
     }
 }
