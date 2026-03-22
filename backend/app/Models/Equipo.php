@@ -121,6 +121,13 @@ class Equipo extends Model
         return $this->morphMany(Document::class, 'documentable')->latest();
     }
 
+    public function documentosCentralizados(): HasMany
+    {
+        return $this->hasMany(EquipoDocumento::class)
+            ->orderByDesc('fecha_documento')
+            ->latest();
+    }
+
     public function tienePrestamoActivo(): bool
     {
         return Movimiento::query()

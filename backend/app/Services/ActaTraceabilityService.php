@@ -16,6 +16,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class ActaTraceabilityService
 {
@@ -23,6 +24,7 @@ class ActaTraceabilityService
         private readonly ActaPdfDataService $actaPdfDataService,
         private readonly EquipoStatusResolver $equipoStatusResolver,
         private readonly AuditLogService $auditLogService,
+        private readonly DocumentService $documentService,
     ) {}
 
     public function crear(User $user, array $data): Acta
@@ -141,15 +143,23 @@ class ActaTraceabilityService
             $path = sprintf('documents/%s/%s.pdf', now()->format('Y/m'), strtolower($acta->codigo));
             Storage::put($path, $pdfBinary);
 
-            $acta->documents()->create([
-                'uploaded_by' => $user->id,
-                'type' => 'acta',
-                'note' => sprintf('Acta %s %s', strtoupper($acta->tipo), $acta->codigo),
-                'file_path' => $path,
-                'original_name' => $acta->codigo.'.pdf',
-                'mime' => 'application/pdf',
-                'size' => strlen($pdfBinary),
-            ]);
+            try {
+                $document = $acta->documents()->create([
+                    'uploaded_by' => $user->id,
+                    'type' => 'acta',
+                    'note' => sprintf('Acta %s %s', strtoupper($acta->tipo), $acta->codigo),
+                    'file_path' => $path,
+                    'original_name' => $acta->codigo.'.pdf',
+                    'mime' => 'application/pdf',
+                    'size' => strlen($pdfBinary),
+                ]);
+
+                $this->documentService->registerActaDocument($document, $acta);
+            } catch (Throwable $exception) {
+                Storage::delete($path);
+
+                throw $exception;
+            }
 
             return $acta;
         });

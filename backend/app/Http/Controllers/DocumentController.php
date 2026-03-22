@@ -4,15 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\Document;
 use App\Models\Equipo;
+use App\Models\Mantenimiento;
 use App\Models\Movimiento;
+use App\Services\DocumentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DocumentController extends Controller
 {
+    public function __construct(private readonly DocumentService $documentService) {}
+
     public function storeForEquipo(Request $request, Equipo $equipo): RedirectResponse
     {
         $this->authorize('view', $equipo);
@@ -20,18 +23,7 @@ class DocumentController extends Controller
         $this->authorize('create', [Document::class, $institutionId]);
 
         $data = $this->validateRequest($request);
-        $file = $request->file('file');
-        $path = $file->store('documents/'.now()->format('Y/m'));
-
-        $equipo->documents()->create([
-            'uploaded_by' => $request->user()->id,
-            'type' => $data['type'],
-            'note' => $data['note'] ?? null,
-            'file_path' => $path,
-            'original_name' => $file->getClientOriginalName(),
-            'mime' => $file->getMimeType() ?: $file->getClientMimeType(),
-            'size' => $file->getSize(),
-        ]);
+        $this->documentService->createForEquipo($equipo, $request->user(), $data, $request->file('file'));
 
         return back()->with('status', 'Documento cargado correctamente.');
     }
@@ -43,18 +35,19 @@ class DocumentController extends Controller
         $this->authorize('create', [Document::class, $institutionId]);
 
         $data = $this->validateRequest($request);
-        $file = $request->file('file');
-        $path = $file->store('documents/'.now()->format('Y/m'));
+        $this->documentService->createForMovimiento($movimiento, $request->user(), $data, $request->file('file'));
 
-        $movimiento->documents()->create([
-            'uploaded_by' => $request->user()->id,
-            'type' => $data['type'],
-            'note' => $data['note'] ?? null,
-            'file_path' => $path,
-            'original_name' => $file->getClientOriginalName(),
-            'mime' => $file->getMimeType() ?: $file->getClientMimeType(),
-            'size' => $file->getSize(),
-        ]);
+        return back()->with('status', 'Documento cargado correctamente.');
+    }
+
+    public function storeForMantenimiento(Request $request, Mantenimiento $mantenimiento): RedirectResponse
+    {
+        $this->authorize('view', $mantenimiento);
+        $institutionId = (int) ($mantenimiento->institution_id ?: $mantenimiento->equipo?->oficina?->service?->institution_id);
+        $this->authorize('create', [Document::class, $institutionId]);
+
+        $data = $this->validateRequest($request);
+        $this->documentService->createForMantenimiento($mantenimiento, $request->user(), $data, $request->file('file'));
 
         return back()->with('status', 'Documento cargado correctamente.');
     }
@@ -69,8 +62,7 @@ class DocumentController extends Controller
     public function destroy(Document $document): RedirectResponse
     {
         $this->authorize('delete', $document);
-        Storage::delete($document->file_path);
-        $document->delete();
+        $this->documentService->delete($document);
 
         return back()->with('status', 'Documento eliminado.');
     }

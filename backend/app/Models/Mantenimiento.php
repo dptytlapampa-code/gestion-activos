@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Mantenimiento extends Model
 {
@@ -83,6 +84,11 @@ class Mantenimiento extends Model
     public function estadoResultante(): BelongsTo
     {
         return $this->belongsTo(EquipoStatus::class, 'estado_resultante_id');
+    }
+
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(Document::class, 'documentable')->latest();
     }
 
     public function scopeExternos(Builder $query): Builder

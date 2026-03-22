@@ -6,6 +6,7 @@
 @section('content')
 @php
     use App\Models\Equipo;
+    use App\Models\EquipoDocumento;
     use App\Models\Mantenimiento;
 
     $erroresMantenimiento = collect([
@@ -20,6 +21,14 @@
     ])->contains(fn (string $campo): bool => $errors->has($campo));
 
     $erroresDocumentos = collect(['note', 'file'])->contains(fn (string $campo): bool => $errors->has($campo));
+    $documentContext = (string) old('document_context');
+    $tabConErrores = match (true) {
+        $erroresMantenimiento => 'mantenimiento',
+        $erroresDocumentos && str_starts_with($documentContext, 'movimiento:') => 'movimientos',
+        $erroresDocumentos && str_starts_with($documentContext, 'mantenimiento:') => 'mantenimiento',
+        $erroresDocumentos => 'documentos',
+        default => 'informacion',
+    };
 
     $tipoInicialMantenimiento = old(
         'tipo',
@@ -32,10 +41,10 @@
 <div
     class="space-y-6"
     x-data="{
-        activeTab: @js($erroresMantenimiento ? 'mantenimiento' : ($erroresDocumentos ? 'documentos' : 'informacion')),
+        activeTab: @js($tabConErrores),
         tipo: @js($tipoInicialMantenimiento),
         showMantenimientoForm: @js($erroresMantenimiento || $mantenimientoExternoAbierto !== null),
-        showDocumentoForm: @js($erroresDocumentos),
+        showDocumentoForm: @js($erroresDocumentos && ! str_starts_with($documentContext, 'movimiento:') && ! str_starts_with($documentContext, 'mantenimiento:')),
     }"
 >
     <div class="card">
@@ -321,7 +330,7 @@
                                     default => 'bg-slate-100 text-slate-700',
                                 };
                             @endphp
-                            <tr>
+                            <tr id="mantenimiento-{{ $mantenimiento->id }}">
                                 <td class="px-4 py-4 text-slate-700">{{ $mantenimiento->fecha?->format('d/m/Y') }}</td>
                                 <td class="px-4 py-4 text-slate-700">
                                     <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $tipoClase }}">
@@ -334,6 +343,60 @@
                                     <p class="mt-2 text-xs text-slate-500">
                                         Proveedor: {{ $mantenimiento->proveedor ?: $mantenimiento->mantenimientoExterno?->proveedor ?: 'No informado' }}
                                     </p>
+                                    <div class="mt-3 space-y-2">
+                                        @forelse($mantenimiento->documents as $documento_mto)
+                                            <div class="app-panel flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-xs">
+                                                <div class="flex min-w-0 items-center gap-2 text-slate-700">
+                                                    <x-icon name="file-text" class="h-4 w-4 shrink-0 text-rose-500" />
+                                                    <span class="max-w-56 truncate font-medium text-slate-900" title="{{ $documento_mto->original_name }}">{{ $documento_mto->original_name }}</span>
+                                                </div>
+                                                <div class="flex items-center gap-1.5">
+                                                    <a href="{{ route('documents.download', $documento_mto) }}" target="_blank" rel="noopener noreferrer" class="rounded-md border border-slate-200 px-2 py-1 text-slate-600 transition hover:bg-slate-100">Ver</a>
+                                                    <a href="{{ route('documents.download', $documento_mto) }}" class="inline-flex items-center gap-1 rounded-md border border-indigo-200 px-2 py-1 text-indigo-600 transition hover:bg-indigo-50">
+                                                        <x-icon name="download" class="h-3.5 w-3.5" />
+                                                        Descargar
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        @empty
+                                            <p class="text-xs text-slate-500">Sin documentos adjuntos.</p>
+                                        @endforelse
+                                    </div>
+                                    @if(auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO))
+                                        <form method="POST" action="{{ route('mantenimientos.documents.store', $mantenimiento) }}" enctype="multipart/form-data" x-data="{ selectedFileName: '' }" class="mt-3 app-subcard p-3">
+                                            @csrf
+                                            <input type="hidden" name="document_context" value="mantenimiento:{{ $mantenimiento->id }}">
+                                            <div class="grid gap-3 lg:grid-cols-[minmax(10rem,12rem)_minmax(12rem,1fr)_minmax(10rem,1fr)_auto] lg:items-end">
+                                                <div>
+                                                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tipo documento</label>
+                                                    <select name="type" class="mt-1 w-full rounded-lg border-slate-300 px-2 py-2 text-xs" required>
+                                                        @foreach(\App\Models\Document::TYPES as $type)
+                                                            <option value="{{ $type }}">{{ ucfirst($type) }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Observacion</label>
+                                                    <input type="text" name="note" value="{{ str_starts_with($documentContext, 'mantenimiento:'.$mantenimiento->id) ? old('note') : '' }}" class="mt-1 w-full rounded-lg border-slate-300 px-2 py-2 text-xs" placeholder="Detalle opcional">
+                                                </div>
+                                                <div>
+                                                    <input id="mantenimiento-file-{{ $mantenimiento->id }}" type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" class="sr-only" required @change="selectedFileName = $event.target.files[0] ? $event.target.files[0].name : ''">
+                                                    <label for="mantenimiento-file-{{ $mantenimiento->id }}" class="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-indigo-300 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-50">
+                                                        <x-icon name="paperclip" class="h-4 w-4" />
+                                                        <span x-text="selectedFileName || '{{ $mantenimiento->documents->isNotEmpty() ? 'Adjuntar otro archivo' : 'Subir archivo' }}'"></span>
+                                                    </label>
+                                                    <p class="mt-1 text-[11px] text-slate-500">Formatos permitidos: PDF, JPG, PNG</p>
+                                                </div>
+                                                <button type="submit" class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700">
+                                                    <x-icon name="upload" class="h-4 w-4" />
+                                                    Guardar
+                                                </button>
+                                            </div>
+                                            <p x-show="selectedFileName" x-cloak class="mt-2 text-xs text-slate-600">
+                                                Archivo seleccionado: <span class="font-medium" x-text="selectedFileName"></span>
+                                            </p>
+                                        </form>
+                                    @endif
                                 </td>
                                 <td class="px-4 py-4 text-slate-700">
                                     @if ($mantenimiento->tipo === Mantenimiento::TIPO_EXTERNO)
@@ -428,7 +491,7 @@
                                         ? $destino->service?->institution?->nombre.' / '.$destino->service?->nombre.' / '.$destino->nombre
                                         : '-';
                                 @endphp
-                                <tr>
+                                <tr id="movimiento-{{ $movimiento->id }}">
                                     <td class="px-4 py-4 text-slate-700">{{ $movimiento->fecha?->format('d/m/Y H:i') }}</td>
                                     <td class="px-4 py-4 font-medium text-slate-900">{{ ucfirst($movimiento->tipo_movimiento) }}</td>
                                     <td class="px-4 py-4 text-slate-700">{{ $movimiento->user?->name ?? '-' }}</td>
@@ -470,8 +533,9 @@
                                         @if(auth()->user()->hasRole(\App\Models\User::ROLE_SUPERADMIN, \App\Models\User::ROLE_ADMIN, \App\Models\User::ROLE_TECNICO))
                                             <form method="POST" action="{{ route('movimientos.documents.store', $movimiento) }}" enctype="multipart/form-data" x-data="{ selectedFileName: '' }" class="mt-3 app-subcard p-3">
                                                 @csrf
-                                                <div class="flex flex-wrap items-end gap-3">
-                                                    <div class="min-w-[11rem]">
+                                                <input type="hidden" name="document_context" value="movimiento:{{ $movimiento->id }}">
+                                                <div class="grid gap-3 lg:grid-cols-[minmax(10rem,12rem)_minmax(12rem,1fr)_minmax(10rem,1fr)_auto] lg:items-end">
+                                                    <div>
                                                         <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tipo documento</label>
                                                         <select name="type" class="mt-1 w-full rounded-lg border-slate-300 px-2 py-2 text-xs" required>
                                                             @foreach(\App\Models\Document::TYPES as $type)
@@ -479,7 +543,11 @@
                                                             @endforeach
                                                         </select>
                                                     </div>
-                                                    <div class="min-w-[14rem] flex-1">
+                                                    <div>
+                                                        <label class="text-xs font-semibold uppercase tracking-wide text-slate-500">Observacion</label>
+                                                        <input type="text" name="note" value="{{ str_starts_with($documentContext, 'movimiento:'.$movimiento->id) ? old('note') : '' }}" class="mt-1 w-full rounded-lg border-slate-300 px-2 py-2 text-xs" placeholder="Detalle opcional">
+                                                    </div>
+                                                    <div>
                                                         <input id="movimiento-file-{{ $movimiento->id }}" type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" class="sr-only" required @change="selectedFileName = $event.target.files[0] ? $event.target.files[0].name : ''">
                                                         <label for="movimiento-file-{{ $movimiento->id }}" class="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-indigo-300 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-50">
                                                             <x-icon name="paperclip" class="h-4 w-4" />
@@ -487,7 +555,7 @@
                                                         </label>
                                                         <p class="mt-1 text-[11px] text-slate-500">Formatos permitidos: PDF, JPG, PNG</p>
                                                     </div>
-                                                    <button type="submit" class="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700">
+                                                    <button type="submit" class="inline-flex items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700">
                                                         <x-icon name="upload" class="h-4 w-4" />
                                                         Guardar
                                                     </button>
@@ -521,14 +589,15 @@
                     <div x-show="showDocumentoForm" class="app-subcard p-4">
                         <form method="POST" action="{{ route('equipos.documents.store', $equipo) }}" enctype="multipart/form-data" class="grid gap-3 md:grid-cols-4">
                             @csrf
+                            <input type="hidden" name="document_context" value="equipo:{{ $equipo->id }}">
                             <select name="type" class="rounded border px-3 py-2" required>
                                 <option value="">Tipo...</option>
                                 @foreach(\App\Models\Document::TYPES as $type)
                                     <option value="{{ $type }}">{{ ucfirst($type) }}</option>
                                 @endforeach
                             </select>
-                            <input name="note" placeholder="Nota" class="rounded border px-3 py-2">
-                            <input type="file" name="file" required class="rounded border px-3 py-2">
+                            <input name="note" value="{{ str_starts_with($documentContext, 'equipo:'.$equipo->id) ? old('note') : '' }}" placeholder="Nota" class="rounded border px-3 py-2">
+                            <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required class="rounded border px-3 py-2">
                             <button class="inline-flex items-center justify-center gap-1 rounded bg-indigo-600 px-3 py-2 text-white">
                                 <x-icon name="upload" class="h-4 w-4" />
                                 Subir
@@ -538,15 +607,46 @@
                 @endif
 
                 <div class="space-y-3">
-                    @forelse($equipo->documents as $document)
+                    @forelse($equipo->documentosCentralizados as $documentoEquipo)
+                        @php
+                            $document = $documentoEquipo->document;
+                            $origenUrl = match ($documentoEquipo->origen_tipo) {
+                                EquipoDocumento::ORIGEN_MOVIMIENTO => route('equipos.show', $equipo).'#movimiento-'.$documentoEquipo->origen_id,
+                                EquipoDocumento::ORIGEN_MANTENIMIENTO => route('equipos.show', $equipo).'#mantenimiento-'.$documentoEquipo->origen_id,
+                                EquipoDocumento::ORIGEN_ACTA => $documentoEquipo->origen_id ? route('actas.show', $documentoEquipo->origen_id) : null,
+                                default => null,
+                            };
+                        @endphp
                         <article class="app-panel flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
-                            <div class="flex items-center gap-3">
+                            <div class="flex items-start gap-3">
                                 <div class="rounded-lg bg-rose-50 p-2 text-rose-600">
                                     <x-icon name="file-text" class="h-6 w-6" />
                                 </div>
-                                <div>
-                                    <p class="max-w-sm truncate text-sm font-semibold text-slate-900" title="{{ $document->original_name }}">{{ $document->original_name }}</p>
-                                    <p class="text-xs text-slate-500">{{ $document->created_at?->format('d/m/Y H:i') }}</p>
+                                <div class="space-y-1">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <p class="max-w-sm truncate text-sm font-semibold text-slate-900" title="{{ $documentoEquipo->nombre_original }}">{{ $documentoEquipo->nombre_original }}</p>
+                                        <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-700">
+                                            {{ $documentoEquipo->origen_label }}
+                                        </span>
+                                        <span class="inline-flex rounded-full bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-indigo-700">
+                                            {{ ucfirst($documentoEquipo->tipo_documento) }}
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-slate-500">
+                                        Fecha documento: {{ $documentoEquipo->fecha_documento?->format('d/m/Y') ?: '-' }}
+                                        @if ($documentoEquipo->uploadedBy)
+                                            | Cargado por {{ $documentoEquipo->uploadedBy->name }}
+                                        @endif
+                                    </p>
+                                    @if ($documentoEquipo->observacion)
+                                        <p class="text-sm text-slate-600">{{ $documentoEquipo->observacion }}</p>
+                                    @endif
+                                    @if ($origenUrl)
+                                        <a href="{{ $origenUrl }}" class="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-700">
+                                            <x-icon name="external-link" class="h-3.5 w-3.5" />
+                                            Ver registro origen
+                                        </a>
+                                    @endif
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
@@ -554,7 +654,8 @@
                                     <x-icon name="download" class="h-4 w-4" />
                                     Descargar
                                 </a>
-                                @can('delete', $document)
+                                @if ($documentoEquipo->origen_tipo !== EquipoDocumento::ORIGEN_ACTA)
+                                    @can('delete', $document)
                                     <form method="POST" action="{{ route('documents.destroy', $document) }}" class="inline">
                                         @csrf
                                         @method('DELETE')
@@ -563,11 +664,12 @@
                                             Eliminar
                                         </button>
                                     </form>
-                                @endcan
+                                    @endcan
+                                @endif
                             </div>
                         </article>
                     @empty
-                        <p class="text-sm text-slate-500">No hay documentos del equipo.</p>
+                        <p class="text-sm text-slate-500">No hay documentos en el legajo central del equipo.</p>
                     @endforelse
                 </div>
             </section>

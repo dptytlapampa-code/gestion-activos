@@ -84,6 +84,12 @@ class ActaModuleTest extends TestCase
         $document = Document::query()->where('documentable_type', Acta::class)->first();
         $this->assertNotNull($document);
         Storage::assertExists($document->file_path);
+        $this->assertDatabaseHas('equipo_documentos', [
+            'equipo_id' => $equipo->id,
+            'document_id' => $document->id,
+            'origen_tipo' => 'acta',
+            'origen_id' => $acta->id,
+        ]);
     }
 
     public function test_acta_permite_mezclar_equipos_de_distintas_instituciones_si_usuario_tiene_permisos(): void

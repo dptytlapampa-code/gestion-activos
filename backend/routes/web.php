@@ -53,6 +53,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::post('equipos/{equipo}/documents', [DocumentController::class, 'storeForEquipo'])->name('equipos.documents.store');
     Route::post('movimientos/{movimiento}/documents', [DocumentController::class, 'storeForMovimiento'])->name('movimientos.documents.store');
+    Route::post('mantenimientos/{mantenimiento}/documents', [DocumentController::class, 'storeForMantenimiento'])->name('mantenimientos.documents.store');
     Route::get('documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
     Route::delete('documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
 

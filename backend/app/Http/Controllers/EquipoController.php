@@ -146,7 +146,8 @@ class EquipoController extends Controller
             'mantenimientoExternoAbierto.creador',
             'movimientos.user',
             'movimientos.documents',
-            'documents.uploadedBy',
+            'documentosCentralizados.document',
+            'documentosCentralizados.uploadedBy',
         ]);
 
         $mantenimientos = $equipo->mantenimientos()
@@ -154,6 +155,7 @@ class EquipoController extends Controller
                 'creador:id,name',
                 'estadoResultante:id,name,color',
                 'mantenimientoExterno:id,fecha,fecha_ingreso_st,fecha_egreso_st,proveedor,titulo',
+                'documents.uploadedBy:id,name',
             ])
             ->limit(30)
             ->get();
