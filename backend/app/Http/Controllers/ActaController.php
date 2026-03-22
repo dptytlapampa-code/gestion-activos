@@ -11,6 +11,7 @@ use App\Models\TipoEquipo;
 use App\Models\User;
 use App\Services\ActaPdfDataService;
 use App\Services\ActaTraceabilityService;
+use App\Services\Auditing\AuditLogService;
 use App\Support\Listings\ListingState;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Builder;
@@ -26,6 +27,7 @@ class ActaController extends Controller
     public function __construct(
         private readonly ActaTraceabilityService $traceabilityService,
         private readonly ActaPdfDataService $actaPdfDataService,
+        private readonly AuditLogService $auditLogService,
     ) {}
 
     public function index(Request $request): View
@@ -195,20 +197,50 @@ class ActaController extends Controller
             $acta->motivo_anulacion = $motivo;
             $acta->save();
 
-            AuditLog::query()->create([
-                'user_id' => $user?->id,
-                'action' => 'acta anulada',
-                'auditable_type' => Acta::class,
-                'auditable_id' => $acta->id,
-                'before' => $before,
-                'after' => [
-                    'status' => $acta->status,
-                    'anulada_por' => $acta->anulada_por,
-                    'anulada_at' => $acta->anulada_at?->toDateTimeString(),
-                    'motivo_anulacion' => $acta->motivo_anulacion,
+            $after = [
+                'status' => ucfirst((string) $acta->status),
+                'anulada_por' => $user?->name ?? 'Usuario no identificado',
+                'anulada_at' => $acta->anulada_at?->format('d/m/Y H:i'),
+                'motivo_anulacion' => $acta->motivo_anulacion,
+            ];
+
+            $this->auditLogService->record([
+                'user' => $user,
+                'institution_id' => $acta->institution_id,
+                'module' => 'actas',
+                'action' => 'acta_anulada',
+                'entity_type' => 'acta',
+                'entity_id' => $acta->id,
+                'summary' => sprintf('Se anulo el acta %s.', $acta->codigo),
+                'before' => [
+                    'status' => ucfirst((string) ($before['status'] ?? Acta::STATUS_ACTIVA)),
+                    'motivo_anulacion' => $before['motivo_anulacion'] ?? 'Sin anular',
                 ],
-                'ip' => request()?->ip(),
-                'user_agent' => request()?->userAgent(),
+                'after' => $after,
+                'metadata' => [
+                    'details' => array_filter([
+                        'codigo' => $acta->codigo,
+                        'tipo' => ucfirst(strtolower(Acta::LABELS[$acta->tipo] ?? $acta->tipo)),
+                        'motivo_anulacion' => $acta->motivo_anulacion,
+                        'anulada_por' => $user?->name,
+                    ], fn (mixed $value): bool => $value !== null && $value !== ''),
+                    'changes' => [
+                        [
+                            'field' => 'status',
+                            'label' => 'Estado',
+                            'before' => ucfirst((string) ($before['status'] ?? Acta::STATUS_ACTIVA)),
+                            'after' => ucfirst((string) $acta->status),
+                        ],
+                        [
+                            'field' => 'motivo_anulacion',
+                            'label' => 'Motivo de anulacion',
+                            'before' => $before['motivo_anulacion'] ?? 'Sin motivo',
+                            'after' => $acta->motivo_anulacion,
+                        ],
+                    ],
+                ],
+                'level' => AuditLog::LEVEL_CRITICAL,
+                'is_critical' => true,
             ]);
         });
 

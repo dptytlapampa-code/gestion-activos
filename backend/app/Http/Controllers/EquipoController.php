@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreEquipoRequest;
 use App\Http\Requests\UpdateEquipoRequest;
+use App\Models\AuditLog;
 use App\Models\Equipo;
 use App\Models\Institution;
 use App\Models\Movimiento;
@@ -11,6 +12,7 @@ use App\Models\Office;
 use App\Models\Service;
 use App\Models\TipoEquipo;
 use App\Models\User;
+use App\Services\Auditing\AuditLogService;
 use App\Services\EquipoListingService;
 use App\Services\EquipoStatusResolver;
 use App\Services\MantenimientoService;
@@ -27,6 +29,7 @@ class EquipoController extends Controller
         private readonly EquipoStatusResolver $equipoStatusResolver,
         private readonly EquipoListingService $equipoListingService,
         private readonly MantenimientoService $mantenimientoService,
+        private readonly AuditLogService $auditLogService,
     ) {
         $this->authorizeResource(Equipo::class, 'equipo');
     }
@@ -109,6 +112,24 @@ class EquipoController extends Controller
             'servicio_destino_id' => $ubicacionDestino['servicio_id'],
             'oficina_destino_id' => $ubicacionDestino['oficina_id'],
             'observacion' => 'Ingreso de equipo',
+        ]);
+
+        $snapshot = $this->equipmentAuditSnapshot($equipo, $oficinaDestino);
+
+        $this->auditLogService->record([
+            'user' => $request->user(),
+            'institution_id' => $ubicacionDestino['institucion_id'],
+            'module' => 'equipos',
+            'action' => 'equipo_creado',
+            'entity_type' => 'equipo',
+            'entity_id' => $equipo->id,
+            'summary' => sprintf('Se dio de alta el equipo %s.', $this->equipmentReference($equipo)),
+            'after' => $snapshot,
+            'metadata' => [
+                'details' => $snapshot,
+            ],
+            'level' => AuditLog::LEVEL_CRITICAL,
+            'is_critical' => true,
         ]);
 
         return redirect()->route('equipos.index')->with('status', 'Equipo creado correctamente.');
@@ -204,6 +225,7 @@ class EquipoController extends Controller
             ->find($equipo->oficina_id);
 
         $validated = $request->validated();
+        $before = $this->equipmentAuditSnapshot($equipo, $oficinaOriginal);
 
         $data = [
             'tipo_equipo_id' => $validated['tipo_equipo_id'],
@@ -244,16 +266,65 @@ class EquipoController extends Controller
                 'institucion_destino_id' => $ubicacionDestino['institucion_id'],
                 'servicio_destino_id' => $ubicacionDestino['servicio_id'],
                 'oficina_destino_id' => $ubicacionDestino['oficina_id'],
-                'observacion' => 'Traslado de ubicación',
+                'observacion' => 'Traslado de ubicacion',
+            ]);
+        }
+
+        $oficinaDestino = Office::query()
+            ->with('service.institution')
+            ->find($equipo->oficina_id);
+
+        $after = $this->equipmentAuditSnapshot($equipo->fresh(), $oficinaDestino);
+        $changes = $this->auditLogService->diff($before, $after, $this->equipmentAuditLabels());
+
+        if ($changes !== []) {
+            $this->auditLogService->record([
+                'user' => $request->user(),
+                'institution_id' => $oficinaDestino?->service?->institution?->id ?? $oficinaOriginal?->service?->institution?->id,
+                'module' => 'equipos',
+                'action' => 'equipo_actualizado',
+                'entity_type' => 'equipo',
+                'entity_id' => $equipo->id,
+                'summary' => $this->equipmentUpdateSummary($equipo, $changes),
+                'before' => $before,
+                'after' => $after,
+                'metadata' => [
+                    'details' => $after,
+                    'changes' => $changes,
+                ],
+                'level' => $this->equipmentUpdateLevel($changes),
+                'is_critical' => $this->equipmentUpdateIsCritical($changes),
             ]);
         }
 
         return redirect()->route('equipos.index')->with('status', 'Equipo actualizado correctamente.');
     }
 
-    public function destroy(Equipo $equipo): RedirectResponse
+    public function destroy(Request $request, Equipo $equipo): RedirectResponse
     {
+        $equipo->loadMissing('oficina.service.institution');
+        $before = $this->equipmentAuditSnapshot($equipo, $equipo->oficina);
+        $institutionId = $equipo->oficina?->service?->institution?->id;
+        $reference = $this->equipmentReference($equipo);
+        $entityId = $equipo->id;
+
         $equipo->delete();
+
+        $this->auditLogService->record([
+            'user' => $request->user(),
+            'institution_id' => $institutionId,
+            'module' => 'equipos',
+            'action' => 'equipo_eliminado',
+            'entity_type' => 'equipo',
+            'entity_id' => $entityId,
+            'summary' => sprintf('Se elimino del inventario el equipo %s.', $reference),
+            'before' => $before,
+            'metadata' => [
+                'details' => $before,
+            ],
+            'level' => AuditLog::LEVEL_CRITICAL,
+            'is_critical' => true,
+        ]);
 
         return redirect()->route('equipos.index')->with('status', 'Equipo eliminado correctamente.');
     }
@@ -270,6 +341,113 @@ class EquipoController extends Controller
         ];
     }
 
+    /**
+     * @return array<string, string>
+     */
+    private function equipmentAuditSnapshot(Equipo $equipo, ?Office $office): array
+    {
+        return [
+            'tipo_equipo' => $equipo->tipo,
+            'marca' => $equipo->marca ?: 'Sin marca',
+            'modelo' => $equipo->modelo ?: 'Sin modelo',
+            'numero_serie' => $equipo->numero_serie ?: 'Sin numero de serie',
+            'bien_patrimonial' => $equipo->bien_patrimonial ?: 'Sin bien patrimonial',
+            'codigo_interno' => $equipo->codigo_interno ?: 'Sin codigo interno',
+            'estado' => $this->estadoLabel($equipo->estado),
+            'institucion' => $office?->service?->institution?->nombre ?? 'Sin institucion',
+            'servicio' => $office?->service?->nombre ?? 'Sin servicio',
+            'oficina' => $office?->nombre ?? 'Sin oficina',
+            'fecha_ingreso' => $equipo->fecha_ingreso?->format('d/m/Y') ?? 'Sin fecha de ingreso',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function equipmentAuditLabels(): array
+    {
+        return [
+            'tipo_equipo' => 'Tipo',
+            'marca' => 'Marca',
+            'modelo' => 'Modelo',
+            'numero_serie' => 'Numero de serie',
+            'bien_patrimonial' => 'Bien patrimonial',
+            'codigo_interno' => 'Codigo interno',
+            'estado' => 'Estado',
+            'institucion' => 'Institucion',
+            'servicio' => 'Servicio',
+            'oficina' => 'Oficina',
+            'fecha_ingreso' => 'Fecha de ingreso',
+        ];
+    }
+
+    /**
+     * @param  array<int, array{field:string,label:string,before:mixed,after:mixed}>  $changes
+     */
+    private function equipmentUpdateSummary(Equipo $equipo, array $changes): string
+    {
+        $fields = collect($changes)->pluck('field');
+        $reference = $this->equipmentReference($equipo);
+
+        if ($fields->contains('estado') && $fields->intersect(['institucion', 'servicio', 'oficina'])->isNotEmpty()) {
+            return sprintf('Se actualizo la ficha del equipo %s, incluyendo estado y ubicacion.', $reference);
+        }
+
+        if ($fields->contains('estado')) {
+            return sprintf('Se cambio el estado del equipo %s.', $reference);
+        }
+
+        if ($fields->intersect(['institucion', 'servicio', 'oficina'])->isNotEmpty()) {
+            return sprintf('Se actualizo la ubicacion del equipo %s.', $reference);
+        }
+
+        return sprintf('Se actualizo la ficha del equipo %s.', $reference);
+    }
+
+    /**
+     * @param  array<int, array{field:string,label:string,before:mixed,after:mixed}>  $changes
+     */
+    private function equipmentUpdateLevel(array $changes): string
+    {
+        return collect($changes)->pluck('field')->contains('estado')
+            ? AuditLog::LEVEL_WARNING
+            : AuditLog::LEVEL_INFO;
+    }
+
+    /**
+     * @param  array<int, array{field:string,label:string,before:mixed,after:mixed}>  $changes
+     */
+    private function equipmentUpdateIsCritical(array $changes): bool
+    {
+        return collect($changes)
+            ->contains(function (array $change): bool {
+                return $change['field'] === 'estado'
+                    && in_array((string) $change['after'], ['Mantenimiento', 'Baja'], true);
+            });
+    }
+
+    private function equipmentReference(Equipo $equipo): string
+    {
+        $parts = collect([
+            $equipo->tipo ?: 'Equipo',
+            $equipo->numero_serie ? 'NS '.$equipo->numero_serie : null,
+            $equipo->bien_patrimonial ? 'BP '.$equipo->bien_patrimonial : null,
+        ])->filter()->values();
+
+        return $parts->implode(' / ');
+    }
+
+    private function estadoLabel(?string $estado): string
+    {
+        return match ((string) $estado) {
+            Equipo::ESTADO_OPERATIVO => 'Operativo',
+            Equipo::ESTADO_PRESTADO => 'Prestado',
+            Equipo::ESTADO_EN_MANTENIMIENTO, Equipo::ESTADO_MANTENIMIENTO => 'Mantenimiento',
+            Equipo::ESTADO_FUERA_DE_SERVICIO => 'Fuera de servicio',
+            Equipo::ESTADO_BAJA => 'Baja',
+            default => ucfirst(str_replace('_', ' ', (string) $estado)),
+        };
+    }
 
     private function scopedInstituciones(?User $user)
     {

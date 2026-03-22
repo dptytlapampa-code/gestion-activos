@@ -2,17 +2,22 @@
 
 namespace App\Services;
 
+use App\Models\AuditLog;
 use App\Models\Equipo;
 use App\Models\Movimiento;
 use App\Models\Office;
 use App\Models\Service;
 use App\Models\User;
+use App\Services\Auditing\AuditLogService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class MovimientoService
 {
-    public function __construct(private readonly EquipoStatusResolver $equipoStatusResolver) {}
+    public function __construct(
+        private readonly EquipoStatusResolver $equipoStatusResolver,
+        private readonly AuditLogService $auditLogService,
+    ) {}
 
     public function registrar(Equipo $equipo, User $user, array $data): void
     {
@@ -26,6 +31,9 @@ class MovimientoService
                 ]);
             }
 
+            $estadoAnterior = $equipo->estado;
+            $oficinaOrigen = $equipo->oficina;
+            $before = $this->movementAuditSnapshot($estadoAnterior, $oficinaOrigen);
             $ubicacionOrigen = $equipo->ubicacionActual();
             $ubicacionDestino = [
                 'institucion_id' => null,
@@ -96,7 +104,7 @@ class MovimientoService
                 $estadoNuevo = Equipo::ESTADO_BAJA;
             }
 
-            Movimiento::query()->create([
+            $movimiento = Movimiento::query()->create([
                 'equipo_id' => $equipo->id,
                 'user_id' => $user->id,
                 'tipo_movimiento' => $tipo,
@@ -127,6 +135,47 @@ class MovimientoService
             }
 
             $equipo->save();
+
+            $oficinaDestino = $equipo->oficina_id !== null
+                ? Office::query()->with('service.institution')->find($equipo->oficina_id)
+                : null;
+
+            $after = $this->movementAuditSnapshot($estadoNuevo, $oficinaDestino);
+            $changes = $this->auditLogService->diff($before, $after, [
+                'estado' => 'Estado',
+                'institucion' => 'Institucion',
+                'servicio' => 'Servicio',
+                'oficina' => 'Oficina',
+            ]);
+
+            $this->auditLogService->record([
+                'user' => $user,
+                'institution_id' => $oficinaDestino?->service?->institution?->id ?? $oficinaOrigen?->service?->institution?->id,
+                'module' => 'movimientos',
+                'action' => $this->movementAction($tipo),
+                'entity_type' => 'equipo',
+                'entity_id' => $equipo->id,
+                'summary' => $this->movementSummary($tipo, $equipo),
+                'before' => $before,
+                'after' => $after,
+                'metadata' => [
+                    'details' => array_filter([
+                        'movimiento_id' => $movimiento->id,
+                        'tipo_movimiento' => $this->movementLabel($tipo),
+                        'origen' => $this->officeLabel($oficinaOrigen),
+                        'destino' => $this->officeLabel($oficinaDestino),
+                        'receptor' => $prestamoData['receptor_nombre'],
+                        'dni_receptor' => $prestamoData['receptor_dni'],
+                        'cargo_receptor' => $prestamoData['receptor_cargo'],
+                        'fecha_inicio_prestamo' => $prestamoData['fecha_inicio_prestamo'],
+                        'fecha_estimada_devolucion' => $prestamoData['fecha_estimada_devolucion'],
+                        'observacion' => $data['observacion'] ?? null,
+                    ], fn (mixed $value): bool => $value !== null && $value !== ''),
+                    'changes' => $changes,
+                ],
+                'level' => $this->movementLevel($tipo),
+                'is_critical' => $this->movementIsCritical($tipo),
+            ]);
         });
     }
 
@@ -149,12 +198,12 @@ class MovimientoService
 
         if ($tipo === Movimiento::TIPO_TRANSFERENCIA_INTERNA && (int) $data['institucion_destino_id'] !== (int) $ubicacionOrigen['institucion_id']) {
             throw ValidationException::withMessages([
-                'institucion_destino_id' => 'La transferencia interna debe mantenerse en la misma institución.',
+                'institucion_destino_id' => 'La transferencia interna debe mantenerse en la misma institucion.',
             ]);
         }
 
         if ($tipo === Movimiento::TIPO_PRESTAMO && $equipo->tienePrestamoActivo()) {
-            throw ValidationException::withMessages(['tipo_movimiento' => 'El equipo ya tiene un préstamo activo.']);
+            throw ValidationException::withMessages(['tipo_movimiento' => 'El equipo ya tiene un prestamo activo.']);
         }
 
         if ($tipo === Movimiento::TIPO_DEVOLUCION) {
@@ -168,7 +217,7 @@ class MovimientoService
 
         if ($service === null || (int) $service->institution_id !== $institucionDestinoId) {
             throw ValidationException::withMessages([
-                'servicio_destino_id' => 'El servicio de destino no pertenece a la institución de destino seleccionada.',
+                'servicio_destino_id' => 'El servicio de destino no pertenece a la institucion de destino seleccionada.',
             ]);
         }
 
@@ -193,10 +242,112 @@ class MovimientoService
 
         if ($prestamo === null) {
             throw ValidationException::withMessages([
-                'tipo_movimiento' => 'No existe préstamo activo para registrar la devolución.',
+                'tipo_movimiento' => 'No existe prestamo activo para registrar la devolucion.',
             ]);
         }
 
         return $prestamo;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function movementAuditSnapshot(string $estado, ?Office $office): array
+    {
+        return [
+            'estado' => $this->estadoLabel($estado),
+            'institucion' => $office?->service?->institution?->nombre ?? 'Sin institucion',
+            'servicio' => $office?->service?->nombre ?? 'Sin servicio',
+            'oficina' => $office?->nombre ?? 'Sin oficina',
+        ];
+    }
+
+    private function movementAction(string $type): string
+    {
+        return match ($type) {
+            Movimiento::TIPO_PRESTAMO => 'prestamo_registrado',
+            Movimiento::TIPO_DEVOLUCION => 'devolucion_registrada',
+            Movimiento::TIPO_MANTENIMIENTO => 'movimiento_mantenimiento_registrado',
+            Movimiento::TIPO_BAJA => 'baja_registrada',
+            Movimiento::TIPO_TRANSFERENCIA_INTERNA => 'transferencia_interna_registrada',
+            Movimiento::TIPO_TRANSFERENCIA_EXTERNA => 'transferencia_externa_registrada',
+            default => 'traslado_registrado',
+        };
+    }
+
+    private function movementSummary(string $type, Equipo $equipo): string
+    {
+        $reference = $this->equipmentReference($equipo);
+
+        return match ($type) {
+            Movimiento::TIPO_PRESTAMO => sprintf('Se registro un prestamo para el equipo %s.', $reference),
+            Movimiento::TIPO_DEVOLUCION => sprintf('Se registro la devolucion del equipo %s.', $reference),
+            Movimiento::TIPO_MANTENIMIENTO => sprintf('Se registro un movimiento de mantenimiento para el equipo %s.', $reference),
+            Movimiento::TIPO_BAJA => sprintf('Se registro la baja del equipo %s.', $reference),
+            Movimiento::TIPO_TRANSFERENCIA_INTERNA => sprintf('Se registro una transferencia interna del equipo %s.', $reference),
+            Movimiento::TIPO_TRANSFERENCIA_EXTERNA => sprintf('Se registro una transferencia externa del equipo %s.', $reference),
+            default => sprintf('Se registro un traslado del equipo %s.', $reference),
+        };
+    }
+
+    private function movementLevel(string $type): string
+    {
+        return match ($type) {
+            Movimiento::TIPO_BAJA => AuditLog::LEVEL_CRITICAL,
+            Movimiento::TIPO_MANTENIMIENTO, Movimiento::TIPO_TRANSFERENCIA_EXTERNA => AuditLog::LEVEL_WARNING,
+            default => AuditLog::LEVEL_INFO,
+        };
+    }
+
+    private function movementIsCritical(string $type): bool
+    {
+        return in_array($type, [Movimiento::TIPO_BAJA, Movimiento::TIPO_MANTENIMIENTO, Movimiento::TIPO_TRANSFERENCIA_EXTERNA], true);
+    }
+
+    private function movementLabel(string $type): string
+    {
+        return match ($type) {
+            Movimiento::TIPO_PRESTAMO => 'Prestamo',
+            Movimiento::TIPO_DEVOLUCION => 'Devolucion',
+            Movimiento::TIPO_MANTENIMIENTO => 'Mantenimiento',
+            Movimiento::TIPO_BAJA => 'Baja',
+            Movimiento::TIPO_TRANSFERENCIA_INTERNA => 'Transferencia interna',
+            Movimiento::TIPO_TRANSFERENCIA_EXTERNA => 'Transferencia externa',
+            default => 'Traslado',
+        };
+    }
+
+    private function officeLabel(?Office $office): ?string
+    {
+        if ($office === null) {
+            return null;
+        }
+
+        return collect([
+            $office->service?->institution?->nombre,
+            $office->service?->nombre,
+            $office->nombre,
+        ])->filter()->implode(' / ');
+    }
+
+    private function equipmentReference(Equipo $equipo): string
+    {
+        return collect([
+            $equipo->tipo ?: 'Equipo',
+            $equipo->numero_serie ? 'NS '.$equipo->numero_serie : null,
+            $equipo->bien_patrimonial ? 'BP '.$equipo->bien_patrimonial : null,
+        ])->filter()->implode(' / ');
+    }
+
+    private function estadoLabel(string $estado): string
+    {
+        return match ($estado) {
+            Equipo::ESTADO_OPERATIVO => 'Operativo',
+            Equipo::ESTADO_PRESTADO => 'Prestado',
+            Equipo::ESTADO_MANTENIMIENTO, Equipo::ESTADO_EN_MANTENIMIENTO => 'Mantenimiento',
+            Equipo::ESTADO_FUERA_DE_SERVICIO => 'Fuera de servicio',
+            Equipo::ESTADO_BAJA => 'Baja',
+            default => ucfirst(str_replace('_', ' ', $estado)),
+        };
     }
 }

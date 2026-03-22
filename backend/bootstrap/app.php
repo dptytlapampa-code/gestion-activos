@@ -14,6 +14,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up'
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->web(append: [
+            App\Http\Middleware\AssignAuditCorrelationId::class,
+        ]);
+
         $middleware->alias([
             'auth' => Illuminate\Auth\Middleware\Authenticate::class,
             'guest' => App\Http\Middleware\RedirectIfAuthenticated::class,

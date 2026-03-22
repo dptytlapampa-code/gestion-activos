@@ -252,18 +252,25 @@ class MantenimientoModuleTest extends TestCase
         ])->assertForbidden();
     }
 
-    public function test_registra_auditoria_al_crear_mantenimiento(): void
+    public function test_registra_auditoria_al_abrir_mantenimiento_externo(): void
     {
         [$admin, $equipo] = $this->crearEscenario();
 
         $this->actingAs($admin)->post(route('equipos.mantenimientos.store', $equipo), [
             'fecha' => now()->toDateString(),
-            'tipo' => Mantenimiento::TIPO_INTERNO,
-            'titulo' => 'Cambio de toner',
-            'detalle' => 'Se cambio toner',
+            'tipo' => Mantenimiento::TIPO_EXTERNO,
+            'titulo' => 'Salida a taller',
+            'detalle' => 'Revision de placas',
+            'proveedor' => 'Proveedor externo',
+            'fecha_ingreso_st' => now()->toDateString(),
         ])->assertRedirect();
 
-        $this->assertGreaterThan(0, AuditLog::query()->where('auditable_type', Mantenimiento::class)->count());
+        $this->assertDatabaseHas('audit_logs', [
+            'entity_type' => 'equipo',
+            'entity_id' => $equipo->id,
+            'action' => 'mantenimiento_externo_abierto',
+            'module' => 'mantenimientos',
+        ]);
     }
 
     private function crearEscenario(string $suffix = 'A'): array

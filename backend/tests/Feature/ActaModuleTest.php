@@ -555,13 +555,14 @@ class ActaModuleTest extends TestCase
 
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $admin->id,
-            'action' => 'acta anulada',
-            'auditable_type' => Acta::class,
-            'auditable_id' => $acta->id,
+            'action' => 'acta_anulada',
+            'entity_type' => 'acta',
+            'entity_id' => $acta->id,
+            'module' => 'actas',
         ]);
 
-        $log = AuditLog::query()->where('action', 'acta anulada')->first();
-        $this->assertSame(Acta::STATUS_ANULADA, $log?->after['status'] ?? null);
+        $log = AuditLog::query()->where('action', 'acta_anulada')->first();
+        $this->assertSame('Anulada', $log?->after['status'] ?? null);
     }
 
     public function test_anulacion_requiere_motivo(): void
