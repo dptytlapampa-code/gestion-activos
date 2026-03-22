@@ -137,4 +137,4 @@ return new class extends Migration
     {
         return in_array($action, ['acta anulada', 'maintenance_external_opened', 'maintenance_external_closed'], true);
     }
-}
+};
