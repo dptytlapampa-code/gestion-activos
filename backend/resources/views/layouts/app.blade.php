@@ -28,7 +28,7 @@
     @keydown.escape.window="$store.appShell.closeMobileSidebar()"
     class="hospital-body min-h-screen text-slate-800"
 >
-    <div class="hospital-layout min-h-screen p-4 sm:p-5 lg:p-6">
+    <div class="hospital-layout min-h-screen p-3 sm:p-4 lg:p-5 xl:p-6">
         <div
             x-cloak
             x-show="$store.appShell.mobileSidebarOpen"
@@ -38,11 +38,11 @@
             aria-hidden="true"
         ></div>
 
-        <div class="flex min-h-screen gap-0 lg:gap-6">
+        <div class="flex min-h-screen gap-0 lg:gap-4 xl:gap-6">
             @include('layouts.sidebar', ['siteName' => $siteName, 'logoInstitucionalUrl' => $logoInstitucionalUrl, 'systemLogoUrl' => $systemLogoUrl])
 
             <div class="flex min-w-0 flex-1 flex-col gap-4 lg:gap-6">
-                <header class="app-page-header flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <header class="app-page-header flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
                         <button
                             type="button"
@@ -57,7 +57,7 @@
                         </button>
 
                         <div class="min-w-0">
-                            <h2 class="text-2xl font-semibold text-slate-800">@yield('header', 'Panel')</h2>
+                            <h2 class="break-words text-2xl font-semibold text-slate-800">@yield('header', 'Panel')</h2>
                             <p class="text-sm text-slate-500">{{ now()->translatedFormat('l, j \\d\\e F Y') }}</p>
                         </div>
                     </div>
@@ -71,7 +71,7 @@
                     </div>
                 </header>
 
-                <main class="min-w-0 flex-1 space-y-6">
+                <main class="min-w-0 flex-1 space-y-5 lg:space-y-6">
                     <x-flash-alerts />
                     @yield('content')
                 </main>

@@ -38,7 +38,7 @@
     class="app-sidebar-shell"
     :class="[
         $store.appShell.mobileSidebarOpen ? 'translate-x-0' : '-translate-x-[calc(100%+1.5rem)] lg:translate-x-0',
-        $store.appShell.isDesktopSidebarCollapsed() ? 'lg:w-[5.25rem]' : 'lg:w-72',
+        $store.appShell.isDesktopSidebarCollapsed() ? 'lg:w-[5.25rem]' : 'lg:w-64 xl:w-[17rem] 2xl:w-72',
     ]"
     :aria-hidden="(!$store.appShell.isDesktop() && !$store.appShell.mobileSidebarOpen).toString()"
 >
@@ -84,14 +84,14 @@
                 </div>
 
                 <div x-cloak x-show="!$store.appShell.isDesktopSidebarCollapsed()" x-transition.opacity.duration.150ms class="app-sidebar-brand-copy">
-                    <h1 class="text-[1.375rem] font-semibold leading-tight tracking-tight text-white">{{ $sidebarHeaderTitle }}</h1>
-                    <p class="mt-1.5 text-sm leading-5 text-white/80">{{ $sidebarHeaderDescription }}</p>
+                    <h1 class="text-[1.25rem] font-semibold leading-tight tracking-tight text-white xl:text-[1.375rem]">{{ $sidebarHeaderTitle }}</h1>
+                    <p class="mt-1.5 text-[13px] leading-5 text-white/80">{{ $sidebarHeaderDescription }}</p>
                     <p class="mt-2 text-[11px] font-medium tracking-[0.08em] text-white/65">{{ $sidebarHeaderSubtitle }}</p>
                 </div>
             </div>
         </div>
 
-        <nav class="app-sidebar-nav mt-5 space-y-2 px-3 pr-2">
+        <nav class="app-sidebar-nav mt-5 space-y-2 px-2.5 pr-2">
             <a
                 href="{{ route('dashboard') }}"
                 class="app-sidebar-link min-h-[3rem] rounded-2xl {{ request()->routeIs('dashboard') ? 'app-sidebar-link-active' : '' }}"

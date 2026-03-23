@@ -69,7 +69,7 @@
     }
 
     .app-panel {
-        @apply rounded-2xl border;
+        @apply min-w-0 rounded-2xl border;
         border-color: rgba(217, 226, 236, 0.92);
         background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(252, 253, 255, 0.96) 100%);
         box-shadow: var(--app-panel-shadow);
@@ -85,7 +85,7 @@
     }
 
     .app-page-header {
-        @apply flex rounded-3xl border p-5 sm:p-6;
+        @apply flex rounded-3xl border p-4 sm:p-5 lg:p-6;
         border-color: rgba(217, 226, 236, 0.95);
         background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(248, 250, 252, 0.92) 100%);
         box-shadow: var(--app-header-shadow);
@@ -121,21 +121,21 @@
     }
 
     .app-filter-panel {
-        @apply rounded-2xl border;
+        @apply min-w-0 rounded-2xl border;
         border-color: rgba(217, 226, 236, 0.95);
         background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 250, 252, 0.94) 100%);
         box-shadow: var(--app-panel-shadow);
     }
 
     .app-table-panel {
-        @apply overflow-hidden rounded-2xl border bg-white;
+        @apply min-w-0 overflow-x-auto rounded-2xl border bg-white;
         border-color: rgba(217, 226, 236, 0.96);
         background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(252, 253, 255, 0.97) 100%);
         box-shadow: var(--app-panel-shadow);
     }
 
     .app-subcard {
-        @apply rounded-xl border;
+        @apply min-w-0 rounded-xl border;
         border-color: rgba(217, 226, 236, 0.95);
         background: linear-gradient(180deg, rgba(243, 247, 252, 0.96) 0%, rgba(248, 250, 252, 0.92) 100%);
         box-shadow: var(--app-subpanel-shadow);
@@ -152,9 +152,9 @@
 
     .app-sidebar-shell {
         @apply fixed inset-y-4 left-4 z-40 flex transform transition duration-300 ease-out lg:sticky lg:left-auto lg:bottom-auto lg:top-6 lg:z-20 lg:flex-shrink-0 lg:self-start;
-        width: 18rem;
-        max-width: calc(100vw - 2rem);
-        max-height: calc(100vh - 3rem);
+        width: 16.5rem;
+        max-width: calc(100vw - 1.5rem);
+        max-height: calc(100vh - 2rem);
         transition-property: transform, width;
     }
 
@@ -180,6 +180,7 @@
 
     .app-sidebar-brand-copy {
         @apply mt-4 min-w-0 border-t border-white/10 pt-4;
+        overflow-wrap: anywhere;
     }
 
     .app-sidebar-toggle {
@@ -295,7 +296,12 @@
     }
 
     .btn {
-        @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold shadow-sm transition-all duration-200 hover:-translate-y-px;
+        @apply inline-flex min-h-[2.75rem] max-w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-center text-sm font-semibold leading-5 shadow-sm transition-all duration-200 hover:-translate-y-px;
+        white-space: normal;
+    }
+
+    .btn > svg {
+        flex-shrink: 0;
     }
 
     .btn-primary {
@@ -368,7 +374,7 @@
     }
 
     .form-control {
-        @apply mt-2 w-full rounded-xl border px-4 py-2.5 text-sm text-surface-900 focus:outline-none;
+        @apply mt-2 w-full min-w-0 rounded-xl border px-4 py-2.5 text-sm text-surface-900 focus:outline-none;
         border-color: rgba(197, 210, 223, 0.95);
         background-color: rgba(255, 255, 255, 0.98);
         box-shadow: var(--app-input-shadow);
@@ -393,16 +399,23 @@
     }
 
     .app-table thead {
-        @apply text-left text-xs uppercase tracking-wide text-slate-600;
+        @apply text-left text-[0.72rem] uppercase tracking-[0.08em] text-slate-600;
         background-color: rgba(243, 247, 252, 0.96);
     }
 
     .app-table th {
-        @apply px-5 py-3.5;
+        @apply px-3 py-3 sm:px-4 sm:py-3.5 lg:px-5;
+        vertical-align: top;
+        white-space: normal;
+        overflow-wrap: anywhere;
     }
 
     .app-table td {
-        @apply px-5 py-4;
+        @apply px-3 py-3 sm:px-4 sm:py-4 lg:px-5;
+        vertical-align: top;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
     }
 
     .app-table tbody tr {
@@ -419,8 +432,13 @@
         background-color: rgba(238, 244, 250, 0.94);
     }
 
+    .app-badge {
+        @apply inline-flex max-w-full flex-wrap items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold leading-5;
+        overflow-wrap: anywhere;
+    }
+
     .status-badge {
-        @apply inline-flex rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide;
+        @apply inline-flex max-w-full flex-wrap items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide leading-5;
     }
 
     .status-operativo {
@@ -444,7 +462,7 @@
     }
 
     .app-input {
-        @apply rounded-xl border px-4 py-2.5 text-sm text-slate-900 focus:outline-none;
+        @apply w-full min-w-0 rounded-xl border px-4 py-2.5 text-sm text-slate-900 focus:outline-none;
         border-color: rgba(197, 210, 223, 0.95);
         background-color: rgba(255, 255, 255, 0.98);
         box-shadow: var(--app-input-shadow);

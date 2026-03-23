@@ -27,7 +27,7 @@
             this.$nextTick(() => this.submit());
         },
     }"
-    class="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 lg:grid-cols-[minmax(0,1fr)_180px_auto] lg:items-end"
+    class="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 xl:grid-cols-[minmax(0,1fr)_180px_auto] xl:items-end"
 >
     <div>
         <label for="{{ $searchId }}" class="mb-2 block text-sm font-medium text-slate-700">{{ $searchLabel }}</label>
@@ -73,7 +73,7 @@
         </select>
     </div>
 
-    <div class="flex items-center justify-start lg:justify-end">
+    <div class="flex items-center justify-start xl:justify-end">
         <a href="{{ $clearUrl }}" class="btn btn-neutral gap-2">
             <x-icon name="x" class="h-4 w-4" />
             Restablecer
