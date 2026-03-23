@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\Auditing\Auditable;
+use App\Services\ActiveInstitutionContext;
 use App\Services\EquipoStatusResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -177,13 +178,18 @@ class Equipo extends Model
 
     public function scopeVisibleToUser(Builder $query, ?User $user): Builder
     {
+        $activeInstitutionId = $user !== null
+            ? app(ActiveInstitutionContext::class)->currentId($user)
+            : null;
+
         return $query->when(
-            $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-            function (Builder $builder) use ($user): void {
-                $builder->whereHas('oficina.service', function (Builder $serviceQuery) use ($user): void {
-                    $serviceQuery->where('institution_id', $user->institution_id);
+            $activeInstitutionId !== null,
+            function (Builder $builder) use ($activeInstitutionId): void {
+                $builder->whereHas('oficina.service', function (Builder $serviceQuery) use ($activeInstitutionId): void {
+                    $serviceQuery->where('institution_id', $activeInstitutionId);
                 });
-            }
+            },
+            fn (Builder $builder) => $builder->whereRaw('1 = 0')
         );
     }
 

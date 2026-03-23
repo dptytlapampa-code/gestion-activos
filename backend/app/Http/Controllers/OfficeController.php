@@ -28,12 +28,12 @@ class OfficeController extends Controller
 
     public function index(Request $request): View
     {
-        $user = $request->user();
+        $activeInstitutionId = $this->activeInstitutionId($request->user());
 
         $offices = Office::query()
             ->with(['service.institution'])
-            ->when($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN), function ($query) use ($user): void {
-                $query->whereHas('service', fn ($serviceQuery) => $serviceQuery->where('institution_id', $user->institution_id));
+            ->whereHas('service', function ($query) use ($activeInstitutionId): void {
+                $query->where('institution_id', $activeInstitutionId ?? 0);
             })
             ->orderBy('nombre')
             ->paginate(10);
@@ -70,28 +70,24 @@ class OfficeController extends Controller
 
     public function edit(Request $request, Office $office): View
     {
-        $user = $request->user();
-
         $office->loadMissing('service.institution');
 
-        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && (int) $office->service?->institution_id !== (int) $user->institution_id) {
+        if (! $this->isActiveInstitution($request->user(), (int) $office->service?->institution_id)) {
             abort(403);
         }
 
         return view('offices.edit', [
             'office' => $office,
-            'institutions' => $this->scopedInstitutions($user),
-            'services' => $this->scopedServices($user),
+            'institutions' => $this->scopedInstitutions($request->user()),
+            'services' => $this->scopedServices($request->user()),
         ]);
     }
 
     public function update(UpdateOfficeRequest $request, Office $office): RedirectResponse
     {
-        $user = $request->user();
-
         $office->loadMissing('service');
 
-        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && (int) $office->service?->institution_id !== (int) $user->institution_id) {
+        if (! $this->isActiveInstitution($request->user(), (int) $office->service?->institution_id)) {
             abort(403);
         }
 
@@ -110,11 +106,9 @@ class OfficeController extends Controller
 
     public function destroy(Request $request, Office $office): RedirectResponse
     {
-        $user = $request->user();
-
         $office->loadMissing('service');
 
-        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && (int) $office->service?->institution_id !== (int) $user->institution_id) {
+        if (! $this->isActiveInstitution($request->user(), (int) $office->service?->institution_id)) {
             abort(403);
         }
 
@@ -128,10 +122,7 @@ class OfficeController extends Controller
     private function scopedInstitutions(?User $user)
     {
         return Institution::query()
-            ->when(
-                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-                fn ($query) => $query->where('id', $user->institution_id)
-            )
+            ->where('id', $this->activeInstitutionId($user) ?? 0)
             ->orderBy('nombre')
             ->get(['id', 'nombre']);
     }
@@ -139,10 +130,7 @@ class OfficeController extends Controller
     private function scopedServices(?User $user)
     {
         return Service::query()
-            ->when(
-                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-                fn ($query) => $query->where('institution_id', $user->institution_id)
-            )
+            ->where('institution_id', $this->activeInstitutionId($user) ?? 0)
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'institution_id']);
     }

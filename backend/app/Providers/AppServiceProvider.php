@@ -24,6 +24,7 @@ use App\Policies\OfficePolicy;
 use App\Policies\ServicePolicy;
 use App\Policies\TipoEquipoPolicy;
 use App\Policies\UserPolicy;
+use App\Services\ActiveInstitutionContext;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -56,6 +57,26 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer('*', function ($view): void {
             $view->with('settings', system_config());
+
+            $user = auth()->user();
+
+            if (! $user instanceof User) {
+                return;
+            }
+
+            $user->loadMissing(['institution:id,nombre', 'permittedInstitutions:id,nombre']);
+
+            /** @var ActiveInstitutionContext $activeInstitutionContext */
+            $activeInstitutionContext = app(ActiveInstitutionContext::class);
+            $accessibleInstitutions = $activeInstitutionContext->accessibleInstitutions($user);
+
+            $view->with('authInstitutionContext', [
+                'activeInstitutionId' => $activeInstitutionContext->currentId($user),
+                'activeInstitution' => $activeInstitutionContext->activeInstitution($user),
+                'primaryInstitution' => $user->institution,
+                'accessibleInstitutions' => $accessibleInstitutions,
+                'canSwitchInstitution' => $accessibleInstitutions->count() > 1,
+            ]);
         });
     }
 }

@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
             App\Http\Middleware\AssignAuditCorrelationId::class,
+            App\Http\Middleware\EnsureActiveInstitution::class,
         ]);
 
         $middleware->alias([

@@ -53,6 +53,7 @@ class ActaEquipoSearchService
         $allowedInstitutionIds = $user->hasRole(User::ROLE_SUPERADMIN)
             ? null
             : $user->accessibleInstitutionIds();
+        $activeInstitutionId = app(ActiveInstitutionContext::class)->currentId($user);
 
         if ($allowedInstitutionIds !== null && $allowedInstitutionIds->isEmpty()) {
             return $this->emptyResult($page, 'No tiene instituciones habilitadas para generar actas.');
@@ -60,6 +61,10 @@ class ActaEquipoSearchService
 
         if ($allowedInstitutionIds !== null && $institutionId !== null && ! $allowedInstitutionIds->contains($institutionId)) {
             return $this->emptyResult($page, 'No puede consultar equipos de la institucion seleccionada.');
+        }
+
+        if ($institutionId === null && $activeInstitutionId === null) {
+            return $this->emptyResult($page, 'Seleccione una institucion activa para comenzar la busqueda.');
         }
 
         $hasUuid = Schema::hasColumn('equipos', 'uuid');
@@ -105,7 +110,7 @@ class ActaEquipoSearchService
             ->join('institutions', 'institutions.id', '=', 'services.institution_id')
             ->leftJoin('tipos_equipos', 'tipos_equipos.id', '=', 'equipos.tipo_equipo_id')
             ->when($allowedInstitutionIds !== null, fn (Builder $builder) => $builder->whereIn('institutions.id', $allowedInstitutionIds->all()))
-            ->when($institutionId !== null, fn (Builder $builder) => $builder->where('institutions.id', $institutionId))
+            ->where('institutions.id', $institutionId ?? $activeInstitutionId)
             ->when($serviceId !== null, fn (Builder $builder) => $builder->where('services.id', $serviceId))
             ->when($officeId !== null, fn (Builder $builder) => $builder->where('offices.id', $officeId))
             ->when($tipoEquipoId !== null, fn (Builder $builder) => $builder->where('equipos.tipo_equipo_id', $tipoEquipoId))

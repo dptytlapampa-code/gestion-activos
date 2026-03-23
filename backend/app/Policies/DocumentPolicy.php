@@ -5,24 +5,25 @@ namespace App\Policies;
 use App\Models\Acta;
 use App\Models\Document;
 use App\Models\User;
+use App\Services\ActiveInstitutionContext;
 
 class DocumentPolicy
 {
     public function before(User $user): ?bool
     {
-        return $user->hasRole(User::ROLE_SUPERADMIN) ? true : null;
+        return null;
     }
 
     public function view(User $user, Document $document): bool
     {
-        if (! $user->hasRole(User::ROLE_ADMIN, User::ROLE_TECNICO, User::ROLE_VIEWER)) {
+        if (! $user->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN, User::ROLE_TECNICO, User::ROLE_VIEWER)) {
             return false;
         }
 
-        $accessibleInstitutionIds = $user->accessibleInstitutionIds()->all();
+        $activeInstitutionId = app(ActiveInstitutionContext::class)->currentId($user);
 
-        if ($accessibleInstitutionIds !== [] && $document->equipoDocumentos()
-            ->whereHas('equipo.oficina.service', fn ($query) => $query->whereIn('institution_id', $accessibleInstitutionIds))
+        if ($activeInstitutionId !== null && $document->equipoDocumentos()
+            ->whereHas('equipo.oficina.service', fn ($query) => $query->where('institution_id', $activeInstitutionId))
             ->exists()) {
             return true;
         }
@@ -34,13 +35,16 @@ class DocumentPolicy
             : ($documentable?->oficina?->service?->institution_id
                 ?? $documentable?->equipo?->oficina?->service?->institution_id);
 
-        return $user->canAccessInstitution($institutionId !== null ? (int) $institutionId : null);
+        return app(ActiveInstitutionContext::class)->isActiveInstitution(
+            $user,
+            $institutionId !== null ? (int) $institutionId : null
+        );
     }
 
     public function create(User $user, int $institutionId): bool
     {
-        return $user->hasRole(User::ROLE_ADMIN, User::ROLE_TECNICO)
-            && $user->canAccessInstitution($institutionId);
+        return $user->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN, User::ROLE_TECNICO)
+            && app(ActiveInstitutionContext::class)->isActiveInstitution($user, $institutionId);
     }
 
     public function delete(User $user, Document $document): bool
@@ -49,6 +53,6 @@ class DocumentPolicy
             return false;
         }
 
-        return $user->hasRole(User::ROLE_ADMIN) && $this->view($user, $document);
+        return $user->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN) && $this->view($user, $document);
     }
 }

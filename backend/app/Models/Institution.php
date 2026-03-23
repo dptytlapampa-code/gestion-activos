@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\Auditing\Auditable;
+use App\Services\ActiveInstitutionContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -54,9 +55,14 @@ class Institution extends Model
 
     public function scopeVisibleToUser(Builder $query, ?User $user): Builder
     {
+        $activeInstitutionId = $user !== null
+            ? app(ActiveInstitutionContext::class)->currentId($user)
+            : null;
+
         return $query->when(
-            $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-            fn (Builder $builder) => $builder->where('id', $user->institution_id)
+            $activeInstitutionId !== null,
+            fn (Builder $builder) => $builder->where('id', $activeInstitutionId),
+            fn (Builder $builder) => $builder->whereRaw('1 = 0')
         );
     }
 

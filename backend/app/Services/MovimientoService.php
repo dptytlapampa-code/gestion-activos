@@ -189,9 +189,9 @@ class MovimientoService
             }
 
             if (! $user->hasRole(User::ROLE_SUPERADMIN)
-                && (int) $data['institucion_destino_id'] !== (int) $user->institution_id) {
+                && ! $user->canAccessInstitution((int) $data['institucion_destino_id'])) {
                 throw ValidationException::withMessages([
-                    'institucion_destino_id' => 'No tiene permisos para transferir equipos entre instituciones.',
+                    'institucion_destino_id' => 'No tiene permisos para operar con la institucion de destino seleccionada.',
                 ]);
             }
         }

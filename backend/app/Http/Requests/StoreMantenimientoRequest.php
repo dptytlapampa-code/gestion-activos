@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Equipo;
 use App\Models\Mantenimiento;
 use App\Models\User;
+use App\Services\ActiveInstitutionContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,13 +26,10 @@ class StoreMantenimientoRequest extends FormRequest
             return false;
         }
 
-        if ($user->hasRole(User::ROLE_SUPERADMIN)) {
-            return true;
-        }
-
-        $equipo->loadMissing('oficina.service');
-
-        return (int) $equipo->oficina?->service?->institution_id === (int) $user->institution_id;
+        return app(ActiveInstitutionContext::class)->isActiveInstitution(
+            $user,
+            $equipo->oficina?->service?->institution_id
+        );
     }
 
     public function rules(): array

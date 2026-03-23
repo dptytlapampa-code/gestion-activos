@@ -14,7 +14,6 @@ use App\Services\ActaTraceabilityService;
 use App\Services\Auditing\AuditLogService;
 use App\Support\Listings\ListingState;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -67,13 +66,7 @@ class ActaController extends Controller
 
         $user = $request->user();
         $destinationInstitutions = Institution::query()->orderBy('nombre')->get(['id', 'nombre']);
-        $originInstitutions = Institution::query()
-            ->when(
-                ! $user->hasRole(User::ROLE_SUPERADMIN),
-                fn (Builder $query) => $query->whereIn('id', $user->accessibleInstitutionIds())
-            )
-            ->orderBy('nombre')
-            ->get(['id', 'nombre']);
+        $originInstitutions = $this->accessibleInstitutions($user);
         $tiposEquipo = TipoEquipo::query()->orderBy('nombre')->get(['id', 'nombre']);
 
         $oldEquipoIds = collect(old('equipos', []))
@@ -135,6 +128,7 @@ class ActaController extends Controller
             'tipoLabels' => Acta::LABELS,
             'destinationInstitutions' => $destinationInstitutions,
             'originInstitutions' => $originInstitutions,
+            'activeInstitutionId' => $this->activeInstitutionId($user),
             'tipoEquipoOptions' => $tiposEquipo,
             'searchEndpoints' => [
                 'actaEquipos' => route('api.search.acta-equipos', [], false),

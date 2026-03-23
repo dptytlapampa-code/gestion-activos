@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\Auditing\Auditable;
+use App\Services\ActiveInstitutionContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -147,9 +148,14 @@ class Acta extends Model
 
     public function scopeVisibleToUser(Builder $query, ?User $user): Builder
     {
+        $activeInstitutionId = $user !== null
+            ? app(ActiveInstitutionContext::class)->currentId($user)
+            : null;
+
         return $query->when(
-            $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-            fn (Builder $builder) => $builder->whereIn('institution_id', $user->accessibleInstitutionIds()->all())
+            $activeInstitutionId !== null,
+            fn (Builder $builder) => $builder->where('institution_id', $activeInstitutionId),
+            fn (Builder $builder) => $builder->whereRaw('1 = 0')
         );
     }
 

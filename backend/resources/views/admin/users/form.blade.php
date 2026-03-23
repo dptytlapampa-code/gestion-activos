@@ -7,6 +7,14 @@
 @endphp
 
 <div class="grid gap-4 md:grid-cols-2">
+    <div class="app-subcard p-4 md:col-span-2">
+        <p class="text-sm font-semibold text-slate-900">Contexto institucional del usuario</p>
+        <p class="mt-2 text-sm text-slate-600">
+            La institucion principal define la pertenencia base del usuario y se toma como institucion activa al iniciar sesion.
+            Las instituciones habilitadas solo permiten cambiar el contexto de trabajo durante la sesion; no mezclan automaticamente la operacion diaria.
+        </p>
+    </div>
+
     <div>
         <label class="text-sm font-medium text-slate-700" for="name">Nombre</label>
         <input id="name" name="name" value="{{ old('name', $user->name ?? '') }}" class="form-control @error('name') form-control-error @enderror" />
@@ -45,12 +53,13 @@
                 <option value="{{ $institution->id }}" @selected((string) old('institution_id', $user->institution_id ?? '') === (string) $institution->id)>{{ $institution->nombre }}</option>
             @endforeach
         </select>
+        <p class="mt-1 text-xs text-slate-500">Sera la institucion activa inicial cada vez que el usuario ingrese al sistema.</p>
         @error('institution_id')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
     </div>
 
     <div class="md:col-span-2">
-        <label class="text-sm font-medium text-slate-700" for="accessible_institution_ids">Instituciones adicionales habilitadas (opcional)</label>
-        <p class="mt-1 text-xs text-slate-500">Estas instituciones se suman a la principal para permisos operativos.</p>
+        <label class="text-sm font-medium text-slate-700" for="accessible_institution_ids">Instituciones habilitadas adicionales (opcional)</label>
+        <p class="mt-1 text-xs text-slate-500">Permiten cambiar la institucion activa durante la sesion. No combinan automaticamente los datos operativos.</p>
         <div id="accessible_institution_ids" class="app-subcard mt-2 grid gap-2 p-3 md:grid-cols-2">
             @foreach ($institutions as $institution)
                 <label class="flex items-center gap-2 text-sm text-slate-700">

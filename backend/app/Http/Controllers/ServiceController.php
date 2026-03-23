@@ -27,13 +27,11 @@ class ServiceController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
+        $activeInstitutionId = $this->activeInstitutionId($user);
 
         $services = Service::query()
             ->with('institution')
-            ->when(
-                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-                fn ($query) => $query->where('institution_id', $user->institution_id)
-            )
+            ->where('institution_id', $activeInstitutionId ?? 0)
             ->orderBy('nombre')
             ->paginate(10);
 
@@ -44,13 +42,8 @@ class ServiceController extends Controller
 
     public function create(Request $request): View
     {
-        $user = $request->user();
-
         $institutions = Institution::query()
-            ->when(
-                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-                fn ($query) => $query->where('id', $user->institution_id)
-            )
+            ->where('id', $this->activeInstitutionId($request->user()) ?? 0)
             ->orderBy('nombre')
             ->get();
 
@@ -61,15 +54,14 @@ class ServiceController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $user = $request->user();
+        $activeInstitutionId = $this->activeInstitutionId($request->user());
 
         $validated = $request->validate([
             'institution_id' => [
                 'required',
                 'integer',
-                Rule::exists('institutions', 'id')->when(
-                    $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-                    fn ($query) => $query->where('id', $user->institution_id)
+                Rule::exists('institutions', 'id')->where(
+                    fn ($query) => $query->where('id', $activeInstitutionId ?? 0)
                 ),
             ],
             'nombre' => [
@@ -90,17 +82,12 @@ class ServiceController extends Controller
 
     public function edit(Request $request, Service $service): View
     {
-        $user = $request->user();
-
-        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && (int) $service->institution_id !== (int) $user->institution_id) {
+        if (! $this->isActiveInstitution($request->user(), (int) $service->institution_id)) {
             abort(403);
         }
 
         $institutions = Institution::query()
-            ->when(
-                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-                fn ($query) => $query->where('id', $user->institution_id)
-            )
+            ->where('id', $this->activeInstitutionId($request->user()) ?? 0)
             ->orderBy('nombre')
             ->get();
 
@@ -112,19 +99,18 @@ class ServiceController extends Controller
 
     public function update(Request $request, Service $service): RedirectResponse
     {
-        $user = $request->user();
-
-        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && (int) $service->institution_id !== (int) $user->institution_id) {
+        if (! $this->isActiveInstitution($request->user(), (int) $service->institution_id)) {
             abort(403);
         }
+
+        $activeInstitutionId = $this->activeInstitutionId($request->user());
 
         $validated = $request->validate([
             'institution_id' => [
                 'required',
                 'integer',
-                Rule::exists('institutions', 'id')->when(
-                    $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-                    fn ($query) => $query->where('id', $user->institution_id)
+                Rule::exists('institutions', 'id')->where(
+                    fn ($query) => $query->where('id', $activeInstitutionId ?? 0)
                 ),
             ],
             'nombre' => [
@@ -147,9 +133,7 @@ class ServiceController extends Controller
 
     public function destroy(Request $request, Service $service): RedirectResponse
     {
-        $user = $request->user();
-
-        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN) && (int) $service->institution_id !== (int) $user->institution_id) {
+        if (! $this->isActiveInstitution($request->user(), (int) $service->institution_id)) {
             abort(403);
         }
 

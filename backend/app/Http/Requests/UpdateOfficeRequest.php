@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Office;
 use App\Models\User;
+use App\Services\ActiveInstitutionContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -17,10 +18,6 @@ class UpdateOfficeRequest extends FormRequest
             return false;
         }
 
-        if ($user->hasRole(User::ROLE_SUPERADMIN)) {
-            return true;
-        }
-
         /** @var Office|null $office */
         $office = $this->route('office');
 
@@ -30,7 +27,10 @@ class UpdateOfficeRequest extends FormRequest
 
         $office->loadMissing('service');
 
-        return (int) $office->service?->institution_id === (int) $user->institution_id;
+        return app(ActiveInstitutionContext::class)->isActiveInstitution(
+            $user,
+            $office->service?->institution_id
+        );
     }
 
     public function rules(): array
@@ -39,10 +39,9 @@ class UpdateOfficeRequest extends FormRequest
         $office = $this->route('office');
 
         $institutionRule = Rule::exists('institutions', 'id');
+        $activeInstitutionId = app(ActiveInstitutionContext::class)->currentId($this->user());
 
-        if ($this->mustScopeToUserInstitution()) {
-            $institutionRule = $institutionRule->where(fn ($query) => $query->where('id', $this->user()?->institution_id));
-        }
+        $institutionRule = $institutionRule->where(fn ($query) => $query->where('id', $activeInstitutionId ?? 0));
 
         return [
             'institution_id' => [
@@ -55,10 +54,6 @@ class UpdateOfficeRequest extends FormRequest
                 'integer',
                 Rule::exists('services', 'id')->where(function ($query): void {
                     $query->where('institution_id', $this->integer('institution_id'));
-
-                    if ($this->mustScopeToUserInstitution()) {
-                        $query->where('institution_id', $this->user()?->institution_id);
-                    }
                 }),
             ],
             'nombre' => [
@@ -89,8 +84,6 @@ class UpdateOfficeRequest extends FormRequest
 
     private function mustScopeToUserInstitution(): bool
     {
-        $user = $this->user();
-
-        return $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN);
+        return true;
     }
 }

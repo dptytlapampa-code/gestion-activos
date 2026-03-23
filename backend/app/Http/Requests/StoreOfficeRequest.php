@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\User;
+use App\Services\ActiveInstitutionContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,10 +19,9 @@ class StoreOfficeRequest extends FormRequest
     public function rules(): array
     {
         $institutionRule = Rule::exists('institutions', 'id');
+        $activeInstitutionId = app(ActiveInstitutionContext::class)->currentId($this->user());
 
-        if ($this->mustScopeToUserInstitution()) {
-            $institutionRule = $institutionRule->where(fn ($query) => $query->where('id', $this->user()?->institution_id));
-        }
+        $institutionRule = $institutionRule->where(fn ($query) => $query->where('id', $activeInstitutionId ?? 0));
 
         return [
             'institution_id' => [
@@ -34,10 +34,6 @@ class StoreOfficeRequest extends FormRequest
                 'integer',
                 Rule::exists('services', 'id')->where(function ($query): void {
                     $query->where('institution_id', $this->integer('institution_id'));
-
-                    if ($this->mustScopeToUserInstitution()) {
-                        $query->where('institution_id', $this->user()?->institution_id);
-                    }
                 }),
             ],
             'nombre' => [
@@ -66,8 +62,6 @@ class StoreOfficeRequest extends FormRequest
 
     private function mustScopeToUserInstitution(): bool
     {
-        $user = $this->user();
-
-        return $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN);
+        return true;
     }
 }

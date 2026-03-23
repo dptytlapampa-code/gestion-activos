@@ -10,10 +10,12 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EquipoController;
 use App\Http\Controllers\EquipoExportController;
 use App\Http\Controllers\EquipoPublicController;
+use App\Http\Controllers\ActiveInstitutionController;
 use App\Http\Controllers\InstitutionController;
 use App\Http\Controllers\MantenimientoController;
 use App\Http\Controllers\MovimientoController;
 use App\Http\Controllers\OfficeController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\TipoEquipoController;
@@ -27,6 +29,10 @@ Route::get('/equipos/public/{uuid}', [EquipoPublicController::class, 'show'])->m
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/', DashboardController::class)->name('dashboard');
+    Route::get('mi-perfil', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('mi-perfil', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('mi-perfil/password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
+    Route::put('session/active-institution', [ActiveInstitutionController::class, 'update'])->name('session.active-institution.update');
 
     Route::resource('institutions', InstitutionController::class)->except('show');
     Route::resource('services', ServiceController::class)->except('show');

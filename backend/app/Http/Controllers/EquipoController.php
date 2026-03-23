@@ -454,21 +454,17 @@ class EquipoController extends Controller
     private function scopedInstituciones(?User $user)
     {
         return Institution::query()
-            ->when(
-                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-                fn ($query) => $query->where('id', $user->institution_id)
-            )
+            ->where('id', $this->activeInstitutionId($user) ?? 0)
             ->orderBy('nombre')
             ->get(['id', 'nombre']);
     }
 
     private function scopedServicios(?User $user, ?int $institutionId)
     {
+        $activeInstitutionId = $this->activeInstitutionId($user);
+
         return Service::query()
-            ->when(
-                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-                fn ($query) => $query->where('institution_id', $user->institution_id)
-            )
+            ->where('institution_id', $activeInstitutionId ?? 0)
             ->when($institutionId !== null, fn ($query) => $query->where('institution_id', $institutionId))
             ->when($institutionId === null, fn ($query) => $query->whereRaw('1 = 0'))
             ->orderBy('nombre')
@@ -477,9 +473,11 @@ class EquipoController extends Controller
 
     private function scopedOficinas(?User $user, ?int $serviceId)
     {
+        $activeInstitutionId = $this->activeInstitutionId($user);
+
         return Office::query()
-            ->when($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN), function ($query) use ($user): void {
-                $query->whereHas('service', fn ($serviceQuery) => $serviceQuery->where('institution_id', $user->institution_id));
+            ->whereHas('service', function ($query) use ($activeInstitutionId): void {
+                $query->where('institution_id', $activeInstitutionId ?? 0);
             })
             ->when($serviceId !== null, fn ($query) => $query->where('service_id', $serviceId))
             ->when($serviceId === null, fn ($query) => $query->whereRaw('1 = 0'))
@@ -495,10 +493,6 @@ class EquipoController extends Controller
             return $oldInstitutionId;
         }
 
-        if ($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN)) {
-            return (int) $user->institution_id;
-        }
-
-        return null;
+        return $this->activeInstitutionId($user);
     }
 }

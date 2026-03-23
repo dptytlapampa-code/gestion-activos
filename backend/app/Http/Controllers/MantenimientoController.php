@@ -29,7 +29,7 @@ class MantenimientoController extends Controller
 
         $mantenimientos = Mantenimiento::query()
             ->with(['equipo:id,tipo,numero_serie', 'estadoResultante:id,name,color'])
-            ->when(! $user->hasRole(User::ROLE_SUPERADMIN), fn (Builder $query) => $query->where('institution_id', $user->institution_id))
+            ->where('institution_id', $this->activeInstitutionId($user) ?? 0)
             ->latest('fecha')
             ->latest('id')
             ->paginate(20);

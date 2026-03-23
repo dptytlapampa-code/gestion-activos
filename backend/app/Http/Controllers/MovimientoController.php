@@ -45,13 +45,35 @@ class MovimientoController extends Controller
 
         $this->movimientoService->registrar($equipo, $request->user(), $request->validated());
 
+        $equipo->refresh()->load('oficina.service.institution');
+
+        $activeInstitutionId = $this->activeInstitutionId($request->user());
+        $equipoInstitutionId = (int) ($equipo->oficina?->service?->institution_id ?? 0);
+
+        if ($activeInstitutionId !== null && $equipoInstitutionId > 0 && $equipoInstitutionId !== $activeInstitutionId) {
+            $institutionName = $equipo->oficina?->service?->institution?->nombre ?? 'la nueva institucion';
+
+            return redirect()
+                ->route('equipos.index')
+                ->with(
+                    'status',
+                    sprintf(
+                        'Movimiento registrado correctamente. El equipo ahora opera en %s. Cambie la institucion activa para volver a su ficha.',
+                        $institutionName
+                    )
+                );
+        }
+
         return redirect()->route('equipos.show', $equipo)->with('status', 'Movimiento registrado correctamente.');
     }
 
     private function scopedInstituciones(?User $user)
     {
         return Institution::query()
-            ->when($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN), fn ($query) => $query->where('id', $user->institution_id))
+            ->when(
+                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+                fn ($query) => $query->whereIn('id', $user->accessibleInstitutionIds()->all())
+            )
             ->orderBy('nombre')
             ->get(['id', 'nombre']);
     }
@@ -59,7 +81,10 @@ class MovimientoController extends Controller
     private function scopedServicios(?User $user)
     {
         return Service::query()
-            ->when($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN), fn ($query) => $query->where('institution_id', $user->institution_id))
+            ->when(
+                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+                fn ($query) => $query->whereIn('institution_id', $user->accessibleInstitutionIds()->all())
+            )
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'institution_id']);
     }
@@ -67,7 +92,10 @@ class MovimientoController extends Controller
     private function scopedOficinas(?User $user)
     {
         return Office::query()
-            ->when($user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN), fn ($query) => $query->whereHas('service', fn ($q) => $q->where('institution_id', $user->institution_id)))
+            ->when(
+                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
+                fn ($query) => $query->whereHas('service', fn ($q) => $q->whereIn('institution_id', $user->accessibleInstitutionIds()->all()))
+            )
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'service_id']);
     }

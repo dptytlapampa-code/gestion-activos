@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\Equipo;
 use App\Models\Office;
 use App\Models\User;
+use App\Services\ActiveInstitutionContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -33,20 +34,32 @@ class UpdateEquipoRequest extends FormRequest
             return true;
         }
 
+        $activeInstitutionId = app(ActiveInstitutionContext::class)->currentId($user);
         $office = Office::query()->with('service')->find($this->integer('office_id'));
+
+        if ($activeInstitutionId === null) {
+            return false;
+        }
 
         return $office !== null
             && $office->service !== null
-            && (int) $office->service->institution_id === (int) $user->institution_id;
+            && (int) $office->service->institution_id === $activeInstitutionId;
     }
 
     public function rules(): array
     {
         /** @var Equipo $equipo */
         $equipo = $this->route('equipo');
+        $activeInstitutionId = app(ActiveInstitutionContext::class)->currentId($this->user());
 
         return [
-            'institution_id' => ['required', 'integer', 'exists:institutions,id'],
+            'institution_id' => [
+                'required',
+                'integer',
+                Rule::exists('institutions', 'id')->where(
+                    fn ($query) => $query->where('id', $activeInstitutionId ?? 0)
+                ),
+            ],
             'service_id' => [
                 'required',
                 'integer',

@@ -29,10 +29,10 @@ class DashboardController extends Controller
     public function __invoke(Request $request): View
     {
         $user = $request->user();
-        $institutionIds = $user->hasRole(User::ROLE_SUPERADMIN) ? null : $user->accessibleInstitutionIds()->all();
+        $institutionIds = [$this->activeInstitutionId($user) ?? -1];
 
         $institucionesVisibles = Institution::query()
-            ->when($institutionIds !== null, fn (Builder $query) => $query->whereIn('id', $institutionIds))
+            ->whereIn('id', $institutionIds)
             ->orderBy('nombre')
             ->get(['id', 'nombre']);
 

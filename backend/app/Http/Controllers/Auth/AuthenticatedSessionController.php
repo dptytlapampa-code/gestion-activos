@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Services\ActiveInstitutionContext;
 use App\Services\Auditing\AuditLogService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,7 +14,10 @@ use Illuminate\Validation\ValidationException;
 
 class AuthenticatedSessionController extends Controller
 {
-    public function __construct(private readonly AuditLogService $auditLogService) {}
+    public function __construct(
+        private readonly AuditLogService $auditLogService,
+        private readonly ActiveInstitutionContext $activeInstitutionContext,
+    ) {}
 
     public function create(): \Illuminate\View\View
     {
@@ -84,6 +88,16 @@ class AuthenticatedSessionController extends Controller
         /** @var User|null $user */
         $user = auth()->user();
 
+        if ($user !== null) {
+            $defaultActiveInstitutionId = $this->activeInstitutionContext->defaultId($user);
+
+            if ($defaultActiveInstitutionId !== null) {
+                $this->activeInstitutionContext->set($user, $defaultActiveInstitutionId, $request->session());
+            } else {
+                $this->activeInstitutionContext->forget($request->session());
+            }
+        }
+
         $this->auditLogService->record([
             'user_id' => $user?->id,
             'institution_id' => $user?->institution_id,
@@ -126,6 +140,7 @@ class AuthenticatedSessionController extends Controller
         }
 
         Auth::logout();
+        $this->activeInstitutionContext->forget($request->session());
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

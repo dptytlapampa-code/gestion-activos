@@ -8,6 +8,10 @@
         $siteName = $systemConfig->nombre_sistema;
         $logoInstitucionalUrl = $systemConfig->logo_url;
         $systemLogoUrl = $systemConfig->system_logo_url;
+        $institutionContext = $authInstitutionContext ?? [];
+        $activeInstitution = $institutionContext['activeInstitution'] ?? null;
+        $primaryInstitution = $institutionContext['primaryInstitution'] ?? null;
+        $accessibleInstitutions = $institutionContext['accessibleInstitutions'] ?? collect();
     @endphp
     <title>{{ $siteName }} - @yield('title', 'Panel')</title>
     <link rel="icon" type="image/png" href="{{ $systemLogoUrl }}">
@@ -62,12 +66,80 @@
                         </div>
                     </div>
 
-                    <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
-                        <span class="app-user-chip">{{ auth()->user()->name }}</span>
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <button type="submit" class="btn btn-neutral w-full sm:w-auto">Cerrar sesion</button>
-                        </form>
+                    <div class="w-full sm:w-auto" x-data="{ open: false }">
+                        <div class="relative">
+                            <button
+                                type="button"
+                                class="flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-left shadow-sm transition hover:bg-slate-50 sm:min-w-[20rem]"
+                                @click="open = !open"
+                                @click.outside="open = false"
+                                :aria-expanded="open.toString()"
+                            >
+                                <div class="min-w-0">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Usuario</p>
+                                    <p class="truncate text-sm font-semibold text-slate-900">{{ auth()->user()->name }}</p>
+                                    <p class="mt-1 truncate text-xs text-slate-500">Institucion activa: {{ $activeInstitution?->nombre ?? 'Sin institucion activa' }}</p>
+                                </div>
+                                <x-icon name="chevron-down" class="h-4 w-4 flex-shrink-0 text-slate-500" />
+                            </button>
+
+                            <div
+                                x-cloak
+                                x-show="open"
+                                x-transition.origin.top.right
+                                class="absolute right-0 z-30 mt-3 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:w-[24rem]"
+                            >
+                                <div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
+                                    <p class="text-sm font-semibold text-slate-900">Usuario: {{ auth()->user()->name }}</p>
+                                    <p class="mt-1 text-sm text-slate-600">Institucion activa: {{ $activeInstitution?->nombre ?? 'Sin institucion activa' }}</p>
+                                    <p class="mt-1 text-xs text-slate-500">Institucion principal: {{ $primaryInstitution?->nombre ?? 'Sin institucion principal' }}</p>
+                                </div>
+
+                                <div class="p-3">
+                                    <a href="{{ route('profile.edit') }}" class="flex rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900">
+                                        Mi perfil
+                                    </a>
+
+                                    <div class="mt-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+                                        <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Institucion activa</p>
+                                        <div class="mt-2 space-y-2">
+                                            @forelse ($accessibleInstitutions as $institution)
+                                                <form method="POST" action="{{ route('session.active-institution.update') }}">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <input type="hidden" name="institution_id" value="{{ $institution->id }}">
+                                                    <button
+                                                        type="submit"
+                                                        class="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition {{ (int) ($activeInstitution?->id ?? 0) === (int) $institution->id ? 'bg-emerald-50 font-semibold text-emerald-800' : 'bg-white text-slate-700 hover:bg-slate-100' }}"
+                                                    >
+                                                        <span class="truncate">{{ $institution->nombre }}</span>
+                                                        @if ((int) ($activeInstitution?->id ?? 0) === (int) $institution->id)
+                                                            <span class="app-badge bg-emerald-100 px-2 text-emerald-700">Activa</span>
+                                                        @endif
+                                                    </button>
+                                                </form>
+                                            @empty
+                                                <p class="text-sm text-slate-500">No hay instituciones habilitadas para operar.</p>
+                                            @endforelse
+                                        </div>
+                                    </div>
+
+                                    <a href="{{ route('profile.edit') }}#seguridad" class="mt-2 flex rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900">
+                                        Cambiar contrasena
+                                    </a>
+                                    <a href="{{ route('profile.edit') }}#datos" class="flex rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900">
+                                        Actualizar mis datos
+                                    </a>
+
+                                    <form method="POST" action="{{ route('logout') }}" class="mt-2">
+                                        @csrf
+                                        <button type="submit" class="flex w-full rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-700 transition hover:bg-red-50">
+                                            Cerrar sesion
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </header>
 

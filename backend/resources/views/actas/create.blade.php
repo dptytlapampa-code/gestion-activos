@@ -26,6 +26,7 @@
             'officesUrl' => $searchEndpoints['offices'],
             'originInstitutions' => $originInstitutions,
             'destinationInstitutions' => $destinationInstitutions,
+            'activeInstitutionId' => $activeInstitutionId,
             'tipoEquipoOptions' => $tipoEquipoOptions,
             'estadoOptions' => $estadoOptions,
         ]),
@@ -147,20 +148,19 @@
                         <div class="mb-4 flex items-center justify-between">
                             <div>
                                 <h4 class="text-sm font-semibold text-slate-900">Filtros avanzados</h4>
-                                <p class="text-sm text-slate-500">Use solo los necesarios. El sistema buscara automaticamente al aplicarlos.</p>
+                                <p class="text-sm text-slate-500">El origen se inicializa con la institucion activa de la sesion. Use solo los filtros necesarios.</p>
                             </div>
                             <button type="button" @click="clearFilters()" class="text-sm font-semibold text-primary-700">Limpiar filtros</button>
                         </div>
 
                         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
                             <div>
-                                <label class="block text-sm font-medium text-slate-700">Institucion</label>
+                                <label class="block text-sm font-medium text-slate-700">Institucion de origen</label>
                                 <select
                                     x-model="filters.institution_id"
                                     @change="onOriginInstitutionChange()"
                                     class="mt-1 min-h-[48px] w-full rounded-xl border-slate-300"
                                 >
-                                    <option value="">Todas las habilitadas</option>
                                     <template x-for="institution in originInstitutions" :key="`origin-inst-${institution.id}`">
                                         <option :value="String(institution.id)" x-text="institution.nombre"></option>
                                     </template>
@@ -571,8 +571,9 @@
             observaciones: initial.observaciones || '',
             query: '',
             filtersOpen: false,
+            activeInstitutionId: config.activeInstitutionId ? String(config.activeInstitutionId) : '',
             filters: {
-                institution_id: '',
+                institution_id: config.activeInstitutionId ? String(config.activeInstitutionId) : '',
                 service_id: '',
                 office_id: '',
                 tipo_equipo_id: '',
@@ -631,6 +632,10 @@
                         const hasOffice = this.destinationOfficeOptions.some((office) => String(office.id) === String(this.office_destino_id));
                         this.office_destino_id = hasOffice ? String(this.office_destino_id) : '';
                     }
+                }
+
+                if (this.filters.institution_id) {
+                    await this.loadServices('origin', this.filters.institution_id, false);
                 }
             },
 
@@ -1000,9 +1005,9 @@
                 return this.selected.some((item) => Number(item.id) === Number(id));
             },
 
-            clearFilters() {
+            async clearFilters() {
                 this.filters = {
-                    institution_id: '',
+                    institution_id: this.activeInstitutionId,
                     service_id: '',
                     office_id: '',
                     tipo_equipo_id: '',
@@ -1010,6 +1015,11 @@
                 };
                 this.originServiceOptions = [];
                 this.originOfficeOptions = [];
+
+                if (this.filters.institution_id) {
+                    await this.loadServices('origin', this.filters.institution_id, false);
+                }
+
                 this.onFilterChange();
             },
 

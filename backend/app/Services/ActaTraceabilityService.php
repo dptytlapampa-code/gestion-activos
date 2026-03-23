@@ -10,6 +10,7 @@ use App\Models\Movimiento;
 use App\Models\Office;
 use App\Models\Service;
 use App\Models\User;
+use App\Services\ActiveInstitutionContext;
 use App\Services\Auditing\AuditLogService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Collection;
@@ -25,6 +26,7 @@ class ActaTraceabilityService
         private readonly EquipoStatusResolver $equipoStatusResolver,
         private readonly AuditLogService $auditLogService,
         private readonly DocumentService $documentService,
+        private readonly ActiveInstitutionContext $activeInstitutionContext,
     ) {}
 
     public function crear(User $user, array $data): Acta
@@ -520,9 +522,11 @@ class ActaTraceabilityService
 
         $institucionActaId = $instituciones->count() === 1
             ? (int) $instituciones->first()
-            : ($user->institution_id !== null && $instituciones->contains((int) $user->institution_id)
-                ? (int) $user->institution_id
-                : (int) $instituciones->first());
+            : ($this->activeInstitutionContext->currentId($user) !== null && $instituciones->contains((int) $this->activeInstitutionContext->currentId($user))
+                ? (int) $this->activeInstitutionContext->currentId($user)
+                : ($user->institution_id !== null && $instituciones->contains((int) $user->institution_id)
+                    ? (int) $user->institution_id
+                    : (int) $instituciones->first()));
 
         if ($institucionActaId <= 0) {
             throw ValidationException::withMessages([

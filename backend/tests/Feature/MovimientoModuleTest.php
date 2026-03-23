@@ -55,7 +55,14 @@ class MovimientoModuleTest extends TestCase
     public function test_al_cambiar_oficina_se_crea_movimiento_de_traslado(): void
     {
         [$institutionOrigen, $serviceOrigen, $officeOrigen] = $this->crearUbicacion('Hospital Sur', 'Guardia', 'Oficina A');
-        [$institutionDestino, $serviceDestino, $officeDestino] = $this->crearUbicacion('Hospital Centro', 'Laboratorio', 'Oficina B');
+        $serviceDestino = Service::create([
+            'nombre' => 'Laboratorio',
+            'institution_id' => $institutionOrigen->id,
+        ]);
+        $officeDestino = Office::create([
+            'nombre' => 'Oficina B',
+            'service_id' => $serviceDestino->id,
+        ]);
 
         $tipoEquipo = TipoEquipo::create(['nombre' => 'Monitor']);
         $equipo = $this->crearEquipo($officeOrigen, $tipoEquipo);
@@ -64,7 +71,7 @@ class MovimientoModuleTest extends TestCase
         $usuario = $this->crearUsuario(User::ROLE_SUPERADMIN);
 
         $payload = [
-            'institution_id' => $institutionDestino->id,
+            'institution_id' => $institutionOrigen->id,
             'service_id' => $serviceDestino->id,
             'oficina_id' => $officeDestino->id,
             'tipo_equipo_id' => $tipoEquipo->id,
@@ -87,7 +94,7 @@ class MovimientoModuleTest extends TestCase
         $this->assertSame($institutionOrigen->id, $movimiento->institucion_origen_id);
         $this->assertSame($serviceOrigen->id, $movimiento->servicio_origen_id);
         $this->assertSame($officeOrigen->id, $movimiento->oficina_origen_id);
-        $this->assertSame($institutionDestino->id, $movimiento->institucion_destino_id);
+        $this->assertSame($institutionOrigen->id, $movimiento->institucion_destino_id);
         $this->assertSame($serviceDestino->id, $movimiento->servicio_destino_id);
         $this->assertSame($officeDestino->id, $movimiento->oficina_destino_id);
         $this->assertSame('Traslado de ubicación', $movimiento->observacion);
