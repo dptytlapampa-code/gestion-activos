@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    private int $skippedOrphanEquipoRows = 0;
+
     public function up(): void
     {
         Schema::create('equipo_documentos', function (Blueprint $table): void {
@@ -29,6 +31,7 @@ return new class extends Migration
         });
 
         $this->backfillEquipoDocuments();
+        $this->logBackfillSummary();
     }
 
     public function down(): void
@@ -57,7 +60,7 @@ return new class extends Migration
             default => [],
         };
 
-        foreach ($rows as $row) {
+        foreach ($this->filterRowsWithExistingEquipo($rows) as $row) {
             DB::table('equipo_documentos')->updateOrInsert(
                 [
                     'equipo_id' => $row['equipo_id'],
@@ -65,6 +68,66 @@ return new class extends Migration
                 ],
                 $row
             );
+        }
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     * @return array<int, array<string, mixed>>
+     */
+    private function filterRowsWithExistingEquipo(array $rows): array
+    {
+        if ($rows === []) {
+            return [];
+        }
+
+        $equipoIds = array_values(array_unique(array_map(
+            fn (array $row): int => (int) $row['equipo_id'],
+            $rows
+        )));
+
+        if ($equipoIds === []) {
+            return [];
+        }
+
+        $existingEquipoLookup = array_flip(
+            DB::table('equipos')
+                ->whereIn('id', $equipoIds)
+                ->pluck('id')
+                ->map(fn ($id): int => (int) $id)
+                ->all()
+        );
+
+        $validRows = [];
+
+        foreach ($rows as $row) {
+            $equipoId = (int) $row['equipo_id'];
+
+            if (! isset($existingEquipoLookup[$equipoId])) {
+                $this->skippedOrphanEquipoRows++;
+
+                continue;
+            }
+
+            $validRows[] = $row;
+        }
+
+        return $validRows;
+    }
+
+    private function logBackfillSummary(): void
+    {
+        if ($this->skippedOrphanEquipoRows === 0) {
+            return;
+        }
+
+        try {
+            logger()->warning('Se omitieron documentos historicos con equipo inexistente durante la migracion de equipo_documentos.', [
+                'migration' => '2026_03_22_000028_create_equipo_documentos_table',
+                'skipped_orphan_equipo_rows' => $this->skippedOrphanEquipoRows,
+            ]);
+        } catch (\Throwable) {
+            // No detener la migracion por un problema de logging.
         }
     }
 
