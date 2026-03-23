@@ -229,7 +229,7 @@
 
                     <div x-show="activeFilterBadges().length" x-cloak class="flex flex-wrap gap-2">
                         <template x-for="badge in activeFilterBadges()" :key="badge">
-                            <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700" x-text="badge"></span>
+                            <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="badge"></span>
                         </template>
                     </div>
 
@@ -245,7 +245,7 @@
                         </div>
 
                         <div class="overflow-x-auto">
-                            <table class="app-table">
+                            <table class="app-table min-w-[64rem]">
                                 <thead>
                                     <tr>
                                         <th>Equipo</th>
@@ -271,20 +271,24 @@
                                     <template x-for="item in results" :key="`result-${item.id}`">
                                         <tr class="align-top">
                                             <td>
-                                                <div class="font-semibold text-slate-900" x-text="item.tipo || item.label"></div>
-                                                <div class="mt-1 text-slate-600" x-text="joinLabel([item.marca, item.modelo]) || '-'"></div>
+                                                <div class="min-w-[14rem]">
+                                                    <div class="font-semibold text-slate-900" x-text="item.tipo || item.label"></div>
+                                                    <div class="mt-1 app-cell-wrap text-slate-600" x-text="joinLabel([item.marca, item.modelo]) || '-'"></div>
+                                                </div>
                                             </td>
-                                            <td x-text="item.numero_serie || '-'"></td>
-                                            <td x-text="item.bien_patrimonial || '-'"></td>
+                                            <td class="app-cell-nowrap" x-text="item.numero_serie || '-'"></td>
+                                            <td class="app-cell-nowrap" x-text="item.bien_patrimonial || '-'"></td>
                                             <td>
-                                                <div class="text-slate-900" x-text="item.institucion || '-'"></div>
-                                                <div class="text-slate-600" x-text="item.servicio || '-'"></div>
-                                                <div class="text-slate-500" x-text="item.oficina || '-'"></div>
+                                                <div class="min-w-[16rem]">
+                                                    <div class="app-cell-wrap text-slate-900" x-text="item.institucion || '-'"></div>
+                                                    <div class="app-cell-wrap text-slate-600" x-text="item.servicio || '-'"></div>
+                                                    <div class="app-cell-wrap text-slate-500" x-text="item.oficina || '-'"></div>
+                                                </div>
                                             </td>
                                             <td>
-                                                <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700" x-text="item.estado_label || humanizeEstado(item.estado)"></span>
+                                                <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="item.estado_label || humanizeEstado(item.estado)"></span>
                                             </td>
-                                            <td class="text-right">
+                                            <td class="app-cell-nowrap text-right">
                                                 <button
                                                     type="button"
                                                     @click="addSelected(item)"
@@ -292,7 +296,7 @@
                                                     :class="isSelected(item.id)
                                                         ? 'cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400'
                                                         : 'border-primary-200 bg-primary-50 text-primary-700 hover:border-primary-300'"
-                                                    class="inline-flex min-h-[40px] items-center justify-center rounded-xl border px-4 text-sm font-semibold"
+                                                    class="inline-flex min-h-[40px] items-center justify-center whitespace-nowrap rounded-xl border px-4 text-sm font-semibold"
                                                 >
                                                     <span x-text="isSelected(item.id) ? 'Agregado' : 'Agregar'"></span>
                                                 </button>

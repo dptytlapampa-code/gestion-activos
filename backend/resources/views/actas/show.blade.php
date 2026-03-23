@@ -117,91 +117,95 @@
         </div>
     @endif
 
-    <div class="app-table-panel overflow-x-auto">
+    <div class="app-table-panel">
         <div class="border-b border-slate-200 px-5 py-4">
             <h3 class="text-base font-semibold text-slate-900">Equipos del acta</h3>
         </div>
-        <table class="app-table text-sm">
-            <thead>
-            <tr>
-                <th>Tipo</th>
-                <th>Marca</th>
-                <th>Modelo</th>
-                <th>Serie</th>
-                <th>Patrimonial</th>
-                <th>Origen snapshot</th>
-                <th>Destino</th>
-                <th>Cantidad</th>
-                <th>Accesorios</th>
-            </tr>
-            </thead>
-            <tbody>
-            @foreach ($acta->equipos as $equipo)
-                @php
-                    $origenEquipo = trim(implode(' / ', [
-                        $equipo->pivot->institucion_origen_nombre ?: ($equipo->oficina?->service?->institution?->nombre ?? '-'),
-                        $equipo->pivot->servicio_origen_nombre ?: ($equipo->oficina?->service?->nombre ?? '-'),
-                        $equipo->pivot->oficina_origen_nombre ?: ($equipo->oficina?->nombre ?? '-'),
-                    ]));
-
-                    $destinoEquipo = $destinoInstitucionalTexto;
-
-                    if ($isPrestamo && $hasDestinatarioPrestamo) {
-                        $destinoEquipo = $destinoPrestamoResumen !== ''
-                            ? $destinoPrestamoResumen
-                            : 'Destinatario del prestamo no informado';
-
-                        if ($hasDestinoInstitucional) {
-                            $destinoEquipo .= ' (Ref. institucional: '.$destinoInstitucionalTexto.')';
-                        }
-                    }
-                @endphp
+        <div class="overflow-x-auto">
+            <table class="app-table min-w-[78rem] text-sm">
+                <thead>
                 <tr>
-                    <td>{{ $equipo->tipo }}</td>
-                    <td>{{ $equipo->marca }}</td>
-                    <td>{{ $equipo->modelo }}</td>
-                    <td>{{ $equipo->numero_serie }}</td>
-                    <td>{{ $equipo->bien_patrimonial }}</td>
-                    <td>{{ $origenEquipo }}</td>
-                    <td>{{ $destinoEquipo }}</td>
-                    <td>{{ $equipo->pivot->cantidad }}</td>
-                    <td>{{ $equipo->pivot->accesorios ?: '-' }}</td>
+                    <th>Tipo</th>
+                    <th>Marca</th>
+                    <th>Modelo</th>
+                    <th>Serie</th>
+                    <th>Patrimonial</th>
+                    <th>Origen snapshot</th>
+                    <th>Destino</th>
+                    <th>Cantidad</th>
+                    <th>Accesorios</th>
                 </tr>
-            @endforeach
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                @foreach ($acta->equipos as $equipo)
+                    @php
+                        $origenEquipo = trim(implode(' / ', [
+                            $equipo->pivot->institucion_origen_nombre ?: ($equipo->oficina?->service?->institution?->nombre ?? '-'),
+                            $equipo->pivot->servicio_origen_nombre ?: ($equipo->oficina?->service?->nombre ?? '-'),
+                            $equipo->pivot->oficina_origen_nombre ?: ($equipo->oficina?->nombre ?? '-'),
+                        ]));
+
+                        $destinoEquipo = $destinoInstitucionalTexto;
+
+                        if ($isPrestamo && $hasDestinatarioPrestamo) {
+                            $destinoEquipo = $destinoPrestamoResumen !== ''
+                                ? $destinoPrestamoResumen
+                                : 'Destinatario del prestamo no informado';
+
+                            if ($hasDestinoInstitucional) {
+                                $destinoEquipo .= ' (Ref. institucional: '.$destinoInstitucionalTexto.')';
+                            }
+                        }
+                    @endphp
+                    <tr>
+                        <td class="app-cell-nowrap font-medium text-slate-900">{{ $equipo->tipo }}</td>
+                        <td class="app-cell-nowrap">{{ $equipo->marca }}</td>
+                        <td class="app-cell-nowrap">{{ $equipo->modelo }}</td>
+                        <td class="app-cell-nowrap">{{ $equipo->numero_serie }}</td>
+                        <td class="app-cell-nowrap">{{ $equipo->bien_patrimonial }}</td>
+                        <td class="min-w-[16rem] app-cell-wrap">{{ $origenEquipo }}</td>
+                        <td class="min-w-[18rem] app-cell-wrap">{{ $destinoEquipo }}</td>
+                        <td class="app-cell-nowrap text-center">{{ $equipo->pivot->cantidad }}</td>
+                        <td class="min-w-[14rem] app-cell-wrap">{{ $equipo->pivot->accesorios ?: '-' }}</td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <div class="app-table-panel overflow-x-auto">
+    <div class="app-table-panel">
         <div class="border-b border-slate-200 px-5 py-4">
             <h3 class="text-base font-semibold text-slate-900">Historial generado</h3>
         </div>
-        <table class="app-table text-sm">
-            <thead>
-                <tr>
-                    <th>Equipo</th>
-                    <th>Estado anterior</th>
-                    <th>Estado nuevo</th>
-                    <th>Ubicacion anterior</th>
-                    <th>Ubicacion nueva</th>
-                    <th>Usuario</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($acta->historial as $item)
+        <div class="overflow-x-auto">
+            <table class="app-table min-w-[72rem] text-sm">
+                <thead>
                     <tr>
-                        <td>{{ $item->equipo?->tipo }} ({{ $item->equipo?->numero_serie }})</td>
-                        <td>{{ strtoupper(str_replace('_', ' ', $item->estado_anterior ?: '-')) }}</td>
-                        <td>{{ strtoupper(str_replace('_', ' ', $item->estado_nuevo ?: '-')) }}</td>
-                        <td>{{ $item->institucionAnterior?->nombre ?: '-' }} / {{ $item->servicioAnterior?->nombre ?: '-' }} / {{ $item->oficinaAnterior?->nombre ?: '-' }}</td>
-                        <td>{{ $item->institucionNueva?->nombre ?: '-' }} / {{ $item->servicioNuevo?->nombre ?: '-' }} / {{ $item->oficinaNueva?->nombre ?: '-' }}</td>
-                        <td>{{ $item->usuario?->name ?: '-' }}</td>
+                        <th>Equipo</th>
+                        <th>Estado anterior</th>
+                        <th>Estado nuevo</th>
+                        <th>Ubicacion anterior</th>
+                        <th>Ubicacion nueva</th>
+                        <th>Usuario</th>
                     </tr>
-                @empty
-                    <tr><td colspan="6" class="py-4 text-center text-slate-500">Sin historial asociado.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @forelse ($acta->historial as $item)
+                        <tr>
+                            <td class="min-w-[14rem] app-cell-wrap">{{ $item->equipo?->tipo }} ({{ $item->equipo?->numero_serie }})</td>
+                            <td class="app-cell-nowrap">{{ strtoupper(str_replace('_', ' ', $item->estado_anterior ?: '-')) }}</td>
+                            <td class="app-cell-nowrap">{{ strtoupper(str_replace('_', ' ', $item->estado_nuevo ?: '-')) }}</td>
+                            <td class="min-w-[16rem] app-cell-wrap">{{ $item->institucionAnterior?->nombre ?: '-' }} / {{ $item->servicioAnterior?->nombre ?: '-' }} / {{ $item->oficinaAnterior?->nombre ?: '-' }}</td>
+                            <td class="min-w-[16rem] app-cell-wrap">{{ $item->institucionNueva?->nombre ?: '-' }} / {{ $item->servicioNuevo?->nombre ?: '-' }} / {{ $item->oficinaNueva?->nombre ?: '-' }}</td>
+                            <td class="app-cell-nowrap">{{ $item->usuario?->name ?: '-' }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="6" class="py-4 text-center text-slate-500">Sin historial asociado.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-end">
@@ -211,12 +215,12 @@
                     @csrf
                     <label for="motivo_anulacion" class="text-xs font-medium text-slate-600">Motivo de anulacion</label>
                     <textarea id="motivo_anulacion" name="motivo_anulacion" rows="2" required class="app-input text-sm" placeholder="Detalle el motivo administrativo"></textarea>
-                    <button type="submit" class="min-h-[48px] rounded-xl bg-red-600 px-5 py-3 font-semibold text-white">Anular acta</button>
+                    <button type="submit" class="btn w-full bg-red-600 text-white hover:bg-red-700">Anular acta</button>
                 </form>
             @endif
         @endcan
 
-        <a href="{{ route('actas.download', $acta) }}" class="min-h-[48px] rounded-xl bg-primary-600 px-5 py-3 font-semibold text-white text-center">Descargar PDF</a>
+        <a href="{{ route('actas.download', $acta) }}" class="btn btn-primary w-full md:w-auto">Descargar PDF</a>
     </div>
 </div>
 @endsection

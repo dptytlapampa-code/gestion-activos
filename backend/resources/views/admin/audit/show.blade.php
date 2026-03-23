@@ -94,7 +94,9 @@
 
                 <div class="app-subcard p-4">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Correlation ID</p>
-                    <p class="mt-2 break-all text-sm font-semibold text-slate-900">{{ $auditLog->correlation_id ?? 'Sin correlacion' }}</p>
+                    <div class="mt-2 overflow-x-auto">
+                        <p class="inline-block whitespace-nowrap font-mono text-sm font-semibold text-slate-900">{{ $auditLog->correlation_id ?? 'Sin correlacion' }}</p>
+                    </div>
                 </div>
 
                 <div class="app-subcard p-4">
@@ -104,7 +106,7 @@
 
                 <div class="app-subcard p-4">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Agente de usuario</p>
-                    <p class="mt-2 break-all text-sm font-semibold text-slate-900">{{ $auditLog->user_agent ?? 'No disponible' }}</p>
+                    <p class="mt-2 app-cell-wrap text-sm font-semibold text-slate-900">{{ $auditLog->user_agent ?? 'No disponible' }}</p>
                 </div>
             </div>
         </section>
@@ -155,7 +157,7 @@
                 </div>
 
                 <div class="mt-5 hidden overflow-x-auto md:block">
-                    <table class="app-table text-sm">
+                    <table class="app-table min-w-[44rem] text-sm">
                         <thead>
                             <tr>
                                 <th>Campo</th>
@@ -166,9 +168,9 @@
                         <tbody>
                             @foreach ($changes as $change)
                                 <tr>
-                                    <td class="font-medium text-slate-800">{{ $change['label'] }}</td>
-                                    <td class="break-words">{{ $formatValue($change['before']) }}</td>
-                                    <td class="break-words">{{ $formatValue($change['after']) }}</td>
+                                    <td class="min-w-[12rem] font-medium text-slate-800">{{ $change['label'] }}</td>
+                                    <td class="min-w-[14rem] app-cell-wrap">{{ $formatValue($change['before']) }}</td>
+                                    <td class="min-w-[14rem] app-cell-wrap">{{ $formatValue($change['after']) }}</td>
                                 </tr>
                             @endforeach
                         </tbody>

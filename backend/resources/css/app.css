@@ -132,6 +132,7 @@
         border-color: rgba(217, 226, 236, 0.96);
         background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(252, 253, 255, 0.97) 100%);
         box-shadow: var(--app-panel-shadow);
+        overscroll-behavior-x: contain;
     }
 
     .app-subcard {
@@ -180,7 +181,6 @@
 
     .app-sidebar-brand-copy {
         @apply mt-4 min-w-0 border-t border-white/10 pt-4;
-        overflow-wrap: anywhere;
     }
 
     .app-sidebar-toggle {
@@ -296,8 +296,7 @@
     }
 
     .btn {
-        @apply inline-flex min-h-[2.75rem] max-w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-center text-sm font-semibold leading-5 shadow-sm transition-all duration-200 hover:-translate-y-px;
-        white-space: normal;
+        @apply inline-flex min-h-[2.75rem] max-w-full flex-shrink-0 items-center justify-center gap-2 rounded-xl px-4 py-2 text-center text-sm font-semibold leading-5 shadow-sm transition-all duration-200 hover:-translate-y-px whitespace-nowrap;
     }
 
     .btn > svg {
@@ -406,16 +405,12 @@
     .app-table th {
         @apply px-3 py-3 sm:px-4 sm:py-3.5 lg:px-5;
         vertical-align: top;
-        white-space: normal;
-        overflow-wrap: anywhere;
+        white-space: nowrap;
     }
 
     .app-table td {
         @apply px-3 py-3 sm:px-4 sm:py-4 lg:px-5;
         vertical-align: top;
-        white-space: normal;
-        overflow-wrap: anywhere;
-        word-break: break-word;
     }
 
     .app-table tbody tr {
@@ -432,13 +427,21 @@
         background-color: rgba(238, 244, 250, 0.94);
     }
 
+    .app-cell-nowrap {
+        white-space: nowrap;
+    }
+
+    .app-cell-wrap {
+        white-space: normal;
+        overflow-wrap: break-word;
+    }
+
     .app-badge {
-        @apply inline-flex max-w-full flex-wrap items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold leading-5;
-        overflow-wrap: anywhere;
+        @apply inline-flex max-w-full flex-shrink-0 items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold leading-5 whitespace-nowrap;
     }
 
     .status-badge {
-        @apply inline-flex max-w-full flex-wrap items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide leading-5;
+        @apply inline-flex max-w-full flex-shrink-0 items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide leading-5 whitespace-nowrap;
     }
 
     .status-operativo {
