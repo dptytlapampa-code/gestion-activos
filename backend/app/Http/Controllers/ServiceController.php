@@ -27,11 +27,13 @@ class ServiceController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $activeInstitutionId = $this->activeInstitutionId($user);
 
-        $services = Service::query()
-            ->with('institution')
-            ->where('institution_id', $activeInstitutionId ?? 0)
+        $services = $this->applyGlobalAdministrationScope(
+            Service::query()->with('institution'),
+            'institution_id',
+            $user
+        )
+            ->orderBy('institution_id')
             ->orderBy('nombre')
             ->paginate(10);
 
@@ -42,27 +44,18 @@ class ServiceController extends Controller
 
     public function create(Request $request): View
     {
-        $institutions = Institution::query()
-            ->where('id', $this->activeInstitutionId($request->user()) ?? 0)
-            ->orderBy('nombre')
-            ->get();
-
         return view('services.create', [
-            'institutions' => $institutions,
+            'institutions' => $this->scopedInstitutions($request->user()),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $activeInstitutionId = $this->activeInstitutionId($request->user());
-
         $validated = $request->validate([
             'institution_id' => [
                 'required',
                 'integer',
-                Rule::exists('institutions', 'id')->where(
-                    fn ($query) => $query->where('id', $activeInstitutionId ?? 0)
-                ),
+                $this->scopedInstitutionExistsRule($request->user()),
             ],
             'nombre' => [
                 'required',
@@ -82,36 +75,27 @@ class ServiceController extends Controller
 
     public function edit(Request $request, Service $service): View
     {
-        if (! $this->isActiveInstitution($request->user(), (int) $service->institution_id)) {
+        if (! $this->isWithinGlobalAdministrationScope($request->user(), (int) $service->institution_id)) {
             abort(403);
         }
 
-        $institutions = Institution::query()
-            ->where('id', $this->activeInstitutionId($request->user()) ?? 0)
-            ->orderBy('nombre')
-            ->get();
-
         return view('services.edit', [
             'service' => $service,
-            'institutions' => $institutions,
+            'institutions' => $this->scopedInstitutions($request->user()),
         ]);
     }
 
     public function update(Request $request, Service $service): RedirectResponse
     {
-        if (! $this->isActiveInstitution($request->user(), (int) $service->institution_id)) {
+        if (! $this->isWithinGlobalAdministrationScope($request->user(), (int) $service->institution_id)) {
             abort(403);
         }
-
-        $activeInstitutionId = $this->activeInstitutionId($request->user());
 
         $validated = $request->validate([
             'institution_id' => [
                 'required',
                 'integer',
-                Rule::exists('institutions', 'id')->where(
-                    fn ($query) => $query->where('id', $activeInstitutionId ?? 0)
-                ),
+                $this->scopedInstitutionExistsRule($request->user()),
             ],
             'nombre' => [
                 'required',
@@ -133,7 +117,7 @@ class ServiceController extends Controller
 
     public function destroy(Request $request, Service $service): RedirectResponse
     {
-        if (! $this->isActiveInstitution($request->user(), (int) $service->institution_id)) {
+        if (! $this->isWithinGlobalAdministrationScope($request->user(), (int) $service->institution_id)) {
             abort(403);
         }
 
@@ -142,5 +126,36 @@ class ServiceController extends Controller
         return redirect()
             ->route('services.index')
             ->with('status', 'Servicio eliminado correctamente.');
+    }
+
+    private function scopedInstitutions(?User $user)
+    {
+        return $this->applyGlobalAdministrationScope(
+            Institution::query(),
+            'id',
+            $user
+        )
+            ->orderBy('nombre')
+            ->get();
+    }
+
+    private function scopedInstitutionExistsRule(?User $user): \Illuminate\Validation\Rules\Exists
+    {
+        $rule = Rule::exists('institutions', 'id');
+        $scopeIds = $this->globalAdministrationScopeIds($user);
+
+        if ($scopeIds === null) {
+            return $rule;
+        }
+
+        return $rule->where(function ($query) use ($scopeIds): void {
+            if ($scopeIds === []) {
+                $query->whereRaw('1 = 0');
+
+                return;
+            }
+
+            $query->whereIn('id', $scopeIds);
+        });
     }
 }

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Institution;
 use App\Models\User;
+use App\Services\ActiveInstitutionContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -14,6 +15,10 @@ class InstitutionModuleTest extends TestCase
     public function test_superadmin_puede_buscar_y_paginar_instituciones_con_whitelist_de_per_page(): void
     {
         $superadmin = $this->crearUsuario(User::ROLE_SUPERADMIN);
+        $activeInstitution = Institution::create([
+            'codigo' => 'CTX-00',
+            'nombre' => 'Hospital Contexto Activo',
+        ]);
 
         for ($i = 1; $i <= 21; $i++) {
             Institution::create([
@@ -24,16 +29,21 @@ class InstitutionModuleTest extends TestCase
             ]);
         }
 
-        $defaultResponse = $this->actingAs($superadmin)->get(route('institutions.index'));
+        $defaultResponse = $this->actingAs($superadmin)
+            ->withSession([ActiveInstitutionContext::SESSION_KEY => $activeInstitution->id])
+            ->get(route('institutions.index'));
 
         $defaultResponse->assertOk();
+        $this->assertSame(22, $defaultResponse->viewData('institutions')->total());
         $this->assertSame(20, $defaultResponse->viewData('institutions')->perPage());
         $this->assertCount(20, $defaultResponse->viewData('institutions')->items());
 
-        $searchResponse = $this->actingAs($superadmin)->get(route('institutions.index', [
-            'search' => 'MAT-21',
-            'per_page' => 5,
-        ]));
+        $searchResponse = $this->actingAs($superadmin)
+            ->withSession([ActiveInstitutionContext::SESSION_KEY => $activeInstitution->id])
+            ->get(route('institutions.index', [
+                'search' => 'MAT-21',
+                'per_page' => 5,
+            ]));
 
         $searchResponse->assertOk();
 
@@ -43,7 +53,9 @@ class InstitutionModuleTest extends TestCase
         $this->assertSame(1, $searchPaginator->total());
         $this->assertSame('Hospital MAT-21', collect($searchPaginator->items())->first()?->nombre);
 
-        $invalidResponse = $this->actingAs($superadmin)->get(route('institutions.index', ['per_page' => 999]));
+        $invalidResponse = $this->actingAs($superadmin)
+            ->withSession([ActiveInstitutionContext::SESSION_KEY => $activeInstitution->id])
+            ->get(route('institutions.index', ['per_page' => 999]));
 
         $invalidResponse->assertOk();
         $this->assertSame(20, $invalidResponse->viewData('institutions')->perPage());

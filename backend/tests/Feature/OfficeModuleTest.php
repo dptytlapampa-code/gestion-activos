@@ -6,6 +6,7 @@ use App\Models\Institution;
 use App\Models\Office;
 use App\Models\Service;
 use App\Models\User;
+use App\Services\ActiveInstitutionContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -24,6 +25,7 @@ class OfficeModuleTest extends TestCase
         $superadmin = $this->crearUsuario(User::ROLE_SUPERADMIN);
 
         $this->actingAs($superadmin)
+            ->withSession([ActiveInstitutionContext::SESSION_KEY => $institucionB->id])
             ->post(route('offices.store'), [
                 'institution_id' => $institucionA->id,
                 'service_id' => $servicioB->id,
@@ -33,6 +35,7 @@ class OfficeModuleTest extends TestCase
             ->assertSessionHasErrors('service_id');
 
         $this->actingAs($superadmin)
+            ->withSession([ActiveInstitutionContext::SESSION_KEY => $institucionB->id])
             ->post(route('offices.store'), [
                 'institution_id' => $institucionA->id,
                 'service_id' => $servicioA->id,
@@ -63,6 +66,7 @@ class OfficeModuleTest extends TestCase
         $superadmin = $this->crearUsuario(User::ROLE_SUPERADMIN);
 
         $this->actingAs($superadmin)
+            ->withSession([ActiveInstitutionContext::SESSION_KEY => $institucionB->id])
             ->put(route('offices.update', $office), [
                 'institution_id' => $institucionA->id,
                 'service_id' => $servicioB->id,
@@ -75,6 +79,30 @@ class OfficeModuleTest extends TestCase
 
         $this->assertSame('Oficina RX', $office->nombre);
         $this->assertSame($servicioA->id, $office->service_id);
+    }
+
+    public function test_superadmin_ve_todas_las_oficinas_aunque_tenga_institucion_activa(): void
+    {
+        $institucionA = Institution::create(['nombre' => 'Hospital Este']);
+        $institucionB = Institution::create(['nombre' => 'Hospital Oeste']);
+
+        $servicioA = Service::create(['nombre' => 'Guardia', 'institution_id' => $institucionA->id]);
+        $servicioB = Service::create(['nombre' => 'Terapia', 'institution_id' => $institucionB->id]);
+
+        $oficinaA = Office::create(['nombre' => 'Oficina Este', 'service_id' => $servicioA->id]);
+        $oficinaB = Office::create(['nombre' => 'Oficina Oeste', 'service_id' => $servicioB->id]);
+
+        $superadmin = $this->crearUsuario(User::ROLE_SUPERADMIN);
+
+        $response = $this->actingAs($superadmin)
+            ->withSession([ActiveInstitutionContext::SESSION_KEY => $institucionA->id])
+            ->get(route('offices.index'));
+
+        $response->assertOk()
+            ->assertSee($oficinaA->nombre)
+            ->assertSee($oficinaB->nombre);
+
+        $this->assertSame(2, $response->viewData('offices')->total());
     }
 
     public function test_admin_hospital_no_puede_crear_oficina_en_otra_institucion(): void

@@ -102,6 +102,35 @@ class ActiveInstitutionContextTest extends TestCase
             ->assertDontSee($equipoPrimary->numero_serie);
     }
 
+    public function test_superadmin_uses_active_institution_as_operational_context_in_equipos(): void
+    {
+        [$primary, $secondary] = $this->crearInstituciones();
+        [$officePrimary, $officeSecondary] = $this->crearUbicaciones($primary, $secondary);
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Workstation']);
+        $equipoPrimary = $this->crearEquipo($officePrimary, $tipoEquipo, 'SER-SUPER-PRIMARY', 'BP-SUPER-PRIMARY');
+        $equipoSecondary = $this->crearEquipo($officeSecondary, $tipoEquipo, 'SER-SUPER-SECONDARY', 'BP-SUPER-SECONDARY');
+
+        $superadmin = User::factory()->create([
+            'role' => User::ROLE_SUPERADMIN,
+            'institution_id' => null,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($superadmin)
+            ->withSession([ActiveInstitutionContext::SESSION_KEY => $primary->id])
+            ->get(route('equipos.index'))
+            ->assertOk()
+            ->assertSee($equipoPrimary->numero_serie)
+            ->assertDontSee($equipoSecondary->numero_serie);
+
+        $this->actingAs($superadmin)
+            ->withSession([ActiveInstitutionContext::SESSION_KEY => $secondary->id])
+            ->get(route('equipos.index'))
+            ->assertOk()
+            ->assertSee($equipoSecondary->numero_serie)
+            ->assertDontSee($equipoPrimary->numero_serie);
+    }
+
     public function test_operational_access_is_blocked_until_the_user_changes_context(): void
     {
         [$primary, $secondary] = $this->crearInstituciones();

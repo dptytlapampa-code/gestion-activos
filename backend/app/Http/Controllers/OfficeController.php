@@ -28,13 +28,22 @@ class OfficeController extends Controller
 
     public function index(Request $request): View
     {
-        $activeInstitutionId = $this->activeInstitutionId($request->user());
+        $scopeIds = $this->globalAdministrationScopeIds($request->user());
 
         $offices = Office::query()
             ->with(['service.institution'])
-            ->whereHas('service', function ($query) use ($activeInstitutionId): void {
-                $query->where('institution_id', $activeInstitutionId ?? 0);
+            ->when($scopeIds !== null, function ($query) use ($scopeIds): void {
+                $query->whereHas('service', function ($serviceQuery) use ($scopeIds): void {
+                    if ($scopeIds === []) {
+                        $serviceQuery->whereRaw('1 = 0');
+
+                        return;
+                    }
+
+                    $serviceQuery->whereIn('institution_id', $scopeIds);
+                });
             })
+            ->orderBy('service_id')
             ->orderBy('nombre')
             ->paginate(10);
 
@@ -72,7 +81,7 @@ class OfficeController extends Controller
     {
         $office->loadMissing('service.institution');
 
-        if (! $this->isActiveInstitution($request->user(), (int) $office->service?->institution_id)) {
+        if (! $this->isWithinGlobalAdministrationScope($request->user(), (int) $office->service?->institution_id)) {
             abort(403);
         }
 
@@ -87,7 +96,7 @@ class OfficeController extends Controller
     {
         $office->loadMissing('service');
 
-        if (! $this->isActiveInstitution($request->user(), (int) $office->service?->institution_id)) {
+        if (! $this->isWithinGlobalAdministrationScope($request->user(), (int) $office->service?->institution_id)) {
             abort(403);
         }
 
@@ -108,7 +117,7 @@ class OfficeController extends Controller
     {
         $office->loadMissing('service');
 
-        if (! $this->isActiveInstitution($request->user(), (int) $office->service?->institution_id)) {
+        if (! $this->isWithinGlobalAdministrationScope($request->user(), (int) $office->service?->institution_id)) {
             abort(403);
         }
 
@@ -121,16 +130,23 @@ class OfficeController extends Controller
 
     private function scopedInstitutions(?User $user)
     {
-        return Institution::query()
-            ->where('id', $this->activeInstitutionId($user) ?? 0)
+        return $this->applyGlobalAdministrationScope(
+            Institution::query(),
+            'id',
+            $user
+        )
             ->orderBy('nombre')
             ->get(['id', 'nombre']);
     }
 
     private function scopedServices(?User $user)
     {
-        return Service::query()
-            ->where('institution_id', $this->activeInstitutionId($user) ?? 0)
+        return $this->applyGlobalAdministrationScope(
+            Service::query(),
+            'institution_id',
+            $user
+        )
+            ->orderBy('institution_id')
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'institution_id']);
     }

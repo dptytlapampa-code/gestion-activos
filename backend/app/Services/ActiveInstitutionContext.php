@@ -167,6 +167,27 @@ class ActiveInstitutionContext
             && $this->currentId($user, $session) === $normalizedInstitutionId;
     }
 
+    public function bypassesActiveInstitutionForGlobalModules(?User $user): bool
+    {
+        return $user instanceof User
+            && $user->hasRole(User::ROLE_SUPERADMIN);
+    }
+
+    public function isWithinGlobalAdministrationScope(?User $user, ?int $institutionId, ?Session $session = null): bool
+    {
+        $normalizedInstitutionId = $this->normalizeId($institutionId);
+
+        if ($normalizedInstitutionId === null || ! $user instanceof User) {
+            return false;
+        }
+
+        if ($this->bypassesActiveInstitutionForGlobalModules($user)) {
+            return true;
+        }
+
+        return $this->isActiveInstitution($user, $normalizedInstitutionId, $session);
+    }
+
     /**
      * @return array<int, int>
      */
@@ -175,6 +196,22 @@ class ActiveInstitutionContext
         $activeInstitutionId = $this->currentId($user, $session);
 
         return $activeInstitutionId !== null ? [$activeInstitutionId] : [];
+    }
+
+    /**
+     * @return array<int, int>|null
+     */
+    public function globalAdministrationScopeIds(?User $user, ?Session $session = null): ?array
+    {
+        if (! $user instanceof User) {
+            return [];
+        }
+
+        if ($this->bypassesActiveInstitutionForGlobalModules($user)) {
+            return null;
+        }
+
+        return $this->activeScopeIds($user, $session);
     }
 
     private function normalizeId(mixed $value): ?int

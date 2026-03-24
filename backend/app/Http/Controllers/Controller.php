@@ -45,6 +45,34 @@ abstract class Controller extends BaseController
         return $this->institutionContext()->isActiveInstitution($user, $institutionId);
     }
 
+    /**
+     * @return array<int, int>|null
+     */
+    protected function globalAdministrationScopeIds(?User $user = null): ?array
+    {
+        return $this->institutionContext()->globalAdministrationScopeIds($user ?? request()->user());
+    }
+
+    protected function isWithinGlobalAdministrationScope(?User $user, ?int $institutionId): bool
+    {
+        return $this->institutionContext()->isWithinGlobalAdministrationScope($user, $institutionId);
+    }
+
+    protected function applyGlobalAdministrationScope(mixed $query, string $column, ?User $user = null): mixed
+    {
+        $scopeIds = $this->globalAdministrationScopeIds($user ?? request()->user());
+
+        if ($scopeIds === null) {
+            return $query;
+        }
+
+        if ($scopeIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereIn($column, $scopeIds);
+    }
+
     protected function friendlyErrorRedirect(Throwable $exception, bool $withInput = true): RedirectResponse
     {
         if (config('app.debug')) {

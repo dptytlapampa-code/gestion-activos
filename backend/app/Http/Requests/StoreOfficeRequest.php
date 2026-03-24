@@ -19,9 +19,19 @@ class StoreOfficeRequest extends FormRequest
     public function rules(): array
     {
         $institutionRule = Rule::exists('institutions', 'id');
-        $activeInstitutionId = app(ActiveInstitutionContext::class)->currentId($this->user());
+        $scopeIds = app(ActiveInstitutionContext::class)->globalAdministrationScopeIds($this->user());
 
-        $institutionRule = $institutionRule->where(fn ($query) => $query->where('id', $activeInstitutionId ?? 0));
+        if ($scopeIds !== null) {
+            $institutionRule = $institutionRule->where(function ($query) use ($scopeIds): void {
+                if ($scopeIds === []) {
+                    $query->whereRaw('1 = 0');
+
+                    return;
+                }
+
+                $query->whereIn('id', $scopeIds);
+            });
+        }
 
         return [
             'institution_id' => [

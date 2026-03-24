@@ -8,10 +8,10 @@ use App\Services\ActiveInstitutionContext;
 
 class OfficePolicy
 {
-    public function before(User $user): ?bool { return null; }
+    public function before(User $user): ?bool { return $user->hasRole(User::ROLE_SUPERADMIN) ? true : null; }
     public function viewAny(User $user): bool { return $user->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN, User::ROLE_TECNICO); }
-    public function view(User $user, Office $office): bool { return app(ActiveInstitutionContext::class)->isActiveInstitution($user, $office->service?->institution_id); }
+    public function view(User $user, Office $office): bool { return app(ActiveInstitutionContext::class)->isWithinGlobalAdministrationScope($user, $office->service?->institution_id); }
     public function create(User $user): bool { return $user->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN); }
-    public function update(User $user, Office $office): bool { return $user->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN) && app(ActiveInstitutionContext::class)->isActiveInstitution($user, $office->service?->institution_id); }
+    public function update(User $user, Office $office): bool { return $user->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN) && app(ActiveInstitutionContext::class)->isWithinGlobalAdministrationScope($user, $office->service?->institution_id); }
     public function delete(User $user, Office $office): bool { return $this->update($user, $office); }
 }
