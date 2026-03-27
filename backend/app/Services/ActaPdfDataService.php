@@ -18,34 +18,48 @@ class ActaPdfDataService
             'institucionDestino',
             'servicioDestino',
             'oficinaDestino',
-            'equipos',
+            'creator',
+            'equipos.tipoEquipo',
+            'equipos.oficina.service.institution',
         ]);
 
         $settings = system_config();
-        $headerLogoPath = $settings->logo_institucional_file_path ?? $settings->logo_pdf_file_path ?? null;
+        $systemName = $this->nullableTrim($settings->nombre_sistema ?? $settings->site_name ?? config('app.name'))
+            ?? config('app.name');
+        $headerLogoPath = $settings->logo_pdf_file_path ?? $settings->logo_institucional_file_path ?? null;
+        $issuerInstitutionName = $this->resolveIssuerInstitutionName($acta, $systemName);
 
         $equipoQr = $this->resolveEquipoForQr($acta);
         $equipoPublicUrl = $equipoQr !== null
             ? route('equipos.public.show', ['uuid' => $equipoQr->uuid])
             : null;
 
+        $originSummary = $this->buildOriginSummary($acta, $issuerInstitutionName);
         $destinoInstitucional = $this->buildDestinoInstitucional($acta);
-        $prestamoDestinatario = $this->buildPrestamoDestinatario($acta);
-        $institutionName = $this->resolveInstitutionName($acta, $settings->nombre_sistema ?? config('app.name'));
+        $receptorData = $this->buildReceptorData($acta);
+        $destinationSummary = $this->buildDestinationSummary($destinoInstitucional, $receptorData);
+        $equipmentTable = $this->buildEquipmentTable($acta, $originSummary);
 
         return [
-            'pdfInstitutionName' => $institutionName,
-            'pdfFooterInstitutionName' => $institutionName,
+            'pdfSystemName' => $systemName,
+            'pdfInstitutionName' => $issuerInstitutionName,
+            'pdfIssuerInstitutionName' => $issuerInstitutionName,
+            'pdfFooterInstitutionName' => $issuerInstitutionName,
             'pdfHeaderLogoPath' => $headerLogoPath,
             'pdfDocumentTitle' => $this->resolveTitle($acta),
+            'pdfDocumentFacts' => $this->buildDocumentFacts($acta, $issuerInstitutionName),
+            'pdfOriginSummary' => $originSummary,
+            'pdfDestinationSummary' => $destinationSummary,
+            'pdfReceptorData' => $receptorData,
+            'pdfEquipmentTable' => $equipmentTable,
             'equipoPublicUrl' => $equipoPublicUrl,
             'equipoQrSvg' => $this->generateQrSvg($equipoPublicUrl),
             'pdfDestinoInstitucional' => $destinoInstitucional,
-            'pdfPrestamoDestinatario' => $prestamoDestinatario,
+            'pdfPrestamoDestinatario' => $receptorData,
         ];
     }
 
-    private function resolveInstitutionName(Acta $acta, string $fallback): string
+    private function resolveIssuerInstitutionName(Acta $acta, string $fallback): string
     {
         $payloadName = $this->nullableTrim(data_get($acta->evento_payload, 'institution_name'));
 
@@ -117,6 +131,54 @@ class ActaPdfDataService
     }
 
     /**
+     * @return array<int, array{label:string,value:string}>
+     */
+    private function buildDocumentFacts(Acta $acta, string $issuerInstitutionName): array
+    {
+        return [
+            ['label' => 'Codigo', 'value' => $acta->codigo],
+            ['label' => 'Tipo', 'value' => $this->resolveTypeLabel($acta)],
+            ['label' => 'Fecha', 'value' => $acta->fecha?->format('d/m/Y') ?: '-'],
+            ['label' => 'Estado', 'value' => $this->resolveStatusLabel($acta)],
+            ['label' => 'Institucion administradora', 'value' => $issuerInstitutionName],
+            ['label' => 'Generado por', 'value' => $this->nullableTrim($acta->creator?->name) ?? '-'],
+        ];
+    }
+
+    /**
+     * @return array{
+     *     institution_label:string,
+     *     headline:string,
+     *     caption:?string,
+     *     locations:array<int, string>,
+     *     requires_equipment_column:bool
+     * }
+     */
+    private function buildOriginSummary(Acta $acta, string $issuerInstitutionName): array
+    {
+        $locationLabels = $acta->equipos
+            ->map(fn (Equipo $equipo): string => $this->resolveOriginLabel($acta, $equipo))
+            ->filter(fn (string $label): bool => $label !== '-')
+            ->unique()
+            ->values();
+
+        $institucionLabel = $this->nullableTrim($acta->institution?->nombre) ?? $issuerInstitutionName;
+        $requiresEquipmentColumn = $locationLabels->count() > 1;
+
+        return [
+            'institution_label' => $institucionLabel,
+            'headline' => $requiresEquipmentColumn
+                ? 'Multiples ubicaciones de origen registradas'
+                : ((string) ($locationLabels->first() ?? $institucionLabel)),
+            'caption' => $requiresEquipmentColumn
+                ? 'La trazabilidad individual de origen se conserva en la tabla de detalle.'
+                : null,
+            'locations' => $locationLabels->all(),
+            'requires_equipment_column' => $requiresEquipmentColumn,
+        ];
+    }
+
+    /**
      * @return array{institucion:?string,servicio:?string,oficina:?string,texto:string,has_data:bool}
      */
     private function buildDestinoInstitucional(Acta $acta): array
@@ -145,7 +207,7 @@ class ActaPdfDataService
     /**
      * @return array{is_prestamo:bool,nombre:?string,dni:?string,cargo:?string,dependencia:?string,has_data:bool,summary:string}
      */
-    private function buildPrestamoDestinatario(Acta $acta): array
+    private function buildReceptorData(Acta $acta): array
     {
         $nombre = $this->nullableTrim($acta->receptor_nombre);
         $dni = $this->nullableTrim($acta->receptor_dni);
@@ -171,6 +233,116 @@ class ActaPdfDataService
             'has_data' => $hasData,
             'summary' => $summaryParts !== [] ? implode(' | ', $summaryParts) : '',
         ];
+    }
+
+    /**
+     * @param  array{institucion:?string,servicio:?string,oficina:?string,texto:string,has_data:bool}  $destinoInstitucional
+     * @param  array{is_prestamo:bool,nombre:?string,dni:?string,cargo:?string,dependencia:?string,has_data:bool,summary:string}  $receptorData
+     * @return array{title:string,headline:string,caption:?string}
+     */
+    private function buildDestinationSummary(array $destinoInstitucional, array $receptorData): array
+    {
+        if (($receptorData['is_prestamo'] ?? false) === true) {
+            return [
+                'title' => 'Destinatario del prestamo',
+                'headline' => $receptorData['summary'] !== ''
+                    ? $receptorData['summary']
+                    : 'Destinatario del prestamo no informado',
+                'caption' => ($destinoInstitucional['has_data'] ?? false) === true
+                    ? 'Referencia institucional: '.$destinoInstitucional['texto']
+                    : null,
+            ];
+        }
+
+        if (($destinoInstitucional['has_data'] ?? false) === true) {
+            return [
+                'title' => 'Destino administrativo',
+                'headline' => (string) $destinoInstitucional['texto'],
+                'caption' => null,
+            ];
+        }
+
+        return [
+            'title' => 'Destino administrativo',
+            'headline' => 'Sin destino adicional registrado.',
+            'caption' => null,
+        ];
+    }
+
+    /**
+     * @param  array{
+     *     institution_label:string,
+     *     headline:string,
+     *     caption:?string,
+     *     locations:array<int, string>,
+     *     requires_equipment_column:bool
+     * }  $originSummary
+     * @return array{
+     *     show_origin_column:bool,
+     *     rows:array<int, array{
+     *         position:int,
+     *         equipo:string,
+     *         marca:?string,
+     *         modelo:?string,
+     *         serie:?string,
+     *         patrimonial:?string,
+     *         accesorios:?string,
+     *         origen:?string
+     *     }>
+     * }
+     */
+    private function buildEquipmentTable(Acta $acta, array $originSummary): array
+    {
+        $showOriginColumn = (bool) ($originSummary['requires_equipment_column'] ?? false);
+
+        return [
+            'show_origin_column' => $showOriginColumn,
+            'rows' => $acta->equipos
+                ->values()
+                ->map(function (Equipo $equipo, int $index) use ($acta, $showOriginColumn): array {
+                    return [
+                        'position' => $index + 1,
+                        'equipo' => $equipo->tipoEquipo?->nombre ?? $equipo->tipo ?? 'Equipo',
+                        'marca' => $this->nullableTrim($equipo->marca),
+                        'modelo' => $this->nullableTrim($equipo->modelo),
+                        'serie' => $this->nullableTrim($equipo->numero_serie),
+                        'patrimonial' => $this->nullableTrim($equipo->bien_patrimonial),
+                        'accesorios' => $this->nullableTrim($equipo->pivot->accesorios ?? null),
+                        'origen' => $showOriginColumn ? $this->resolveOriginLabel($acta, $equipo) : null,
+                    ];
+                })
+                ->all(),
+        ];
+    }
+
+    private function resolveOriginLabel(Acta $acta, Equipo $equipo): string
+    {
+        $payloadOrigen = data_get($acta->evento_payload, 'origenes_por_equipo.'.(string) $equipo->id, []);
+
+        $partes = array_values(array_filter([
+            $this->nullableTrim($equipo->pivot->institucion_origen_nombre ?? data_get($payloadOrigen, 'institucion_nombre'))
+                ?? $this->nullableTrim($equipo->oficina?->service?->institution?->nombre),
+            $this->nullableTrim($equipo->pivot->servicio_origen_nombre ?? data_get($payloadOrigen, 'servicio_nombre'))
+                ?? $this->nullableTrim($equipo->oficina?->service?->nombre),
+            $this->nullableTrim($equipo->pivot->oficina_origen_nombre ?? data_get($payloadOrigen, 'oficina_nombre'))
+                ?? $this->nullableTrim($equipo->oficina?->nombre),
+        ], fn (?string $value): bool => $value !== null && $value !== ''));
+
+        return $partes !== [] ? implode(' / ', $partes) : '-';
+    }
+
+    private function resolveTypeLabel(Acta $acta): string
+    {
+        $label = Acta::LABELS[$acta->tipo] ?? strtoupper((string) $acta->tipo);
+
+        return ucfirst(strtolower($label));
+    }
+
+    private function resolveStatusLabel(Acta $acta): string
+    {
+        return ($acta->status ?? Acta::STATUS_ACTIVA) === Acta::STATUS_ANULADA
+            ? 'Anulada'
+            : 'Activa';
     }
 
     private function nullableTrim(mixed $value): ?string
