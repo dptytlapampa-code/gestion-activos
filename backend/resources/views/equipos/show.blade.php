@@ -62,8 +62,9 @@
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <span class="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 font-mono text-xs font-semibold tracking-[0.16em] text-indigo-700">
-                        Codigo interno: {{ $equipo->codigo_interno }}
+                    <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                        Codigo interno
+                        <span class="ml-2 font-mono font-semibold text-slate-900">{{ $equipo->codigo_interno }}</span>
                     </span>
                     <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
                         Nro Serie: {{ $equipo->numero_serie ?: '-' }}
@@ -110,7 +111,7 @@
                 <dl class="grid gap-4 md:grid-cols-2">
                     <div class="app-subcard p-4">
                         <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Codigo interno</dt>
-                        <dd class="mt-1 font-mono text-base font-semibold tracking-[0.14em] text-slate-900">{{ $equipo->codigo_interno }}</dd>
+                        <dd class="mt-1 font-mono text-sm font-semibold text-slate-900">{{ $equipo->codigo_interno }}</dd>
                     </div>
                     <div class="app-subcard p-4">
                         <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tipo</dt>

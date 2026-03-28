@@ -35,7 +35,10 @@ class EquipoModuleTest extends TestCase
         $this->actingAs($viewer)->get(route('equipos.create'))->assertForbidden();
 
         $tecnico = $this->crearUsuario(User::ROLE_TECNICO);
-        $this->actingAs($tecnico)->get(route('equipos.create'))->assertOk();
+        $this->actingAs($tecnico)->get(route('equipos.create'))
+            ->assertOk()
+            ->assertSee('El código interno se asignará automáticamente al guardar.')
+            ->assertDontSee('Identificador institucional unico, autogenerado y no editable por el usuario.');
         $this->actingAs($tecnico)->delete(route('equipos.destroy', $equipo))->assertForbidden();
     }
 
@@ -343,7 +346,7 @@ class EquipoModuleTest extends TestCase
 
         $equipo = Equipo::query()->where('numero_serie', 'SER-MAC-001')->firstOrFail();
 
-        $this->assertMatchesRegularExpression('/^GA-EQ-\d{9}$/', $equipo->codigo_interno);
+        $this->assertSame('GA-EQ-000001', $equipo->codigo_interno);
         $this->assertDatabaseHas('equipos', [
             'numero_serie' => 'SER-MAC-001',
             'mac_address' => 'AA:BB:CC:DD:EE:FF',
@@ -377,7 +380,7 @@ class EquipoModuleTest extends TestCase
 
         $this->assertNull($equipo->numero_serie);
         $this->assertNull($equipo->bien_patrimonial);
-        $this->assertMatchesRegularExpression('/^GA-EQ-\d{9}$/', $equipo->codigo_interno);
+        $this->assertSame('GA-EQ-000001', $equipo->codigo_interno);
     }
 
     public function test_uuid_se_genera_automaticamente_al_crear_equipo(): void

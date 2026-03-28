@@ -277,7 +277,9 @@
                                                     <div class="mt-1 app-cell-wrap text-slate-600" x-text="joinLabel([item.marca, item.modelo]) || '-'"></div>
                                                 </div>
                                             </td>
-                                            <td class="app-cell-nowrap font-mono text-xs font-semibold tracking-[0.14em] text-slate-900" x-text="item.codigo_interno || '-'"></td>
+                                            <td class="app-cell-nowrap">
+                                                <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700" x-text="item.codigo_interno || '-'"></span>
+                                            </td>
                                             <td class="app-cell-nowrap" x-text="item.numero_serie || '-'"></td>
                                             <td class="app-cell-nowrap" x-text="item.bien_patrimonial || '-'"></td>
                                             <td>
@@ -381,7 +383,7 @@
                                         <p class="truncate font-semibold text-slate-900" x-text="item.label || item.tipo"></p>
                                         <p class="mt-1 text-sm text-slate-600">
                                             Codigo interno:
-                                            <span class="font-mono font-semibold tracking-[0.14em] text-slate-900" x-text="item.codigo_interno || '-'"></span>
+                                            <span class="font-mono font-semibold text-slate-900" x-text="item.codigo_interno || '-'"></span>
                                         </p>
                                         <p class="mt-1 text-sm text-slate-600">
                                             Serie:

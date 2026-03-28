@@ -10,7 +10,7 @@ return new class extends Migration
     private const COUNTER_TABLE = 'internal_code_sequences';
     private const COUNTER_RESOURCE = 'equipos';
     private const INTERNAL_CODE_PREFIX = 'GA-EQ-';
-    private const INTERNAL_CODE_PAD = 9;
+    private const INTERNAL_CODE_PAD = 6;
 
     public function up(): void
     {
@@ -104,6 +104,11 @@ return new class extends Migration
                 continue;
             }
 
+            /*
+             * Preserve previously assigned internal codes, including historical 9-digit variants,
+             * to avoid breaking printed labels, actas or other external references.
+             * Only missing or conflicting records are regenerated with the current 6-digit minimum padding.
+             */
             if (array_key_exists($normalizedCode, $seenCodes)) {
                 DB::table('equipos')
                     ->where('id', $equipo->id)
@@ -189,7 +194,7 @@ return new class extends Migration
 
     private function managedSequenceFromCode(string $code): ?int
     {
-        $pattern = '/^'.preg_quote(self::INTERNAL_CODE_PREFIX, '/').'(\d{'.self::INTERNAL_CODE_PAD.'})$/';
+        $pattern = '/^'.preg_quote(self::INTERNAL_CODE_PREFIX, '/').'(\d{'.self::INTERNAL_CODE_PAD.',})$/';
 
         if (! preg_match($pattern, $code, $matches)) {
             return null;

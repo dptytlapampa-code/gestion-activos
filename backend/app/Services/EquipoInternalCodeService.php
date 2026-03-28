@@ -10,6 +10,10 @@ class EquipoInternalCodeService
     private const COUNTER_TABLE = 'internal_code_sequences';
     private const COUNTER_RESOURCE = 'equipos';
 
+    /**
+     * Historical internal codes are preserved as stored for traceability.
+     * Only newly generated codes use the current minimum 6-digit padding.
+     */
     public function next(): string
     {
         return DB::transaction(function (): string {

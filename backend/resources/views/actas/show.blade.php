@@ -162,7 +162,9 @@
                         <td class="app-cell-nowrap font-medium text-slate-900">{{ $equipo->tipo }}</td>
                         <td class="app-cell-nowrap">{{ $equipo->marca }}</td>
                         <td class="app-cell-nowrap">{{ $equipo->modelo }}</td>
-                        <td class="app-cell-nowrap font-mono text-xs font-semibold tracking-[0.14em] text-slate-900">{{ $equipo->codigo_interno }}</td>
+                        <td class="app-cell-nowrap">
+                            <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{{ $equipo->codigo_interno }}</span>
+                        </td>
                         <td class="app-cell-nowrap">{{ $equipo->numero_serie ?: '-' }}</td>
                         <td class="app-cell-nowrap">{{ $equipo->bien_patrimonial ?: '-' }}</td>
                         <td class="min-w-[16rem] app-cell-wrap">{{ $origenEquipo }}</td>

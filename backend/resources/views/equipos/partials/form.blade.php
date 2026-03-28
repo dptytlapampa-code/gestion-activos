@@ -20,7 +20,6 @@
 
     $estadoSeleccionado = old('estado', $equipo?->estado);
     $fechaIngreso = old('fecha_ingreso', $equipo?->fecha_ingreso?->format('Y-m-d'));
-    $codigoInterno = $equipo?->codigo_interno;
 @endphp
 
 <div
@@ -93,8 +92,23 @@
     }"
 >
     <div class="border-b border-slate-200 px-6 py-5 sm:px-8">
-        <h3 class="text-lg font-semibold text-slate-900">Datos del equipo</h3>
-        <p class="mt-1 text-sm text-slate-600">Complete la información solicitada. El sistema asigna automáticamente un código interno único para rotulado y trazabilidad.</p>
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+                <h3 class="text-lg font-semibold text-slate-900">Datos del equipo</h3>
+                @if ($equipo?->exists)
+                    <p class="mt-1 text-sm text-slate-600">Actualice la información operativa del equipo.</p>
+                @else
+                    <p class="mt-1 text-sm text-slate-600">El código interno se asignará automáticamente al guardar.</p>
+                @endif
+            </div>
+
+            @if ($equipo?->exists && $equipo->codigo_interno)
+                <div class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-sm text-slate-700">
+                    <span class="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Código interno</span>
+                    <span class="font-mono text-sm font-semibold text-slate-900">{{ $equipo->codigo_interno }}</span>
+                </div>
+            @endif
+        </div>
     </div>
 
     <form
@@ -117,18 +131,18 @@
         @endif
 
         <section class="space-y-4" aria-labelledby="ubicacion-heading">
-            <h4 id="ubicacion-heading" class="text-sm font-semibold uppercase tracking-wide text-slate-700">Ubicación</h4>
+            <h4 id="ubicacion-heading" class="text-sm font-semibold uppercase tracking-wide text-slate-700">Ubicacion</h4>
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div
                     @autocomplete-selected.window="if ($event.detail.name === 'institution_id') { handleInstitutionSelected($event.detail.value); }"
                     @autocomplete-cleared.window="if ($event.detail.name === 'institution_id') { handleInstitutionSelected(''); }"
                 >
-                    <label for="institution_id" class="block text-sm font-medium text-slate-700">Institución <span class="text-red-600" aria-hidden="true">*</span></label>
+                    <label for="institution_id" class="block text-sm font-medium text-slate-700">Institucion <span class="text-red-600" aria-hidden="true">*</span></label>
                     <x-autocomplete
                         name="institution_id"
                         endpoint="/api/search/institutions"
-                        placeholder="Buscar institución..."
+                        placeholder="Buscar institucion..."
                         :value="$institutionSelected"
                         :label="$institutionLabelSelected"
                         x-ref="institution"
@@ -182,7 +196,7 @@
         </section>
 
         <section class="space-y-4" aria-labelledby="datos-tecnicos-heading">
-            <h4 id="datos-tecnicos-heading" class="text-sm font-semibold uppercase tracking-wide text-slate-700">Datos técnicos</h4>
+            <h4 id="datos-tecnicos-heading" class="text-sm font-semibold uppercase tracking-wide text-slate-700">Datos tecnicos</h4>
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div
@@ -222,9 +236,9 @@
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                    <label for="numero_serie" class="block text-sm font-medium text-slate-700">Número de serie</label>
+                    <label for="numero_serie" class="block text-sm font-medium text-slate-700">Numero de serie</label>
                     <input id="numero_serie" name="numero_serie" type="text" value="{{ old('numero_serie', $equipo?->numero_serie) }}" class="mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 @error('numero_serie') border-red-400 focus:border-red-500 focus:ring-red-100 @else border-slate-300 @enderror" aria-invalid="@error('numero_serie') true @else false @enderror" aria-describedby="numero_serie_help @error('numero_serie') numero_serie_error @enderror" />
-                    <p id="numero_serie_help" class="mt-1 text-xs text-slate-500">Opcional. Cárguelo solo si el equipo tiene serie visible y verificable.</p>
+                    <p id="numero_serie_help" class="mt-1 text-xs text-slate-500">Opcional. Carguelo solo si el equipo tiene serie visible y verificable.</p>
                     @error('numero_serie')
                         <p id="numero_serie_error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -233,29 +247,19 @@
                 <div>
                     <label for="bien_patrimonial" class="block text-sm font-medium text-slate-700">Bien patrimonial</label>
                     <input id="bien_patrimonial" name="bien_patrimonial" type="text" value="{{ old('bien_patrimonial', $equipo?->bien_patrimonial) }}" class="mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 @error('bien_patrimonial') border-red-400 focus:border-red-500 focus:ring-red-100 @else border-slate-300 @enderror" aria-invalid="@error('bien_patrimonial') true @else false @enderror" aria-describedby="bien_patrimonial_help @error('bien_patrimonial') bien_patrimonial_error @enderror" />
-                    <p id="bien_patrimonial_help" class="mt-1 text-xs text-slate-500">Opcional. Úselo si la institución ya tiene identificación patrimonial cargada en el activo.</p>
+                    <p id="bien_patrimonial_help" class="mt-1 text-xs text-slate-500">Opcional. Uselo si la institucion ya tiene identificacion patrimonial cargada en el activo.</p>
                     @error('bien_patrimonial')
                         <p id="bien_patrimonial_error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                    <label for="mac_address" class="block text-sm font-medium text-slate-700">MAC</label>
-                    <input id="mac_address" name="mac_address" type="text" maxlength="50" value="{{ old('mac_address', $equipo?->mac_address) }}" class="mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 @error('mac_address') border-red-400 focus:border-red-500 focus:ring-red-100 @else border-slate-300 @enderror" aria-invalid="@error('mac_address') true @else false @enderror" aria-describedby="@error('mac_address') mac_address_error @enderror" />
-                    @error('mac_address')
-                        <p id="mac_address_error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <span class="block text-sm font-medium text-slate-700">Código interno</span>
-                    <div class="mt-1 rounded-xl border border-slate-300 bg-slate-50 px-4 py-3">
-                        <p class="font-mono text-base font-semibold tracking-[0.18em] text-slate-900">{{ $codigoInterno ?: 'Se generará automáticamente al guardar' }}</p>
-                        <p class="mt-1 text-xs text-slate-500">Identificador institucional único, autogenerado y no editable por el usuario.</p>
-                    </div>
-                </div>
+            <div>
+                <label for="mac_address" class="block text-sm font-medium text-slate-700">MAC</label>
+                <input id="mac_address" name="mac_address" type="text" maxlength="50" value="{{ old('mac_address', $equipo?->mac_address) }}" class="mt-1 w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 @error('mac_address') border-red-400 focus:border-red-500 focus:ring-red-100 @else border-slate-300 @enderror" aria-invalid="@error('mac_address') true @else false @enderror" aria-describedby="@error('mac_address') mac_address_error @enderror" />
+                @error('mac_address')
+                    <p id="mac_address_error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
             </div>
 
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -301,5 +305,3 @@
         </div>
     </form>
 </div>
-
-
