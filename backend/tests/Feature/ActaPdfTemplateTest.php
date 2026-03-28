@@ -94,12 +94,20 @@ class ActaPdfTemplateTest extends TestCase
             Storage::disk('public')->path('logos/pdf.png'),
             $pdfData['pdfHeaderLogoPath']
         );
+        $this->assertSame(
+            Storage::disk('public')->path('logos/pdf.png'),
+            $pdfData['pdfHeaderMastheadPath']
+        );
 
         $html = view('actas.pdf.entrega', array_merge(['acta' => $acta], $pdfData))->render();
 
         $this->assertStringContainsString('Sistema Provincial de Gestion de Activos y Trazabilidad', $html);
         $this->assertStringContainsString('Hospital Origen', $html);
         $this->assertStringContainsString('Destino administrativo', $html);
+        $this->assertStringContainsString('class="masthead-image"', $html);
+        $this->assertStringContainsString('alt="Membrete institucional"', $html);
+        $this->assertStringNotContainsString('header-logo-cell', $html);
+        $this->assertStringNotContainsString('<div class="issuer-name">Hospital Origen</div>', $html);
         $this->assertStringContainsString(
             '<span class="footer-line">Documento generado por Sistema Provincial de Gestion de Activos y Trazabilidad</span>',
             $html

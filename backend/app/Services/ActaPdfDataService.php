@@ -26,7 +26,7 @@ class ActaPdfDataService
         $settings = system_config();
         $systemName = $this->nullableTrim($settings->nombre_sistema ?? $settings->site_name ?? config('app.name'))
             ?? config('app.name');
-        $headerLogoPath = $settings->logo_pdf_file_path ?? $settings->logo_institucional_file_path ?? null;
+        $headerMastheadPath = $settings->logo_pdf_file_path ?? $settings->logo_institucional_file_path ?? null;
         $issuerInstitutionName = $this->resolveIssuerInstitutionName($acta, $systemName);
 
         $equipoQr = $this->resolveEquipoForQr($acta);
@@ -46,7 +46,8 @@ class ActaPdfDataService
             'pdfIssuerInstitutionName' => $issuerInstitutionName,
             'pdfFooterInstitutionName' => $systemName,
             'pdfFooterText' => $this->resolveFooterText($systemName),
-            'pdfHeaderLogoPath' => $headerLogoPath,
+            'pdfHeaderLogoPath' => $headerMastheadPath,
+            'pdfHeaderMastheadPath' => $headerMastheadPath,
             'pdfDocumentTitle' => $this->resolveTitle($acta),
             'pdfDocumentFacts' => $this->buildDocumentFacts($acta, $issuerInstitutionName),
             'pdfOriginSummary' => $originSummary,

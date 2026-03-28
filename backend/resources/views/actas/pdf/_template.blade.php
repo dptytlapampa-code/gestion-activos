@@ -46,36 +46,38 @@
     }
 
     .document-header {
+        margin-bottom: 16px;
+    }
+
+    .masthead {
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #d3dce4;
+        text-align: center;
+    }
+
+    .masthead-image {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        max-height: 96px;
+        margin: 0 auto;
+        object-fit: contain;
+        object-position: center top;
+    }
+
+    .title-block {
+        text-align: center;
         border-bottom: 2px solid #23364d;
         padding-bottom: 12px;
-        margin-bottom: 14px;
     }
 
-    .header-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .header-table td {
-        vertical-align: top;
-    }
-
-    .header-logo-cell {
-        width: 150px;
-        padding-right: 16px;
-    }
-
-    .header-logo-box {
+    .title-block-compact {
         padding-top: 2px;
     }
 
-    .header-logo-box img {
-        max-width: 140px;
-        max-height: 92px;
-    }
-
     .header-kicker {
-        font-size: 8.5px;
+        font-size: 8px;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.18em;
@@ -84,7 +86,7 @@
     }
 
     .system-name {
-        font-size: 18px;
+        font-size: 14px;
         font-weight: 700;
         text-transform: uppercase;
         line-height: 1.12;
@@ -92,27 +94,22 @@
     }
 
     .issuer-name {
-        margin-top: 4px;
-        font-size: 10px;
+        margin-top: 3px;
+        font-size: 9.5px;
         color: #506173;
     }
 
-    .title-band {
-        margin-top: 10px;
-        padding-top: 8px;
-        border-top: 1px solid #d3dce4;
-    }
-
     .title {
-        font-size: 15px;
+        font-size: 16px;
         font-weight: 700;
         text-transform: uppercase;
-        line-height: 1.2;
+        line-height: 1.18;
+        letter-spacing: 0.03em;
         color: #17283e;
     }
 
     .header-meta {
-        margin-top: 4px;
+        margin-top: 5px;
         font-size: 9px;
         color: #647588;
     }
@@ -370,6 +367,7 @@
         $documentTitle = $pdfDocumentTitle ?? strtoupper((string) ($titulo ?? 'ACTA DE EQUIPAMIENTO INFORMATICO'));
         $systemName = $pdfSystemName ?? config('app.name');
         $issuerInstitutionName = $pdfIssuerInstitutionName ?? ($pdfInstitutionName ?? ($acta->institution?->nombre ?: 'Institucion'));
+        $headerMastheadPath = $pdfHeaderMastheadPath ?? $pdfHeaderLogoPath ?? null;
         $footerText = $pdfFooterText ?? ('Documento generado por '.$systemName);
         $clausulaTexto = $clausula ?? 'Se deja constancia institucional del evento de trazabilidad registrado sobre el equipamiento detallado en el presente documento.';
         $documentFacts = collect($pdfDocumentFacts ?? []);
@@ -419,29 +417,24 @@
 
     <div class="content">
         <div class="document-header">
-            <table class="header-table">
-                <tr>
-                    @if (! empty($pdfHeaderLogoPath))
-                        <td class="header-logo-cell">
-                            <div class="header-logo-box">
-                                <img src="{{ $pdfHeaderLogoPath }}" alt="Logo institucional">
-                            </div>
-                        </td>
-                    @endif
-                    <td>
-                        <div class="header-kicker">Gestion institucional de activos</div>
-                        <div class="system-name">{{ $systemName }}</div>
-                        <div class="issuer-name">{{ $issuerInstitutionName }}</div>
+            @if (! empty($headerMastheadPath))
+                <div class="masthead">
+                    <img class="masthead-image" src="{{ $headerMastheadPath }}" alt="Membrete institucional">
+                </div>
+            @endif
 
-                        <div class="title-band">
-                            <div class="title">{{ $documentTitle }}</div>
-                            <div class="header-meta">
-                                Documento administrativo de trazabilidad patrimonial y operativa
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            </table>
+            <div class="title-block{{ empty($headerMastheadPath) ? ' title-block-compact' : '' }}">
+                @if (empty($headerMastheadPath))
+                    <div class="header-kicker">Gestion institucional de activos</div>
+                    <div class="system-name">{{ $systemName }}</div>
+                    <div class="issuer-name">{{ $issuerInstitutionName }}</div>
+                @endif
+
+                <div class="title">{{ $documentTitle }}</div>
+                <div class="header-meta">
+                    Documento administrativo de trazabilidad patrimonial y operativa
+                </div>
+            </div>
         </div>
 
         <div class="section keep-together">
