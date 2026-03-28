@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ActaController;
+use App\Http\Controllers\ActaPublicController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\SystemSettingsController;
 use App\Http\Controllers\Admin\UserController;
@@ -27,6 +28,10 @@ Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middlew
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->middleware('auth')->name('logout');
 
 Route::get('/equipos/public/{uuid}', [EquipoPublicController::class, 'show'])->middleware('web')->name('equipos.public.show');
+Route::get('/actas/public/{uuid}', [ActaPublicController::class, 'show'])
+    ->middleware('web')
+    ->whereUuid('uuid')
+    ->name('actas.public.show');
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/', DashboardController::class)->name('dashboard');

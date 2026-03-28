@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class Acta extends Model
 {
@@ -52,6 +54,7 @@ class Acta extends Model
     ];
 
     protected $fillable = [
+        'uuid',
         'institution_id',
         'institution_destino_id',
         'service_origen_id',
@@ -73,6 +76,15 @@ class Acta extends Model
         'motivo_anulacion',
         'created_by',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Acta $acta): void {
+            if (Schema::hasColumn($acta->getTable(), 'uuid') && empty($acta->uuid)) {
+                $acta->uuid = (string) Str::uuid();
+            }
+        });
+    }
 
     protected function casts(): array
     {

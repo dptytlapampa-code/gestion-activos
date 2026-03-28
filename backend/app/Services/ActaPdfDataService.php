@@ -29,10 +29,13 @@ class ActaPdfDataService
         $headerMastheadPath = $settings->logo_pdf_file_path ?? $settings->logo_institucional_file_path ?? null;
         $issuerInstitutionName = $this->resolveIssuerInstitutionName($acta, $systemName);
 
-        $equipoQr = $this->resolveEquipoForQr($acta);
+        $actaPublicUrl = $this->resolveActaPublicUrl($acta);
+        $equipoQr = $this->resolveSingleEquipoForQr($acta);
         $equipoPublicUrl = $equipoQr !== null
             ? route('equipos.public.show', ['uuid' => $equipoQr->uuid])
             : null;
+        $actaQrSvg = $this->generateQrSvg($actaPublicUrl, 112);
+        $equipoQrSvg = $this->generateQrSvg($equipoPublicUrl, 104);
 
         $originSummary = $this->buildOriginSummary($acta, $issuerInstitutionName);
         $destinoInstitucional = $this->buildDestinoInstitucional($acta);
@@ -54,8 +57,11 @@ class ActaPdfDataService
             'pdfDestinationSummary' => $destinationSummary,
             'pdfReceptorData' => $receptorData,
             'pdfEquipmentTable' => $equipmentTable,
+            'actaPublicUrl' => $actaPublicUrl,
+            'actaQrSvg' => $actaQrSvg,
             'equipoPublicUrl' => $equipoPublicUrl,
-            'equipoQrSvg' => $this->generateQrSvg($equipoPublicUrl),
+            'equipoQrSvg' => $equipoQrSvg,
+            'pdfQrCards' => $this->buildQrCards($acta, $actaPublicUrl, $actaQrSvg, $equipoQr, $equipoPublicUrl, $equipoQrSvg),
             'pdfDestinoInstitucional' => $destinoInstitucional,
             'pdfPrestamoDestinatario' => $receptorData,
         ];
@@ -104,19 +110,74 @@ class ActaPdfDataService
         return $this->nullableTrim($acta->institution?->nombre) ?? $fallback;
     }
 
-    private function resolveEquipoForQr(Acta $acta): ?Equipo
+    private function resolveActaPublicUrl(Acta $acta): ?string
     {
+        $uuid = $this->nullableTrim($acta->uuid ?? null);
+
+        if ($uuid === null) {
+            return null;
+        }
+
+        return route('actas.public.show', ['uuid' => $uuid]);
+    }
+
+    private function resolveSingleEquipoForQr(Acta $acta): ?Equipo
+    {
+        if ($acta->equipos->count() !== 1) {
+            return null;
+        }
+
         return $acta->equipos
             ->first(fn (Equipo $equipo): bool => is_string($equipo->uuid) && $equipo->uuid !== '');
     }
 
-    private function generateQrSvg(?string $url): ?string
+    private function generateQrSvg(?string $url, int $size = 120): ?string
     {
         if ($url === null || $url === '' || ! class_exists(QrCode::class)) {
             return null;
         }
 
-        return QrCode::size(120)->generate($url);
+        return QrCode::format('svg')
+            ->size($size)
+            ->margin(1)
+            ->generate($url);
+    }
+
+    /**
+     * @return array<int, array{title:string,description:string,url:string,svg:string,meta:string}>
+     */
+    private function buildQrCards(
+        Acta $acta,
+        ?string $actaPublicUrl,
+        ?string $actaQrSvg,
+        ?Equipo $equipoQr,
+        ?string $equipoPublicUrl,
+        ?string $equipoQrSvg,
+    ): array {
+        $cards = [];
+
+        if ($actaPublicUrl !== null && $actaQrSvg !== null) {
+            $cards[] = [
+                'title' => 'Acta patrimonial',
+                'description' => 'Escanee este codigo para validar esta acta en modo de solo lectura.',
+                'url' => $actaPublicUrl,
+                'svg' => $actaQrSvg,
+                'meta' => $acta->codigo,
+            ];
+        }
+
+        if ($equipoQr !== null && $equipoPublicUrl !== null && $equipoQrSvg !== null) {
+            $cards[] = [
+                'title' => 'Ficha publica del equipo',
+                'description' => 'Disponible solo en actas con un unico equipo para reforzar la trazabilidad sin saturar el documento.',
+                'url' => $equipoPublicUrl,
+                'svg' => $equipoQrSvg,
+                'meta' => $this->nullableTrim($equipoQr->codigo_interno)
+                    ?? $equipoQr->primaryIdentifier(),
+            ];
+        }
+
+        return $cards;
     }
 
     private function resolveTitle(Acta $acta): string

@@ -130,7 +130,8 @@
     .summary-table,
     .detail-table,
     .signature-table,
-    .qr-table {
+    .qr-table,
+    .qr-grid {
         width: 100%;
         border-collapse: collapse;
         table-layout: fixed;
@@ -299,13 +300,44 @@
 
     .qr-panel {
         background: #f7fafc;
-        border-top: 1px solid #dbe4eb;
-        border-bottom: 1px solid #dbe4eb;
+        border: 1px solid #dbe4eb;
+        border-radius: 8px;
+        padding: 8px;
+    }
+
+    .qr-grid-cell {
+        width: 50%;
+        vertical-align: top;
+        padding: 4px;
+    }
+
+    .qr-card {
+        background: #ffffff;
+        border: 1px solid #dbe4eb;
+        border-radius: 6px;
+        padding: 10px;
+        min-height: 150px;
+    }
+
+    .qr-card-title {
+        font-size: 8px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: #607284;
+        margin-bottom: 6px;
+    }
+
+    .qr-card-meta {
+        margin-top: 6px;
+        font-size: 8.5px;
+        font-weight: 700;
+        color: #1f3145;
     }
 
     .qr-table td {
         vertical-align: middle;
-        padding: 10px 0;
+        padding: 0;
     }
 
     .qr-code {
@@ -313,8 +345,8 @@
     }
 
     .qr-code svg {
-        width: 120px;
-        height: 120px;
+        width: 108px;
+        height: 108px;
     }
 
     .qr-text {
@@ -390,6 +422,12 @@
             'show_origin_column' => false,
             'rows' => [],
         ];
+        $qrCards = collect($pdfQrCards ?? [])->filter(function (mixed $card): bool {
+            return is_array($card)
+                && filled($card['title'] ?? null)
+                && filled($card['url'] ?? null)
+                && filled($card['svg'] ?? null);
+        })->values();
         $isPrestamo = (bool) ($receptorData['is_prestamo'] ?? false);
         $signatureRightLabel = match ($acta->tipo) {
             \App\Models\Acta::TIPO_PRESTAMO => 'Destinatario del prestamo',
@@ -400,9 +438,6 @@
         $multipleOriginLocations = collect($originSummary['locations'] ?? [])->filter()->values();
         $hasReceptorData = (bool) ($receptorData['has_data'] ?? false);
         $hasMotivoBaja = filled($acta->motivo_baja ?? null);
-        $qrDescription = $acta->equipos->count() > 1
-            ? 'Escanee este codigo para consultar la ficha publica del primer equipo asociado al acta.'
-            : 'Escanee este codigo para consultar la ficha publica del equipo asociado al acta.';
     @endphp
 
     @if ($isAnulada)
@@ -623,22 +658,51 @@
         </div>
 
         <div class="section keep-together">
-            <div class="section-title">Validacion publica</div>
+            <div class="section-title">Validacion y trazabilidad</div>
             <div class="qr-panel">
-                @if (! empty($equipoQrSvg))
-                    <table class="qr-table">
+                @if ($qrCards->isNotEmpty())
+                    <table class="qr-grid">
                         <tr>
-                            <td class="qr-code">{!! $equipoQrSvg !!}</td>
-                            <td class="qr-text">
-                                {{ $qrDescription }}
-                                @if (! empty($equipoPublicUrl))
-                                    <div class="qr-url">{{ $equipoPublicUrl }}</div>
-                                @endif
-                            </td>
+                            @if ($qrCards->count() === 1)
+                                @php $card = $qrCards->first(); @endphp
+                                <td class="qr-grid-cell" colspan="2">
+                                    <div class="qr-card">
+                                        <div class="qr-card-title">{{ $card['title'] }}</div>
+                                        <table class="qr-table">
+                                            <tr>
+                                                <td class="qr-code">{!! $card['svg'] !!}</td>
+                                                <td class="qr-text">
+                                                    {{ $card['description'] }}
+                                                    <div class="qr-card-meta">{{ $card['meta'] }}</div>
+                                                    <div class="qr-url">{{ $card['url'] }}</div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </td>
+                            @else
+                                @foreach ($qrCards as $card)
+                                    <td class="qr-grid-cell">
+                                        <div class="qr-card">
+                                            <div class="qr-card-title">{{ $card['title'] }}</div>
+                                            <table class="qr-table">
+                                                <tr>
+                                                    <td class="qr-code">{!! $card['svg'] !!}</td>
+                                                    <td class="qr-text">
+                                                        {{ $card['description'] }}
+                                                        <div class="qr-card-meta">{{ $card['meta'] }}</div>
+                                                        <div class="qr-url">{{ $card['url'] }}</div>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </td>
+                                @endforeach
+                            @endif
                         </tr>
                     </table>
                 @else
-                    <div class="qr-text">No fue posible generar el QR para esta acta.</div>
+                    <div class="qr-text">No fue posible generar los QR de trazabilidad para esta acta.</div>
                 @endif
             </div>
         </div>
