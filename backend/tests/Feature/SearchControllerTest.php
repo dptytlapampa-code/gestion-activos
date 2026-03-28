@@ -501,6 +501,33 @@ class SearchControllerTest extends TestCase
         $response->assertForbidden();
     }
 
+    public function test_tecnico_puede_buscar_equipos_en_contexto_de_actas(): void
+    {
+        $institution = Institution::create(['nombre' => 'Hospital Tecnico']);
+        $service = Service::create(['nombre' => 'Bioingenieria', 'institution_id' => $institution->id]);
+        $office = Office::create(['nombre' => 'Taller', 'service_id' => $service->id]);
+        $tipo = TipoEquipo::create(['nombre' => 'Monitor']);
+
+        $equipo = Equipo::create([
+            'tipo' => $tipo->nombre,
+            'tipo_equipo_id' => $tipo->id,
+            'marca' => 'Philips',
+            'modelo' => 'IntelliVue',
+            'numero_serie' => 'TEC-ACTA-01',
+            'bien_patrimonial' => 'BP-TEC-ACTA-01',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => now()->toDateString(),
+            'oficina_id' => $office->id,
+        ]);
+
+        $response = $this->actingAs($this->createUser(User::ROLE_TECNICO, $institution->id))
+            ->get('/api/search/acta-equipos?institution_id='.$institution->id.'&q=TEC-ACTA');
+
+        $response->assertOk()
+            ->assertJsonPath('items.0.id', $equipo->id)
+            ->assertJsonPath('meta.searched', true);
+    }
+
 
     private function createUser(string $role, ?int $institutionId = null): User
     {

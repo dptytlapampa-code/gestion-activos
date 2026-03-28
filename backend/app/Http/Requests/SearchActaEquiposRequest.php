@@ -6,16 +6,34 @@ use App\Models\Acta;
 use App\Models\Equipo;
 use App\Models\Office;
 use App\Models\Service;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class SearchActaEquiposRequest extends FormRequest
 {
+    private string $authorizationMessage = 'No tiene permisos para buscar equipos para generar actas.';
+
     public function authorize(): bool
     {
         $user = $this->user();
 
-        return $user !== null && $user->can('create', Acta::class);
+        if ($user === null) {
+            $this->authorizationMessage = 'Debe iniciar sesion para buscar equipos para generar actas.';
+
+            return false;
+        }
+
+        $response = Gate::forUser($user)->inspect('create', Acta::class);
+        $this->authorizationMessage = $response->message() ?: $this->authorizationMessage;
+
+        return $response->allowed();
+    }
+
+    protected function failedAuthorization(): void
+    {
+        throw new AuthorizationException($this->authorizationMessage);
     }
 
     protected function prepareForValidation(): void

@@ -26,6 +26,7 @@ use App\Policies\TipoEquipoPolicy;
 use App\Policies\UserPolicy;
 use App\Services\ActiveInstitutionContext;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -40,6 +41,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->ensureRuntimeDirectories();
+
         Gate::policy(Equipo::class, EquipoPolicy::class);
         Gate::policy(EquipoStatus::class, EquipoStatusPolicy::class);
         Gate::policy(Mantenimiento::class, MantenimientoPolicy::class);
@@ -78,5 +81,17 @@ class AppServiceProvider extends ServiceProvider
                 'canSwitchInstitution' => $accessibleInstitutions->count() > 1,
             ]);
         });
+    }
+
+    private function ensureRuntimeDirectories(): void
+    {
+        foreach ([
+            storage_path('logs'),
+            storage_path('framework/cache'),
+            storage_path('framework/sessions'),
+            storage_path('framework/views'),
+        ] as $path) {
+            File::ensureDirectoryExists($path);
+        }
     }
 }

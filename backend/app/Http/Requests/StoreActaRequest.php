@@ -5,22 +5,40 @@ namespace App\Http\Requests;
 use App\Models\Acta;
 use App\Models\Office;
 use App\Models\Service;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class StoreActaRequest extends FormRequest
 {
+    private string $authorizationMessage = 'No tiene permisos para generar actas.';
+
     public function authorize(): bool
     {
         $user = $this->user();
 
-        return $user !== null && $user->can('create', Acta::class);
+        if ($user === null) {
+            $this->authorizationMessage = 'Debe iniciar sesion para generar actas.';
+
+            return false;
+        }
+
+        $response = Gate::forUser($user)->inspect('create', Acta::class);
+        $this->authorizationMessage = $response->message() ?: $this->authorizationMessage;
+
+        return $response->allowed();
+    }
+
+    protected function failedAuthorization(): void
+    {
+        throw new AuthorizationException($this->authorizationMessage);
     }
 
     public function rules(): array
     {
         return [
-            'tipo' => ['required', Rule::in(Acta::TIPOS)],
+            'tipo' => ['required', Rule::in(Acta::creatableTypes())],
             'fecha' => ['required', 'date'],
             'institution_id' => ['nullable', 'integer', 'exists:institutions,id'],
             'institution_destino_id' => ['nullable', 'integer', 'exists:institutions,id'],
@@ -48,6 +66,7 @@ class StoreActaRequest extends FormRequest
             'equipos.min' => 'Agregue al menos un equipo antes de generar el acta.',
             'equipos.*.equipo_id.distinct' => 'No puede repetir el mismo equipo dentro de la misma acta.',
             'equipos.*.cantidad.in' => 'Cada equipo del acta debe registrarse con cantidad fija 1.',
+            'tipo.in' => 'Debe seleccionar un tipo de acta patrimonial valido.',
         ];
     }
 
@@ -55,6 +74,10 @@ class StoreActaRequest extends FormRequest
     {
         $validator->after(function ($validator): void {
             $tipo = (string) $this->input('tipo');
+
+            if ($tipo === Acta::TIPO_MANTENIMIENTO) {
+                $validator->errors()->add('tipo', 'El mantenimiento se gestiona desde el modulo de mantenimientos y no genera actas patrimoniales.');
+            }
 
             if ($tipo === Acta::TIPO_ENTREGA) {
                 if (! $this->filled('institution_destino_id')) {

@@ -31,6 +31,8 @@ class ActaTraceabilityService
 
     public function crear(User $user, array $data): Acta
     {
+        $this->assertCreatableType((string) ($data['tipo'] ?? ''));
+
         $items = collect($data['equipos'] ?? [])->values();
 
         if ($items->isEmpty()) {
@@ -237,6 +239,8 @@ class ActaTraceabilityService
         $serviceDestinoId = $this->nullableInt($data['service_destino_id'] ?? null);
         $officeDestinoId = $this->nullableInt($data['office_destino_id'] ?? null);
 
+        $this->validateDestinationScope($user, $tipo, $institutionDestinoId, $serviceDestinoId);
+
         if ($tipo === Acta::TIPO_ENTREGA) {
             if ($institutionDestinoId === null || $serviceDestinoId === null || $officeDestinoId === null) {
                 throw ValidationException::withMessages([
@@ -285,6 +289,44 @@ class ActaTraceabilityService
                     'office_destino_id' => 'La oficina destino no pertenece al servicio destino.',
                 ]);
             }
+        }
+    }
+
+    private function assertCreatableType(string $tipo): void
+    {
+        if (Acta::isCreatableType($tipo)) {
+            return;
+        }
+
+        if ($tipo === Acta::TIPO_MANTENIMIENTO) {
+            throw ValidationException::withMessages([
+                'tipo' => 'El mantenimiento se gestiona desde el modulo de mantenimientos y no genera actas patrimoniales.',
+            ]);
+        }
+
+        throw ValidationException::withMessages([
+            'tipo' => 'Debe seleccionar un tipo de acta patrimonial valido.',
+        ]);
+    }
+
+    private function validateDestinationScope(User $user, string $tipo, ?int $institutionDestinoId, ?int $serviceDestinoId): void
+    {
+        if (! in_array($tipo, [Acta::TIPO_ENTREGA, Acta::TIPO_TRASLADO], true)) {
+            return;
+        }
+
+        $serviceDestino = $serviceDestinoId !== null
+            ? Service::query()->find($serviceDestinoId)
+            : null;
+
+        $resolvedInstitutionDestinoId = $institutionDestinoId ?? ($serviceDestino?->institution_id !== null
+            ? (int) $serviceDestino->institution_id
+            : null);
+
+        if ($resolvedInstitutionDestinoId !== null && ! $user->canAccessInstitution($resolvedInstitutionDestinoId)) {
+            throw ValidationException::withMessages([
+                'institution_destino_id' => 'No tiene permisos para operar con la institucion destino seleccionada.',
+            ]);
         }
     }
 

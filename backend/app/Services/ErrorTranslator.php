@@ -27,7 +27,7 @@ class ErrorTranslator
     public function translate(Throwable $exception): array
     {
         if ($exception instanceof AuthorizationException) {
-            return $this->fromHttpStatus(403);
+            return $this->fromAuthorizationException($exception);
         }
 
         if ($exception instanceof TokenMismatchException) {
@@ -252,6 +252,33 @@ class ErrorTranslator
             'El registro puede tener restricciones de negocio o dependencias activas.',
             'Revise los datos asociados y vuelva a intentar.'
         );
+    }
+
+    /**
+     * @return array{
+     *     status:int,
+     *     level:string,
+     *     title:string,
+     *     message:string,
+     *     reason:string,
+     *     next_steps:string
+     * }
+     */
+    private function fromAuthorizationException(AuthorizationException $exception): array
+    {
+        $message = trim((string) $exception->getMessage());
+
+        if ($message !== '' && $message !== 'This action is unauthorized.') {
+            return $this->package(
+                403,
+                'No tiene permisos para esta accion',
+                $message,
+                'La operacion fue bloqueada por reglas de rol, institucion activa o alcance institucional.',
+                'Revise la institucion activa y sus permisos. Si corresponde, solicite acceso al administrador del sistema.'
+            );
+        }
+
+        return $this->fromHttpStatus(403);
     }
 
     /**

@@ -3,7 +3,14 @@ set -e
 
 APP_DIR="/var/www/app"
 
-mkdir -p "${APP_DIR}/storage" "${APP_DIR}/storage/app/public" "${APP_DIR}/bootstrap/cache"
+mkdir -p \
+    "${APP_DIR}/storage" \
+    "${APP_DIR}/storage/app/public" \
+    "${APP_DIR}/storage/logs" \
+    "${APP_DIR}/storage/framework/cache" \
+    "${APP_DIR}/storage/framework/sessions" \
+    "${APP_DIR}/storage/framework/views" \
+    "${APP_DIR}/bootstrap/cache"
 chown -R www-data:www-data "${APP_DIR}/storage" "${APP_DIR}/bootstrap/cache"
 
 cd "${APP_DIR}"

@@ -4,34 +4,35 @@ namespace App\Policies;
 
 use App\Models\Acta;
 use App\Models\User;
-use App\Services\ActiveInstitutionContext;
+use App\Services\ActaAuthorizationService;
+use Illuminate\Auth\Access\Response;
 
 class ActaPolicy
 {
+    public function __construct(private readonly ActaAuthorizationService $authorizationService) {}
+
     public function before(User $user): ?bool
     {
         return null;
     }
 
-    public function viewAny(User $user): bool
+    public function viewAny(User $user): Response
     {
-        return $user->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN, User::ROLE_TECNICO, User::ROLE_VIEWER);
+        return $this->authorizationService->viewAny($user);
     }
 
-    public function view(User $user, Acta $acta): bool
+    public function view(User $user, Acta $acta): Response
     {
-        return $user->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN, User::ROLE_TECNICO, User::ROLE_VIEWER)
-            && app(ActiveInstitutionContext::class)->isActiveInstitution($user, (int) $acta->institution_id);
+        return $this->authorizationService->view($user, $acta);
     }
 
-    public function create(User $user): bool
+    public function create(User $user): Response
     {
-        return $user->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN);
+        return $this->authorizationService->create($user);
     }
 
-    public function anular(User $user, Acta $acta): bool
+    public function anular(User $user, Acta $acta): Response
     {
-        return $user->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN)
-            && app(ActiveInstitutionContext::class)->isActiveInstitution($user, (int) $acta->institution_id);
+        return $this->authorizationService->anular($user, $acta);
     }
 }

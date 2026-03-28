@@ -6,9 +6,7 @@ use App\Http\Requests\StoreActaRequest;
 use App\Models\Acta;
 use App\Models\AuditLog;
 use App\Models\Equipo;
-use App\Models\Institution;
 use App\Models\TipoEquipo;
-use App\Models\User;
 use App\Services\ActaPdfDataService;
 use App\Services\ActaTraceabilityService;
 use App\Services\Auditing\AuditLogService;
@@ -65,7 +63,7 @@ class ActaController extends Controller
         $this->authorize('create', Acta::class);
 
         $user = $request->user();
-        $destinationInstitutions = Institution::query()->orderBy('nombre')->get(['id', 'nombre']);
+        $destinationInstitutions = $this->accessibleInstitutions($user);
         $originInstitutions = $this->accessibleInstitutions($user);
         $tiposEquipo = TipoEquipo::query()->orderBy('nombre')->get(['id', 'nombre']);
 
@@ -124,7 +122,7 @@ class ActaController extends Controller
                 });
 
         return view('actas.create', [
-            'tipos' => Acta::TIPOS,
+            'tipos' => Acta::creatableTypes(),
             'tipoLabels' => Acta::LABELS,
             'destinationInstitutions' => $destinationInstitutions,
             'originInstitutions' => $originInstitutions,

@@ -15,8 +15,11 @@ use App\Models\User;
 use App\Services\ActaTraceabilityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 use Tests\TestCase;
 
 class ActaModuleTest extends TestCase
@@ -367,7 +370,7 @@ class ActaModuleTest extends TestCase
         $this->assertDatabaseCount('actas', 0);
         $this->assertDatabaseCount('acta_equipo', 0);
     }
-    public function test_acta_mantenimiento_actualiza_estado_sin_mover_ubicacion(): void
+    public function test_acta_mantenimiento_se_rechaza_por_no_ser_un_tipo_patrimonial(): void
     {
         Storage::fake();
 
@@ -381,12 +384,15 @@ class ActaModuleTest extends TestCase
             'equipos' => [
                 ['equipo_id' => $equipo->id, 'cantidad' => 1],
             ],
-        ])->assertRedirect();
+        ])->assertSessionHasErrors('tipo');
 
         $equipo->refresh();
 
         $this->assertSame($officeA->id, $equipo->oficina_id);
-        $this->assertSame(Equipo::ESTADO_EN_MANTENIMIENTO, $equipo->estado);
+        $this->assertSame(Equipo::ESTADO_OPERATIVO, $equipo->estado);
+        $this->assertDatabaseCount('actas', 0);
+        $this->assertDatabaseCount('movimientos', 0);
+        $this->assertDatabaseCount('equipo_historial', 0);
     }
 
     public function test_acta_devolucion_vuelve_estado_operativo(): void
@@ -468,6 +474,88 @@ class ActaModuleTest extends TestCase
         $this->assertDatabaseCount('actas', 0);
         $this->assertDatabaseCount('acta_equipo', 0);
     }
+
+    public function test_traceability_service_hace_rollback_si_falla_la_persistencia_del_acta(): void
+    {
+        Storage::fake();
+
+        [$admin, , , $officeA] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
+
+        $dispatcher = Acta::getEventDispatcher();
+        Acta::flushEventListeners();
+        Acta::creating(function (): void {
+            throw new RuntimeException('fallo_acta');
+        });
+
+        try {
+            app(ActaTraceabilityService::class)->crear($admin, [
+                'tipo' => Acta::TIPO_PRESTAMO,
+                'fecha' => now()->toDateString(),
+                'receptor_nombre' => 'Persona prueba',
+                'equipos' => [
+                    ['equipo_id' => $equipo->id, 'cantidad' => 1],
+                ],
+            ]);
+
+            $this->fail('Expected RuntimeException was not thrown.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('fallo_acta', $exception->getMessage());
+        } finally {
+            Acta::flushEventListeners();
+            Acta::setEventDispatcher($dispatcher);
+        }
+
+        $equipo->refresh();
+
+        $this->assertSame($officeA->id, $equipo->oficina_id);
+        $this->assertSame(Equipo::ESTADO_OPERATIVO, $equipo->estado);
+        $this->assertDatabaseCount('actas', 0);
+        $this->assertDatabaseCount('acta_equipo', 0);
+        $this->assertDatabaseCount('movimientos', 0);
+        $this->assertDatabaseCount('equipo_historial', 0);
+    }
+
+    public function test_traceability_service_hace_rollback_si_falla_el_movimiento_derivado(): void
+    {
+        Storage::fake();
+
+        [$admin, , , $officeA] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
+
+        $dispatcher = Movimiento::getEventDispatcher();
+        Movimiento::flushEventListeners();
+        Movimiento::creating(function (): void {
+            throw new RuntimeException('fallo_movimiento');
+        });
+
+        try {
+            app(ActaTraceabilityService::class)->crear($admin, [
+                'tipo' => Acta::TIPO_PRESTAMO,
+                'fecha' => now()->toDateString(),
+                'receptor_nombre' => 'Persona prueba',
+                'equipos' => [
+                    ['equipo_id' => $equipo->id, 'cantidad' => 1],
+                ],
+            ]);
+
+            $this->fail('Expected RuntimeException was not thrown.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('fallo_movimiento', $exception->getMessage());
+        } finally {
+            Movimiento::flushEventListeners();
+            Movimiento::setEventDispatcher($dispatcher);
+        }
+
+        $equipo->refresh();
+
+        $this->assertSame($officeA->id, $equipo->oficina_id);
+        $this->assertSame(Equipo::ESTADO_OPERATIVO, $equipo->estado);
+        $this->assertDatabaseCount('actas', 0);
+        $this->assertDatabaseCount('acta_equipo', 0);
+        $this->assertDatabaseCount('movimientos', 0);
+        $this->assertDatabaseCount('equipo_historial', 0);
+    }
     public function test_admin_bloquea_solo_equipo_fuera_de_alcance_con_mensaje_claro(): void
     {
         Storage::fake();
@@ -500,6 +588,76 @@ class ActaModuleTest extends TestCase
         $this->assertDatabaseCount('equipo_historial', 0);
     }
 
+    public function test_acta_rechaza_institucion_destino_fuera_del_alcance_del_usuario(): void
+    {
+        Storage::fake();
+
+        [$adminA, , , $officeA] = $this->crearEscenarioBase('A');
+        [, $instB, , , $serviceB, $officeB] = $this->crearEscenarioBase('B');
+
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
+
+        $this->actingAs($adminA)->post(route('actas.store'), [
+            'tipo' => Acta::TIPO_ENTREGA,
+            'fecha' => now()->toDateString(),
+            'institution_destino_id' => $instB->id,
+            'service_destino_id' => $serviceB->id,
+            'office_destino_id' => $officeB->id,
+            'receptor_nombre' => 'Destino no permitido',
+            'receptor_dni' => '10020030',
+            'equipos' => [
+                ['equipo_id' => $equipo->id, 'cantidad' => 1],
+            ],
+        ])->assertSessionHasErrors('institution_destino_id');
+
+        $equipo->refresh();
+
+        $this->assertSame($officeA->id, $equipo->oficina_id);
+        $this->assertDatabaseCount('actas', 0);
+        $this->assertDatabaseCount('movimientos', 0);
+        $this->assertDatabaseCount('equipo_historial', 0);
+    }
+
+    public function test_tecnico_puede_acceder_a_create_y_store_para_actas_patrimoniales(): void
+    {
+        Storage::fake();
+
+        [, $institution, , $officeA] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
+
+        $tecnico = User::create([
+            'name' => 'Tecnico Actas',
+            'email' => uniqid('tecnico_').'@test.com',
+            'password' => '123456',
+            'role' => User::ROLE_TECNICO,
+            'institution_id' => $institution->id,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($tecnico)
+            ->get(route('actas.create'))
+            ->assertOk();
+
+        $this->actingAs($tecnico)->post(route('actas.store'), [
+            'tipo' => Acta::TIPO_PRESTAMO,
+            'fecha' => now()->toDateString(),
+            'receptor_nombre' => 'Tecnico habilitado',
+            'receptor_dni' => '30111222',
+            'equipos' => [
+                ['equipo_id' => $equipo->id, 'cantidad' => 1],
+            ],
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('actas', [
+            'tipo' => Acta::TIPO_PRESTAMO,
+            'created_by' => $tecnico->id,
+        ]);
+        $this->assertDatabaseHas('movimientos', [
+            'equipo_id' => $equipo->id,
+            'tipo_movimiento' => Movimiento::TIPO_PRESTAMO,
+        ]);
+    }
+
     public function test_viewer_no_puede_crear_actas(): void
     {
         Storage::fake();
@@ -516,7 +674,14 @@ class ActaModuleTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->actingAs($viewer)->post(route('actas.store'), [
+        $this->actingAs($viewer)
+            ->get(route('actas.create'))
+            ->assertForbidden()
+            ->assertSee('No tiene permisos para generar actas.');
+
+        $this->actingAs($viewer)
+            ->from(route('actas.index'))
+            ->post(route('actas.store'), [
             'tipo' => Acta::TIPO_ENTREGA,
             'fecha' => now()->toDateString(),
             'institution_destino_id' => $officeA->service->institution_id,
@@ -527,7 +692,11 @@ class ActaModuleTest extends TestCase
             'equipos' => [
                 ['equipo_id' => $equipo->id, 'cantidad' => 1],
             ],
-        ])->assertForbidden();
+        ])->assertRedirect(route('actas.index'))
+            ->assertSessionHas('error', 'No tiene permisos para generar actas.');
+
+        $this->assertDatabaseCount('actas', 0);
+        $this->assertDatabaseCount('movimientos', 0);
     }
 
     public function test_admin_puede_anular_acta_y_registra_auditoria(): void
@@ -634,6 +803,64 @@ class ActaModuleTest extends TestCase
             'id' => $acta->id,
             'status' => Acta::STATUS_ACTIVA,
         ]);
+    }
+
+    public function test_tecnico_puede_descargar_pdf_pero_no_anular_acta(): void
+    {
+        Storage::fake();
+
+        [$admin, $institution, , $officeA] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO);
+
+        $this->actingAs($admin)->post(route('actas.store'), [
+            'tipo' => Acta::TIPO_PRESTAMO,
+            'fecha' => now()->toDateString(),
+            'receptor_nombre' => 'Persona prueba',
+            'equipos' => [
+                ['equipo_id' => $equipo->id, 'cantidad' => 1],
+            ],
+        ])->assertRedirect();
+
+        $acta = Acta::query()->firstOrFail();
+
+        $tecnico = User::create([
+            'name' => 'Tecnico PDF',
+            'email' => uniqid('tecnico_pdf_').'@test.com',
+            'password' => '123456',
+            'role' => User::ROLE_TECNICO,
+            'institution_id' => $institution->id,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($tecnico)
+            ->get(route('actas.download', $acta))
+            ->assertOk();
+
+        $this->actingAs($tecnico)
+            ->from(route('actas.show', $acta))
+            ->post(route('actas.anular', $acta), [
+                'motivo_anulacion' => 'No autorizado',
+            ])
+            ->assertRedirect(route('actas.show', $acta))
+            ->assertSessionHas('error', 'No tiene permisos para anular actas.');
+
+        $this->assertDatabaseHas('actas', [
+            'id' => $acta->id,
+            'status' => Acta::STATUS_ACTIVA,
+        ]);
+    }
+
+    public function test_logging_single_channel_crea_el_archivo_laravel_log(): void
+    {
+        $logPath = storage_path('logs/laravel.log');
+
+        File::ensureDirectoryExists(dirname($logPath));
+        File::delete($logPath);
+
+        Log::channel('single')->warning('actas_log_test');
+
+        $this->assertFileExists($logPath);
+        $this->assertStringContainsString('actas_log_test', File::get($logPath));
     }
 
     public function test_listado_de_actas_aplica_busqueda_por_codigo_y_per_page_whitelist(): void

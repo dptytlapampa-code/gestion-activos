@@ -34,6 +34,14 @@ class Acta extends Model
         self::TIPO_MANTENIMIENTO,
     ];
 
+    public const TIPOS_PATRIMONIALES = [
+        self::TIPO_ENTREGA,
+        self::TIPO_PRESTAMO,
+        self::TIPO_TRASLADO,
+        self::TIPO_BAJA,
+        self::TIPO_DEVOLUCION,
+    ];
+
     public const LABELS = [
         self::TIPO_ENTREGA => 'ENTREGA',
         self::TIPO_PRESTAMO => 'PRESTAMO',
@@ -144,6 +152,19 @@ class Acta extends Model
     public function getTipoLabelAttribute(): string
     {
         return self::LABELS[$this->tipo] ?? strtoupper((string) $this->tipo);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function creatableTypes(): array
+    {
+        return self::TIPOS_PATRIMONIALES;
+    }
+
+    public static function isCreatableType(?string $tipo): bool
+    {
+        return in_array((string) $tipo, self::creatableTypes(), true);
     }
 
     public function scopeVisibleToUser(Builder $query, ?User $user): Builder

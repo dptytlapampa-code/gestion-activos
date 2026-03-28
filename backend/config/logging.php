@@ -9,7 +9,11 @@ return [
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => ['single'],
+            'channels' => array_values(array_filter(array_map(
+                'trim',
+                explode(',', (string) env('LOG_STACK', 'single,stderr'))
+            ))),
+            'ignore_exceptions' => false,
         ],
         'single' => [
             'driver' => 'single',
