@@ -17,6 +17,7 @@
     $canTiposEquipos = $user->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN, User::ROLE_TECNICO, User::ROLE_VIEWER);
     $canEquipos = $user->can('viewAny', Equipo::class);
     $canActas = $user->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN, User::ROLE_TECNICO, User::ROLE_VIEWER);
+    $canMesaTecnica = $user->can('mesa_tecnica_access');
     $canAdministracion = $user->hasRole(User::ROLE_SUPERADMIN);
 
     $institucionesGroupVisible = $canInstitutions || $canServices || $canOffices;
@@ -25,6 +26,7 @@
 
     $institucionesGroupActive = request()->routeIs('institutions.*') || request()->routeIs('services.*') || request()->routeIs('offices.*');
     $equiposGroupActive = request()->routeIs('tipos-equipos.*') || request()->routeIs('equipos.*');
+    $mesaTecnicaActive = request()->routeIs('mesa-tecnica.*');
     $administracionGroupActive = request()->routeIs('admin.users.*') || request()->routeIs('admin.audit.*') || request()->routeIs('admin.configuracion.general.*');
 @endphp
 
@@ -247,6 +249,20 @@
                 >
                     <x-sidebar.icon name="actas" class="h-5 w-5 shrink-0" />
                     <span x-cloak x-show="!$store.appShell.isDesktopSidebarCollapsed()" x-transition.opacity.duration.150ms>Actas</span>
+                </a>
+            @endif
+
+            @if ($canMesaTecnica)
+                <a
+                    href="{{ route('mesa-tecnica.index') }}"
+                    class="app-sidebar-link min-h-[3rem] rounded-2xl {{ $mesaTecnicaActive ? 'app-sidebar-link-active' : '' }}"
+                    :class="$store.appShell.isDesktopSidebarCollapsed() ? 'justify-center px-0' : ''"
+                    :aria-label="$store.appShell.isDesktopSidebarCollapsed() ? 'Mesa Tecnica' : null"
+                    :title="$store.appShell.isDesktopSidebarCollapsed() ? 'Mesa Tecnica' : ''"
+                    @click="$store.appShell.closeMobileSidebar()"
+                >
+                    <x-sidebar.icon name="mesa-tecnica" class="h-5 w-5 shrink-0" />
+                    <span x-cloak x-show="!$store.appShell.isDesktopSidebarCollapsed()" x-transition.opacity.duration.150ms>Mesa Tecnica</span>
                 </a>
             @endif
 

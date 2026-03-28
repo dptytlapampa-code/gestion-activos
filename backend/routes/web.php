@@ -13,6 +13,7 @@ use App\Http\Controllers\EquipoPublicController;
 use App\Http\Controllers\ActiveInstitutionController;
 use App\Http\Controllers\InstitutionController;
 use App\Http\Controllers\MantenimientoController;
+use App\Http\Controllers\MesaTecnicaController;
 use App\Http\Controllers\MovimientoController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\ProfileController;
@@ -56,6 +57,13 @@ Route::middleware('auth')->group(function (): void {
     Route::post('actas/{acta}/anular', [ActaController::class, 'anular'])->name('actas.anular');
     Route::get('actas/{acta}', [ActaController::class, 'show'])->name('actas.show');
     Route::get('actas/{acta}/pdf', [ActaController::class, 'descargar'])->name('actas.download');
+
+    Route::prefix('mesa-tecnica')->name('mesa-tecnica.')->middleware('can:mesa_tecnica_access')->group(function (): void {
+        Route::get('/', [MesaTecnicaController::class, 'index'])->name('index');
+        Route::post('recepciones', [MesaTecnicaController::class, 'storeRecepcion'])->name('recepciones.store');
+        Route::post('entregas', [MesaTecnicaController::class, 'storeEntrega'])->name('entregas.store');
+        Route::get('equipos/{equipo}/etiqueta', [MesaTecnicaController::class, 'label'])->name('label');
+    });
 
     Route::post('equipos/{equipo}/documents', [DocumentController::class, 'storeForEquipo'])->name('equipos.documents.store');
     Route::post('movimientos/{movimiento}/documents', [DocumentController::class, 'storeForMovimiento'])->name('movimientos.documents.store');

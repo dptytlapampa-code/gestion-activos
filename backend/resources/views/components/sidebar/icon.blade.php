@@ -15,6 +15,7 @@
         'equipos' => 'monitor',
         'mantenimiento' => 'wrench',
         'actas' => 'file-text',
+        'mesa-tecnica' => 'wrench',
         'administracion' => 'shield-check',
         'usuarios' => 'users',
         'auditoria' => 'clipboard-list',

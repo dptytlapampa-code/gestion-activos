@@ -57,6 +57,13 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('manage-users', [UserPolicy::class, 'manageUsers']);
         Gate::define('manage-system-settings', fn (User $user): bool => $user->hasRole(User::ROLE_SUPERADMIN));
+        Gate::define('mesa_tecnica_access', function (User $user): bool {
+            if (! $user->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN, User::ROLE_TECNICO)) {
+                return false;
+            }
+
+            return app(ActiveInstitutionContext::class)->accessibleInstitutionIds($user)->isNotEmpty();
+        });
 
         View::composer('*', function ($view): void {
             $view->with('settings', system_config());
