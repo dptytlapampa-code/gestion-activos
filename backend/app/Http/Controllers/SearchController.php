@@ -24,11 +24,9 @@ class SearchController extends Controller
     {
         $q = $this->validatedQuery($request);
         $listAll = $this->isListAllQuery($q);
-        $user = $request->user();
-        $activeInstitutionId = $this->activeInstitutionId($user);
 
         $query = Institution::query()
-            ->where('id', $activeInstitutionId ?? 0)
+            ->visibleToUser($request->user())
             ->when(! $listAll, fn ($query) => $query->where('nombre', 'ilike', "%{$q}%"))
             ->orderBy('nombre');
 
@@ -62,17 +60,23 @@ class SearchController extends Controller
             : null;
         $actaContext = (bool) ($validated['acta_context'] ?? false);
         $user = $request->user();
-        $activeInstitutionId = $this->activeInstitutionId($user);
 
         if ($institutionId === null) {
             return response()->json([]);
         }
 
-        if (! $actaContext && $institutionId !== $activeInstitutionId) {
+        if (! $actaContext && ! $this->isWithinGlobalAdministrationScope($user, $institutionId)) {
             return response()->json([]);
         }
 
-        if ($user !== null && $actaContext && (! $user->can('create', Acta::class) || ! $user->canAccessInstitution($institutionId))) {
+        if (
+            $user !== null
+            && $actaContext
+            && (
+                ! $user->can('create', Acta::class)
+                || ! $this->canSearchInstitutionForActaContext($user, $institutionId)
+            )
+        ) {
             return response()->json([]);
         }
 
@@ -115,7 +119,6 @@ class SearchController extends Controller
             : null;
         $actaContext = (bool) ($validated['acta_context'] ?? false);
         $user = $request->user();
-        $activeInstitutionId = $this->activeInstitutionId($user);
 
         if ($serviceId === null || $institutionId === null) {
             return response()->json([]);
@@ -130,11 +133,18 @@ class SearchController extends Controller
             return response()->json([]);
         }
 
-        if (! $actaContext && $institutionId !== $activeInstitutionId) {
+        if (! $actaContext && ! $this->isWithinGlobalAdministrationScope($user, $institutionId)) {
             return response()->json([]);
         }
 
-        if ($user !== null && $actaContext && (! $user->can('create', Acta::class) || ! $user->canAccessInstitution($institutionId))) {
+        if (
+            $user !== null
+            && $actaContext
+            && (
+                ! $user->can('create', Acta::class)
+                || ! $this->canSearchInstitutionForActaContext($user, $institutionId)
+            )
+        ) {
             return response()->json([]);
         }
 
@@ -176,7 +186,8 @@ class SearchController extends Controller
         $includeBaja = (bool) ($validated['include_baja'] ?? false);
         $actaContext = (bool) ($validated['acta_context'] ?? false);
         $user = $request->user();
-        $activeInstitutionId = $this->activeInstitutionId($user);
+        $scopeIds = $this->globalAdministrationScopeIds($user);
+        $operatesGlobally = $scopeIds === null;
 
         $requestedInstitutionId = ($validated['institution_id'] ?? null) !== null
             ? (int) $validated['institution_id']
@@ -187,7 +198,7 @@ class SearchController extends Controller
         }
 
         if ($user !== null && $actaContext) {
-            $allowedInstitutionIds = $user->hasRole(User::ROLE_SUPERADMIN)
+            $allowedInstitutionIds = $this->operatesWithGlobalScope($user)
                 ? null
                 : $user->accessibleInstitutionIds();
 
@@ -201,18 +212,28 @@ class SearchController extends Controller
                 }
 
                 $institutionIds = collect([$requestedInstitutionId]);
-            } elseif ($activeInstitutionId !== null) {
+            } elseif ($operatesGlobally) {
+                $institutionIds = null;
+            } elseif (($activeInstitutionId = $this->activeInstitutionId($user)) !== null) {
                 $institutionIds = collect([$activeInstitutionId]);
             } else {
                 $institutionIds = collect();
             }
         } else {
-            $institutionIds = $activeInstitutionId !== null
-                ? collect([$activeInstitutionId])
-                : collect();
+            if ($requestedInstitutionId !== null) {
+                if (! $operatesGlobally && ! in_array($requestedInstitutionId, $scopeIds ?? [], true)) {
+                    return response()->json([]);
+                }
+
+                $institutionIds = collect([$requestedInstitutionId]);
+            } elseif ($operatesGlobally) {
+                $institutionIds = null;
+            } else {
+                $institutionIds = collect($scopeIds ?? []);
+            }
         }
 
-        if ($institutionIds->isEmpty()) {
+        if ($institutionIds instanceof \Illuminate\Support\Collection && $institutionIds->isEmpty()) {
             return response()->json([]);
         }
 
@@ -248,7 +269,10 @@ class SearchController extends Controller
             ->join('offices', 'offices.id', '=', 'equipos.oficina_id')
             ->join('services', 'services.id', '=', 'offices.service_id')
             ->join('institutions', 'institutions.id', '=', 'services.institution_id')
-            ->whereIn('institutions.id', $institutionIds->all())
+            ->when(
+                $institutionIds instanceof \Illuminate\Support\Collection,
+                fn ($query) => $query->whereIn('institutions.id', $institutionIds->all())
+            )
             ->when(! $includeBaja, fn ($query) => $query->where('equipos.estado', '!=', Equipo::ESTADO_BAJA))
             ->when(! $listAll, function ($query) use ($q, $hasMacAddress, $hasCodigoInterno): void {
                 $like = "%{$q}%";
@@ -362,5 +386,18 @@ class SearchController extends Controller
     private function isListAllQuery(string $query): bool
     {
         return trim($query) === '...';
+    }
+
+    private function canSearchInstitutionForActaContext(?User $user, int $institutionId): bool
+    {
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        if ($this->operatesWithGlobalScope($user)) {
+            return true;
+        }
+
+        return $user->canAccessInstitution($institutionId);
     }
 }

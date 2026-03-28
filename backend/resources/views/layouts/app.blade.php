@@ -12,6 +12,8 @@
         $activeInstitution = $institutionContext['activeInstitution'] ?? null;
         $primaryInstitution = $institutionContext['primaryInstitution'] ?? null;
         $accessibleInstitutions = $institutionContext['accessibleInstitutions'] ?? collect();
+        $operatesGlobally = (bool) ($institutionContext['operatesGlobally'] ?? false);
+        $scopeLabel = $institutionContext['scopeLabel'] ?? 'Alcance institucional';
     @endphp
     <title>{{ $siteName }} - @yield('title', 'Panel')</title>
     <link rel="icon" type="image/png" href="{{ $systemLogoUrl }}">
@@ -79,6 +81,7 @@
                                     <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Usuario</p>
                                     <p class="truncate text-sm font-semibold text-slate-900">{{ auth()->user()->name }}</p>
                                     <p class="mt-1 truncate text-xs text-slate-500">Institucion activa: {{ $activeInstitution?->nombre ?? 'Sin institucion activa' }}</p>
+                                    <p class="mt-1 text-xs font-semibold {{ $operatesGlobally ? 'text-emerald-700' : 'text-slate-500' }}">{{ $scopeLabel }}</p>
                                 </div>
                                 <x-icon name="chevron-down" class="h-4 w-4 flex-shrink-0 text-slate-500" />
                             </button>
@@ -92,6 +95,7 @@
                                 <div class="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
                                     <p class="text-sm font-semibold text-slate-900">Usuario: {{ auth()->user()->name }}</p>
                                     <p class="mt-1 text-sm text-slate-600">Institucion activa: {{ $activeInstitution?->nombre ?? 'Sin institucion activa' }}</p>
+                                    <p class="mt-1 text-xs font-semibold {{ $operatesGlobally ? 'text-emerald-700' : 'text-slate-500' }}">{{ $scopeLabel }}</p>
                                     <p class="mt-1 text-xs text-slate-500">Institucion principal: {{ $primaryInstitution?->nombre ?? 'Sin institucion principal' }}</p>
                                 </div>
 
@@ -112,7 +116,12 @@
                                                         type="submit"
                                                         class="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm transition {{ (int) ($activeInstitution?->id ?? 0) === (int) $institution->id ? 'bg-emerald-50 font-semibold text-emerald-800' : 'bg-white text-slate-700 hover:bg-slate-100' }}"
                                                     >
-                                                        <span class="truncate">{{ $institution->nombre }}</span>
+                                                        <span class="flex min-w-0 items-center gap-2">
+                                                            <span class="truncate">{{ $institution->nombre }}</span>
+                                                            @if (($institution->scope_type ?? null) === \App\Models\Institution::SCOPE_GLOBAL)
+                                                                <span class="app-badge bg-slate-900 px-2 text-white">Global</span>
+                                                            @endif
+                                                        </span>
                                                         @if ((int) ($activeInstitution?->id ?? 0) === (int) $institution->id)
                                                             <span class="app-badge bg-emerald-100 px-2 text-emerald-700">Activa</span>
                                                         @endif

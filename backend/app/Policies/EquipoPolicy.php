@@ -24,7 +24,7 @@ class EquipoPolicy
             return false;
         }
 
-        return app(ActiveInstitutionContext::class)->isActiveInstitution(
+        return app(ActiveInstitutionContext::class)->isWithinGlobalAdministrationScope(
             $user,
             $equipo->oficina?->service?->institution_id
         );
@@ -38,13 +38,13 @@ class EquipoPolicy
     public function update(User $user, Equipo $equipo): bool
     {
         return $user->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN)
-            && app(ActiveInstitutionContext::class)->isActiveInstitution($user, $equipo->oficina?->service?->institution_id);
+            && app(ActiveInstitutionContext::class)->isWithinGlobalAdministrationScope($user, $equipo->oficina?->service?->institution_id);
     }
 
     public function delete(User $user, Equipo $equipo): bool
     {
         return $user->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN)
-            && app(ActiveInstitutionContext::class)->isActiveInstitution($user, $equipo->oficina?->service?->institution_id);
+            && app(ActiveInstitutionContext::class)->isWithinGlobalAdministrationScope($user, $equipo->oficina?->service?->institution_id);
     }
 
     public function export(User $user): bool

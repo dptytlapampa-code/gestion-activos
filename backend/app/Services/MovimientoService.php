@@ -188,8 +188,7 @@ class MovimientoService
                 throw ValidationException::withMessages(['oficina_destino_id' => 'La oficina de destino debe ser distinta de la oficina actual.']);
             }
 
-            if (! $user->hasRole(User::ROLE_SUPERADMIN)
-                && ! $user->canAccessInstitution((int) $data['institucion_destino_id'])) {
+            if (! app(ActiveInstitutionContext::class)->isWithinGlobalAdministrationScope($user, (int) $data['institucion_destino_id'])) {
                 throw ValidationException::withMessages([
                     'institucion_destino_id' => 'No tiene permisos para operar con la institucion de destino seleccionada.',
                 ]);

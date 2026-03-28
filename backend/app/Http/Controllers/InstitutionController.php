@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use LogicException;
 
 class InstitutionController extends Controller
 {
@@ -119,6 +120,10 @@ class InstitutionController extends Controller
             return redirect()
                 ->route('institutions.index')
                 ->with('status', 'Institucion eliminada correctamente.');
+        } catch (LogicException $e) {
+            return redirect()
+                ->route('institutions.index')
+                ->with('error', $e->getMessage());
         } catch (QueryException $e) {
             return redirect()
                 ->route('institutions.index')

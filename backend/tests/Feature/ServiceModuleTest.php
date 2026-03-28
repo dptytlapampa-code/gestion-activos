@@ -70,6 +70,30 @@ class ServiceModuleTest extends TestCase
         ]);
     }
 
+    public function test_admin_en_nivel_central_ve_todos_los_servicios_mientras_esta_en_contexto_global(): void
+    {
+        $nivelCentral = Institution::query()
+            ->where('scope_type', Institution::SCOPE_GLOBAL)
+            ->firstOrFail();
+        $institucionA = Institution::create(['nombre' => 'Hospital Uno']);
+        $institucionB = Institution::create(['nombre' => 'Hospital Dos']);
+
+        $servicioA = Service::create(['nombre' => 'Servicio Uno', 'institution_id' => $institucionA->id]);
+        $servicioB = Service::create(['nombre' => 'Servicio Dos', 'institution_id' => $institucionB->id]);
+
+        $adminCentral = $this->crearUsuario(User::ROLE_ADMIN, $nivelCentral->id);
+
+        $response = $this->actingAs($adminCentral)
+            ->withSession([ActiveInstitutionContext::SESSION_KEY => $nivelCentral->id])
+            ->get(route('services.index'));
+
+        $response->assertOk()
+            ->assertSee($servicioA->nombre)
+            ->assertSee($servicioB->nombre);
+
+        $this->assertSame(2, $response->viewData('services')->total());
+    }
+
     public function test_admin_hospital_sigue_restringido_a_la_institucion_activa_en_servicios(): void
     {
         $institucionA = Institution::create(['nombre' => 'Hospital Uno']);

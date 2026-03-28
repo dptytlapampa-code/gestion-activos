@@ -40,6 +40,30 @@ class ActiveInstitutionContextTest extends TestCase
         $this->assertSame($primary->id, session(ActiveInstitutionContext::SESSION_KEY));
     }
 
+    public function test_superadmin_queda_asignado_a_nivel_central_y_lo_toma_como_contexto_inicial(): void
+    {
+        $superadmin = User::factory()->create([
+            'email' => 'superadmin-central@local.test',
+            'password' => Hash::make('password123'),
+            'role' => User::ROLE_SUPERADMIN,
+            'institution_id' => null,
+            'is_active' => true,
+        ]);
+
+        $nivelCentral = Institution::query()
+            ->where('scope_type', Institution::SCOPE_GLOBAL)
+            ->firstOrFail();
+
+        $this->assertSame($nivelCentral->id, $superadmin->fresh()->institution_id);
+
+        $this->post(route('login.store'), [
+            'email' => $superadmin->email,
+            'password' => 'password123',
+        ])->assertRedirect(route('dashboard'));
+
+        $this->assertSame($nivelCentral->id, session(ActiveInstitutionContext::SESSION_KEY));
+    }
+
     public function test_user_can_switch_active_institution_to_an_enabled_institution(): void
     {
         [$primary, $secondary] = $this->crearInstituciones();
@@ -102,7 +126,7 @@ class ActiveInstitutionContextTest extends TestCase
             ->assertDontSee($equipoPrimary->numero_serie);
     }
 
-    public function test_superadmin_uses_active_institution_as_operational_context_in_equipos(): void
+    public function test_superadmin_mantiene_alcance_global_aunque_cambie_la_institucion_activa(): void
     {
         [$primary, $secondary] = $this->crearInstituciones();
         [$officePrimary, $officeSecondary] = $this->crearUbicaciones($primary, $secondary);
@@ -121,9 +145,49 @@ class ActiveInstitutionContextTest extends TestCase
             ->get(route('equipos.index'))
             ->assertOk()
             ->assertSee($equipoPrimary->numero_serie)
-            ->assertDontSee($equipoSecondary->numero_serie);
+            ->assertSee($equipoSecondary->numero_serie);
 
         $this->actingAs($superadmin)
+            ->withSession([ActiveInstitutionContext::SESSION_KEY => $secondary->id])
+            ->get(route('equipos.index'))
+            ->assertOk()
+            ->assertSee($equipoSecondary->numero_serie)
+            ->assertSee($equipoPrimary->numero_serie);
+    }
+
+    public function test_admin_con_nivel_central_ve_todo_y_al_cambiar_a_una_institucion_comun_recupera_restricciones(): void
+    {
+        $nivelCentral = Institution::query()
+            ->where('scope_type', Institution::SCOPE_GLOBAL)
+            ->firstOrFail();
+        [$primary, $secondary] = $this->crearInstituciones();
+        [$officePrimary, $officeSecondary] = $this->crearUbicaciones($primary, $secondary);
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Carro de paro']);
+        $equipoPrimary = $this->crearEquipo($officePrimary, $tipoEquipo, 'SER-CENTRAL-PRIMARY', 'BP-CENTRAL-PRIMARY');
+        $equipoSecondary = $this->crearEquipo($officeSecondary, $tipoEquipo, 'SER-CENTRAL-SECONDARY', 'BP-CENTRAL-SECONDARY');
+
+        $adminCentral = User::factory()->create([
+            'role' => User::ROLE_ADMIN,
+            'institution_id' => $nivelCentral->id,
+            'is_active' => true,
+        ]);
+
+        $adminCentral->permittedInstitutions()->sync([$secondary->id]);
+
+        $this->actingAs($adminCentral)
+            ->withSession([ActiveInstitutionContext::SESSION_KEY => $nivelCentral->id])
+            ->get(route('equipos.index'))
+            ->assertOk()
+            ->assertSee($equipoPrimary->numero_serie)
+            ->assertSee($equipoSecondary->numero_serie);
+
+        $this->actingAs($adminCentral)
+            ->put(route('session.active-institution.update'), [
+                'institution_id' => $secondary->id,
+            ])
+            ->assertRedirect(route('dashboard'));
+
+        $this->actingAs($adminCentral)
             ->withSession([ActiveInstitutionContext::SESSION_KEY => $secondary->id])
             ->get(route('equipos.index'))
             ->assertOk()

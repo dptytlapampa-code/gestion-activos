@@ -50,7 +50,7 @@ class ActaEquipoSearchService
             ];
         }
 
-        $allowedInstitutionIds = $user->hasRole(User::ROLE_SUPERADMIN)
+        $allowedInstitutionIds = app(ActiveInstitutionContext::class)->operatesWithGlobalScope($user)
             ? null
             : $user->accessibleInstitutionIds();
         $activeInstitutionId = app(ActiveInstitutionContext::class)->currentId($user);
@@ -63,11 +63,16 @@ class ActaEquipoSearchService
             return $this->emptyResult($page, 'No puede consultar equipos de la institucion seleccionada.');
         }
 
-        if ($institutionId === null && $activeInstitutionId === null) {
+        if ($allowedInstitutionIds !== null && $institutionId === null && $activeInstitutionId === null) {
             return $this->emptyResult($page, 'Seleccione una institucion activa para comenzar la busqueda.');
         }
 
-        if ($institutionId !== null && $activeInstitutionId !== null && $institutionId !== $activeInstitutionId) {
+        if (
+            $allowedInstitutionIds !== null
+            && $institutionId !== null
+            && $activeInstitutionId !== null
+            && $institutionId !== $activeInstitutionId
+        ) {
             return $this->emptyResult(
                 $page,
                 'Solo puede buscar equipos de la institucion activa seleccionada para generar actas.'
@@ -117,7 +122,14 @@ class ActaEquipoSearchService
             ->join('institutions', 'institutions.id', '=', 'services.institution_id')
             ->leftJoin('tipos_equipos', 'tipos_equipos.id', '=', 'equipos.tipo_equipo_id')
             ->when($allowedInstitutionIds !== null, fn (Builder $builder) => $builder->whereIn('institutions.id', $allowedInstitutionIds->all()))
-            ->where('institutions.id', $activeInstitutionId ?? $institutionId)
+            ->when(
+                $institutionId !== null,
+                fn (Builder $builder) => $builder->where('institutions.id', $institutionId),
+                fn (Builder $builder) => $builder->when(
+                    $allowedInstitutionIds !== null,
+                    fn (Builder $innerBuilder) => $innerBuilder->where('institutions.id', $activeInstitutionId)
+                )
+            )
             ->when($serviceId !== null, fn (Builder $builder) => $builder->where('services.id', $serviceId))
             ->when($officeId !== null, fn (Builder $builder) => $builder->where('offices.id', $officeId))
             ->when($tipoEquipoId !== null, fn (Builder $builder) => $builder->where('equipos.tipo_equipo_id', $tipoEquipoId))

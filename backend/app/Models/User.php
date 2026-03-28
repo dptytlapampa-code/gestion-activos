@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use App\Support\Auditing\Auditable;
+use App\Services\InstitutionScopeService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class User extends Authenticatable
@@ -52,6 +54,21 @@ class User extends Authenticatable
 
     protected $hidden = ['password', 'remember_token'];
 
+    protected static function booted(): void
+    {
+        static::saving(function (User $user): void {
+            if (! Schema::hasTable('institutions')) {
+                return;
+            }
+
+            if ($user->hasRole(self::ROLE_SUPERADMIN)) {
+                $user->institution_id = app(InstitutionScopeService::class)
+                    ->ensureCentralInstitution()
+                    ->id;
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [
@@ -83,7 +100,11 @@ class User extends Authenticatable
     {
         if ($this->hasRole(self::ROLE_SUPERADMIN)) {
             return Institution::query()
-                ->orderBy('id')
+                ->orderByRaw(
+                    "case when scope_type = ? then 0 else 1 end",
+                    [Institution::SCOPE_GLOBAL]
+                )
+                ->orderBy('nombre')
                 ->pluck('id')
                 ->map(fn ($id): int => (int) $id)
                 ->values();

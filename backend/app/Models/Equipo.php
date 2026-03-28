@@ -178,19 +178,19 @@ class Equipo extends Model
 
     public function scopeVisibleToUser(Builder $query, ?User $user): Builder
     {
-        $activeInstitutionId = $user !== null
-            ? app(ActiveInstitutionContext::class)->currentId($user)
-            : null;
+        $scopeIds = app(ActiveInstitutionContext::class)->globalAdministrationScopeIds($user);
 
-        return $query->when(
-            $activeInstitutionId !== null,
-            function (Builder $builder) use ($activeInstitutionId): void {
-                $builder->whereHas('oficina.service', function (Builder $serviceQuery) use ($activeInstitutionId): void {
-                    $serviceQuery->where('institution_id', $activeInstitutionId);
-                });
-            },
-            fn (Builder $builder) => $builder->whereRaw('1 = 0')
-        );
+        if ($scopeIds === null) {
+            return $query;
+        }
+
+        if ($scopeIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereHas('oficina.service', function (Builder $serviceQuery) use ($scopeIds): void {
+            $serviceQuery->whereIn('institution_id', $scopeIds);
+        });
     }
 
     /**

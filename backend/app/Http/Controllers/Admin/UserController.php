@@ -9,6 +9,7 @@ use App\Models\AuditLog;
 use App\Models\Institution;
 use App\Models\User;
 use App\Services\Auditing\AuditLogService;
+use App\Services\InstitutionScopeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -16,8 +17,10 @@ use Illuminate\View\View;
 
 class UserController extends Controller
 {
-    public function __construct(private readonly AuditLogService $auditLogService)
-    {
+    public function __construct(
+        private readonly AuditLogService $auditLogService,
+        private readonly InstitutionScopeService $institutionScopeService,
+    ) {
         $this->middleware('can:manage-users');
     }
 
@@ -33,9 +36,12 @@ class UserController extends Controller
 
     public function create(): View
     {
+        $centralInstitution = $this->institutionScopeService->ensureCentralInstitution();
+
         return view('admin.users.create', [
-            'institutions' => Institution::orderBy('nombre')->get(),
+            'institutions' => $this->availableInstitutions(),
             'roles' => User::ROLES,
+            'centralInstitution' => $centralInstitution,
         ]);
     }
 
@@ -48,7 +54,7 @@ class UserController extends Controller
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => $validated['role'],
-            'institution_id' => $validated['role'] === User::ROLE_SUPERADMIN ? null : $validated['institution_id'],
+            'institution_id' => $this->resolvedInstitutionIdForPayload($validated),
             'is_active' => true,
         ]);
 
@@ -78,10 +84,13 @@ class UserController extends Controller
 
     public function edit(User $user): View
     {
+        $centralInstitution = $this->institutionScopeService->ensureCentralInstitution();
+
         return view('admin.users.edit', [
             'user' => $user->load('permittedInstitutions'),
-            'institutions' => Institution::orderBy('nombre')->get(),
+            'institutions' => $this->availableInstitutions(),
             'roles' => User::ROLES,
+            'centralInstitution' => $centralInstitution,
         ]);
     }
 
@@ -96,7 +105,7 @@ class UserController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'role' => $validated['role'],
-            'institution_id' => $validated['role'] === User::ROLE_SUPERADMIN ? null : $validated['institution_id'],
+            'institution_id' => $this->resolvedInstitutionIdForPayload($validated),
         ]);
 
         $this->syncInstitutionPermissions($user, $validated);
@@ -277,5 +286,25 @@ class UserController extends Controller
             User::ROLE_VIEWER => 'Viewer',
             default => ucfirst(str_replace('_', ' ', $role)),
         };
+    }
+
+    private function availableInstitutions()
+    {
+        return Institution::query()
+            ->orderByRaw(
+                "case when scope_type = ? then 0 else 1 end",
+                [Institution::SCOPE_GLOBAL]
+            )
+            ->orderBy('nombre')
+            ->get();
+    }
+
+    private function resolvedInstitutionIdForPayload(array $validated): int
+    {
+        if (($validated['role'] ?? null) === User::ROLE_SUPERADMIN) {
+            return $this->institutionScopeService->ensureCentralInstitution()->id;
+        }
+
+        return (int) $validated['institution_id'];
     }
 }

@@ -64,10 +64,12 @@ class ActaController extends Controller
 
         $user = $request->user();
         $activeInstitutionId = $this->activeInstitutionId($user);
-        $destinationInstitutions = $this->accessibleInstitutions($user);
-        $originInstitutions = $destinationInstitutions
-            ->where('id', $activeInstitutionId)
-            ->values();
+        $destinationInstitutions = $this->scopedActaInstitutions($user);
+        $originInstitutions = $this->operatesWithGlobalScope($user)
+            ? $destinationInstitutions
+            : $destinationInstitutions
+                ->where('id', $activeInstitutionId)
+                ->values();
         $tiposEquipo = TipoEquipo::query()->orderBy('nombre')->get(['id', 'nombre']);
 
         $oldEquipoIds = collect(old('equipos', []))
@@ -287,5 +289,16 @@ class ActaController extends Controller
         $pdf = Pdf::loadView('actas.pdf.'.$acta->tipo, $pdfData)->setPaper('a4');
 
         return $pdf->download($acta->codigo.'.pdf');
+    }
+
+    private function scopedActaInstitutions(?\App\Models\User $user): \Illuminate\Support\Collection
+    {
+        return $this->applyGlobalAdministrationScope(
+            \App\Models\Institution::query(),
+            'id',
+            $user
+        )
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'scope_type']);
     }
 }

@@ -20,31 +20,33 @@ class DocumentPolicy
             return false;
         }
 
-        $activeInstitutionId = app(ActiveInstitutionContext::class)->currentId($user);
+        $scopeIds = app(ActiveInstitutionContext::class)->globalAdministrationScopeIds($user);
 
-        if ($activeInstitutionId !== null && $document->equipoDocumentos()
-            ->whereHas('equipo.oficina.service', fn ($query) => $query->where('institution_id', $activeInstitutionId))
-            ->exists()) {
+        if ($scopeIds === null) {
             return true;
         }
 
-        $documentable = $document->documentable;
+        if ($scopeIds === [] || $document->equipoDocumentos()
+            ->whereHas('equipo.oficina.service', fn ($query) => $query->whereIn('institution_id', $scopeIds))
+            ->doesntExist()) {
+            $documentable = $document->documentable;
 
-        $institutionId = $documentable instanceof Acta
-            ? $documentable->institution_id
-            : ($documentable?->oficina?->service?->institution_id
-                ?? $documentable?->equipo?->oficina?->service?->institution_id);
+            $institutionId = $documentable instanceof Acta
+                ? $documentable->institution_id
+                : ($documentable?->oficina?->service?->institution_id
+                    ?? $documentable?->equipo?->oficina?->service?->institution_id);
 
-        return app(ActiveInstitutionContext::class)->isActiveInstitution(
-            $user,
-            $institutionId !== null ? (int) $institutionId : null
-        );
+            return $institutionId !== null
+                && in_array((int) $institutionId, $scopeIds, true);
+        }
+
+        return true;
     }
 
     public function create(User $user, int $institutionId): bool
     {
         return $user->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN, User::ROLE_TECNICO)
-            && app(ActiveInstitutionContext::class)->isActiveInstitution($user, $institutionId);
+            && app(ActiveInstitutionContext::class)->isWithinGlobalAdministrationScope($user, $institutionId);
     }
 
     public function delete(User $user, Document $document): bool

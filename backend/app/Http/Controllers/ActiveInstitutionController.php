@@ -68,6 +68,11 @@ class ActiveInstitutionController extends Controller
 
         return redirect()
             ->route('dashboard')
-            ->with('status', sprintf('Ahora esta operando en %s.', $institution->nombre));
+            ->with(
+                'status',
+                $institution->isGlobalScope() || $this->activeInstitutionContext->operatesWithGlobalScope($user, $request->session())
+                    ? sprintf('Ahora esta operando en %s con alcance global.', $institution->nombre)
+                    : sprintf('Ahora esta operando en %s.', $institution->nombre)
+            );
     }
 }

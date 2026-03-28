@@ -29,10 +29,16 @@ class DashboardController extends Controller
     public function __invoke(Request $request): View
     {
         $user = $request->user();
-        $institutionIds = [$this->activeInstitutionId($user) ?? -1];
+        $institutionIds = $this->globalAdministrationScopeIds($user);
+        $operatesGlobally = $this->operatesWithGlobalScope($user);
 
         $institucionesVisibles = Institution::query()
-            ->whereIn('id', $institutionIds)
+            ->when(
+                $institutionIds !== null,
+                fn (Builder $query) => $institutionIds === []
+                    ? $query->whereRaw('1 = 0')
+                    : $query->whereIn('id', $institutionIds)
+            )
             ->orderBy('nombre')
             ->get(['id', 'nombre']);
 
@@ -181,7 +187,7 @@ class DashboardController extends Controller
             'icon_classes' => 'bg-emerald-100 text-emerald-700',
         ]))->values();
 
-        $scopeLabel = $this->scopeLabel($institucionesVisibles);
+        $scopeLabel = $this->scopeLabel($institucionesVisibles, $operatesGlobally);
 
         $dashboardContext = [
             'cutoff' => now()->translatedFormat('l, j \\d\\e F Y'),
@@ -200,7 +206,7 @@ class DashboardController extends Controller
                 ? "{$cantidadAlertasActivas} frentes de atencion prioritaria"
                 : 'Operacion estable al cierre del dia',
             'totalEquipos' => $totalEquipos,
-            'showInstitutionContext' => $instituciones > 1,
+            'showInstitutionContext' => $operatesGlobally || $instituciones > 1,
             'snapshots' => [
                 [
                     'label' => 'Disponibilidad operativa',
@@ -598,8 +604,12 @@ class DashboardController extends Controller
             : 'Equipo sin referencia visible';
     }
 
-    private function scopeLabel(Collection $institucionesVisibles): string
+    private function scopeLabel(Collection $institucionesVisibles, bool $operatesGlobally): string
     {
+        if ($operatesGlobally) {
+            return 'Alcance global del sistema';
+        }
+
         if ($institucionesVisibles->isEmpty()) {
             return 'Sin instituciones visibles';
         }

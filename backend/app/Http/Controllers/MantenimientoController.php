@@ -24,12 +24,18 @@ class MantenimientoController extends Controller
         $this->authorize('viewAny', Mantenimiento::class);
 
         $user = $request->user();
+        $scopeIds = $this->globalAdministrationScopeIds($user);
 
         abort_unless($user?->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN), 403);
 
         $mantenimientos = Mantenimiento::query()
             ->with(['equipo:id,tipo,numero_serie', 'estadoResultante:id,name,color'])
-            ->where('institution_id', $this->activeInstitutionId($user) ?? 0)
+            ->when(
+                $scopeIds !== null,
+                fn (Builder $query) => $scopeIds === []
+                    ? $query->whereRaw('1 = 0')
+                    : $query->whereIn('institution_id', $scopeIds)
+            )
             ->latest('fecha')
             ->latest('id')
             ->paginate(20);

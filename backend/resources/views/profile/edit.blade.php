@@ -4,6 +4,11 @@
 @section('header', 'Mi perfil')
 
 @section('content')
+    @php
+        $institutionContext = $authInstitutionContext ?? [];
+        $operatesGlobally = (bool) ($institutionContext['operatesGlobally'] ?? false);
+        $scopeLabel = $institutionContext['scopeLabel'] ?? 'Alcance institucional';
+    @endphp
     <div class="grid gap-6 xl:grid-cols-[0.9fr,1.1fr]">
         <section id="perfil" class="card space-y-5">
             <div>
@@ -16,6 +21,7 @@
                 <div class="app-subcard p-4">
                     <dt class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Institucion activa</dt>
                     <dd class="mt-2 text-base font-semibold text-slate-900">{{ $activeInstitution?->nombre ?? 'Sin institucion activa' }}</dd>
+                    <p class="mt-1 text-xs font-semibold {{ $operatesGlobally ? 'text-emerald-700' : 'text-slate-500' }}">{{ $scopeLabel }}</p>
                 </div>
 
                 <div class="app-subcard p-4">
@@ -40,7 +46,12 @@
 
                 <div class="mt-3 flex flex-wrap gap-2">
                     @forelse ($accessibleInstitutions as $institution)
-                        <span class="app-badge bg-slate-100 px-3 text-slate-700">{{ $institution->nombre }}</span>
+                        <span class="app-badge bg-slate-100 px-3 text-slate-700">
+                            {{ $institution->nombre }}
+                            @if (($institution->scope_type ?? null) === \App\Models\Institution::SCOPE_GLOBAL)
+                                · Global
+                            @endif
+                        </span>
                     @empty
                         <p class="text-sm text-slate-500">No tiene instituciones habilitadas configuradas.</p>
                     @endforelse

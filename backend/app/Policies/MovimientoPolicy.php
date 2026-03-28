@@ -12,7 +12,7 @@ class MovimientoPolicy
     public function view(User $user, Movimiento $movimiento): bool
     {
         return $user->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN, User::ROLE_TECNICO, User::ROLE_VIEWER)
-            && app(ActiveInstitutionContext::class)->isActiveInstitution($user, $movimiento->equipo?->oficina?->service?->institution_id);
+            && app(ActiveInstitutionContext::class)->isWithinGlobalAdministrationScope($user, $movimiento->equipo?->oficina?->service?->institution_id);
     }
 
     public function create(User $user, ?int $institutionId = null): bool
@@ -22,6 +22,6 @@ class MovimientoPolicy
         }
 
         return $institutionId === null
-            || app(ActiveInstitutionContext::class)->isActiveInstitution($user, $institutionId);
+            || app(ActiveInstitutionContext::class)->isWithinGlobalAdministrationScope($user, $institutionId);
     }
 }

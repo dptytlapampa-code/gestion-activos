@@ -25,7 +25,7 @@ class ActaAuthorizationService
             return Response::deny('No tiene permisos para consultar actas.');
         }
 
-        if (! $this->activeInstitutionContext->isActiveInstitution($user, (int) $acta->institution_id)) {
+        if (! $this->activeInstitutionContext->isWithinGlobalAdministrationScope($user, (int) $acta->institution_id)) {
             return Response::deny('No tiene permisos para acceder a esta acta con la institucion activa seleccionada.');
         }
 
@@ -61,7 +61,7 @@ class ActaAuthorizationService
             return Response::deny('No tiene permisos para anular actas.');
         }
 
-        if (! $this->activeInstitutionContext->isActiveInstitution($user, (int) $acta->institution_id)) {
+        if (! $this->activeInstitutionContext->isWithinGlobalAdministrationScope($user, (int) $acta->institution_id)) {
             return Response::deny('No tiene permisos para anular esta acta con la institucion activa seleccionada.');
         }
 

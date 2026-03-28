@@ -105,6 +105,35 @@ class OfficeModuleTest extends TestCase
         $this->assertSame(2, $response->viewData('offices')->total());
     }
 
+    public function test_admin_en_nivel_central_ve_todas_las_oficinas_desde_el_contexto_global(): void
+    {
+        $nivelCentral = Institution::query()
+            ->where('scope_type', Institution::SCOPE_GLOBAL)
+            ->firstOrFail();
+        $institucionA = Institution::create(['nombre' => 'Hospital Este']);
+        $institucionB = Institution::create(['nombre' => 'Hospital Oeste']);
+
+        $servicioA = Service::create(['nombre' => 'Guardia', 'institution_id' => $institucionA->id]);
+        $servicioB = Service::create(['nombre' => 'Terapia', 'institution_id' => $institucionB->id]);
+
+        $oficinaA = Office::create(['nombre' => 'Oficina Este', 'service_id' => $servicioA->id]);
+        $oficinaB = Office::create(['nombre' => 'Oficina Oeste', 'service_id' => $servicioB->id]);
+
+        $adminCentral = $this->crearUsuario(User::ROLE_ADMIN);
+        $adminCentral->institution_id = $nivelCentral->id;
+        $adminCentral->save();
+
+        $response = $this->actingAs($adminCentral)
+            ->withSession([ActiveInstitutionContext::SESSION_KEY => $nivelCentral->id])
+            ->get(route('offices.index'));
+
+        $response->assertOk()
+            ->assertSee($oficinaA->nombre)
+            ->assertSee($oficinaB->nombre);
+
+        $this->assertSame(2, $response->viewData('offices')->total());
+    }
+
     public function test_admin_hospital_no_puede_crear_oficina_en_otra_institucion(): void
     {
         $institucionA = Institution::create(['nombre' => 'Hospital Local']);

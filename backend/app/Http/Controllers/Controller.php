@@ -58,6 +58,11 @@ abstract class Controller extends BaseController
         return $this->institutionContext()->isWithinGlobalAdministrationScope($user, $institutionId);
     }
 
+    protected function operatesWithGlobalScope(?User $user = null): bool
+    {
+        return $this->institutionContext()->operatesWithGlobalScope($user ?? request()->user());
+    }
+
     protected function applyGlobalAdministrationScope(mixed $query, string $column, ?User $user = null): mixed
     {
         $scopeIds = $this->globalAdministrationScopeIds($user ?? request()->user());

@@ -71,14 +71,20 @@ class AppServiceProvider extends ServiceProvider
 
             /** @var ActiveInstitutionContext $activeInstitutionContext */
             $activeInstitutionContext = app(ActiveInstitutionContext::class);
+            $activeInstitution = $activeInstitutionContext->activeInstitution($user);
+            $operatesGlobally = $activeInstitutionContext->operatesWithGlobalScope($user);
             $accessibleInstitutions = $activeInstitutionContext->accessibleInstitutions($user);
 
             $view->with('authInstitutionContext', [
                 'activeInstitutionId' => $activeInstitutionContext->currentId($user),
-                'activeInstitution' => $activeInstitutionContext->activeInstitution($user),
+                'activeInstitution' => $activeInstitution,
                 'primaryInstitution' => $user->institution,
                 'accessibleInstitutions' => $accessibleInstitutions,
                 'canSwitchInstitution' => $accessibleInstitutions->count() > 1,
+                'operatesGlobally' => $operatesGlobally,
+                'scopeLabel' => $operatesGlobally
+                    ? 'Alcance global del sistema'
+                    : 'Alcance institucional',
             ]);
         });
     }

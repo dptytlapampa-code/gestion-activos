@@ -72,4 +72,61 @@ class DashboardTest extends TestCase
             collect($response->viewData('actas'))->pluck('receptor_nombre')->all()
         );
     }
+
+    public function test_dashboard_en_nivel_central_consolida_el_universo_completo(): void
+    {
+        $nivelCentral = Institution::query()
+            ->where('scope_type', Institution::SCOPE_GLOBAL)
+            ->firstOrFail();
+        $institutionA = Institution::create(['nombre' => 'Hospital Norte']);
+        $institutionB = Institution::create(['nombre' => 'Hospital Sur']);
+
+        $serviceA = Service::create(['nombre' => 'Guardia Norte', 'institution_id' => $institutionA->id]);
+        $serviceB = Service::create(['nombre' => 'Guardia Sur', 'institution_id' => $institutionB->id]);
+        $officeA = Office::create(['nombre' => 'Oficina Norte', 'service_id' => $serviceA->id]);
+        $officeB = Office::create(['nombre' => 'Oficina Sur', 'service_id' => $serviceB->id]);
+        $tipo = TipoEquipo::create(['nombre' => 'Respirador']);
+
+        Equipo::create([
+            'tipo' => $tipo->nombre,
+            'tipo_equipo_id' => $tipo->id,
+            'marca' => 'Marca Norte',
+            'modelo' => 'Modelo Norte',
+            'numero_serie' => 'SER-GLB-01',
+            'bien_patrimonial' => 'BP-GLB-01',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => now()->toDateString(),
+            'oficina_id' => $officeA->id,
+        ]);
+
+        Equipo::create([
+            'tipo' => $tipo->nombre,
+            'tipo_equipo_id' => $tipo->id,
+            'marca' => 'Marca Sur',
+            'modelo' => 'Modelo Sur',
+            'numero_serie' => 'SER-GLB-02',
+            'bien_patrimonial' => 'BP-GLB-02',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => now()->toDateString(),
+            'oficina_id' => $officeB->id,
+        ]);
+
+        $adminCentral = User::create([
+            'name' => 'Admin Central',
+            'email' => 'dashboard-central-'.uniqid().'@test.com',
+            'password' => 'password',
+            'role' => User::ROLE_ADMIN,
+            'institution_id' => $nivelCentral->id,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($adminCentral)
+            ->withSession(['active_institution_id' => $nivelCentral->id])
+            ->get(route('dashboard'));
+
+        $response->assertOk();
+        $this->assertSame('Alcance global del sistema', $response->viewData('dashboardContext')['scopeLabel']);
+        $this->assertSame('2', str_replace(['.', ','], '', (string) $response->viewData('kpiCards')[0]['value']));
+        $this->assertTrue((bool) $response->viewData('dashboardContext')['showInstitutionContext']);
+    }
 }

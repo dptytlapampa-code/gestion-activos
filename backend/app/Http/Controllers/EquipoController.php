@@ -453,18 +453,22 @@ class EquipoController extends Controller
 
     private function scopedInstituciones(?User $user)
     {
-        return Institution::query()
-            ->where('id', $this->activeInstitutionId($user) ?? 0)
+        return $this->applyGlobalAdministrationScope(
+            Institution::query(),
+            'id',
+            $user
+        )
             ->orderBy('nombre')
             ->get(['id', 'nombre']);
     }
 
     private function scopedServicios(?User $user, ?int $institutionId)
     {
-        $activeInstitutionId = $this->activeInstitutionId($user);
-
-        return Service::query()
-            ->where('institution_id', $activeInstitutionId ?? 0)
+        return $this->applyGlobalAdministrationScope(
+            Service::query(),
+            'institution_id',
+            $user
+        )
             ->when($institutionId !== null, fn ($query) => $query->where('institution_id', $institutionId))
             ->when($institutionId === null, fn ($query) => $query->whereRaw('1 = 0'))
             ->orderBy('nombre')
@@ -473,11 +477,19 @@ class EquipoController extends Controller
 
     private function scopedOficinas(?User $user, ?int $serviceId)
     {
-        $activeInstitutionId = $this->activeInstitutionId($user);
+        $scopeIds = $this->globalAdministrationScopeIds($user);
 
         return Office::query()
-            ->whereHas('service', function ($query) use ($activeInstitutionId): void {
-                $query->where('institution_id', $activeInstitutionId ?? 0);
+            ->when($scopeIds !== null, function ($query) use ($scopeIds): void {
+                $query->whereHas('service', function ($serviceQuery) use ($scopeIds): void {
+                    if ($scopeIds === []) {
+                        $serviceQuery->whereRaw('1 = 0');
+
+                        return;
+                    }
+
+                    $serviceQuery->whereIn('institution_id', $scopeIds);
+                });
             })
             ->when($serviceId !== null, fn ($query) => $query->where('service_id', $serviceId))
             ->when($serviceId === null, fn ($query) => $query->whereRaw('1 = 0'))
@@ -493,6 +505,12 @@ class EquipoController extends Controller
             return $oldInstitutionId;
         }
 
-        return $this->activeInstitutionId($user);
+        $activeInstitution = $this->activeInstitution($user);
+
+        if ($activeInstitution?->isGlobalScope()) {
+            return null;
+        }
+
+        return $activeInstitution?->id;
     }
 }

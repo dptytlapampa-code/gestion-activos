@@ -155,8 +155,12 @@ class ActiveInstitutionContext
                 ! $user->hasRole(User::ROLE_SUPERADMIN),
                 fn ($query) => $query->whereIn('id', $user->accessibleInstitutionIds()->all())
             )
+            ->orderByRaw(
+                "case when scope_type = ? then 0 else 1 end",
+                [Institution::SCOPE_GLOBAL]
+            )
             ->orderBy('nombre')
-            ->get(['id', 'nombre']);
+            ->get(['id', 'nombre', 'scope_type']);
     }
 
     public function isActiveInstitution(?User $user, ?int $institutionId, ?Session $session = null): bool
@@ -169,8 +173,20 @@ class ActiveInstitutionContext
 
     public function bypassesActiveInstitutionForGlobalModules(?User $user): bool
     {
-        return $user instanceof User
-            && $user->hasRole(User::ROLE_SUPERADMIN);
+        return $this->operatesWithGlobalScope($user);
+    }
+
+    public function operatesWithGlobalScope(?User $user, ?Session $session = null): bool
+    {
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        if ($user->hasRole(User::ROLE_SUPERADMIN)) {
+            return true;
+        }
+
+        return $this->activeInstitution($user, $session)?->isGlobalScope() ?? false;
     }
 
     public function isWithinGlobalAdministrationScope(?User $user, ?int $institutionId, ?Session $session = null): bool
@@ -181,7 +197,7 @@ class ActiveInstitutionContext
             return false;
         }
 
-        if ($this->bypassesActiveInstitutionForGlobalModules($user)) {
+        if ($this->operatesWithGlobalScope($user, $session)) {
             return true;
         }
 
@@ -207,7 +223,7 @@ class ActiveInstitutionContext
             return [];
         }
 
-        if ($this->bypassesActiveInstitutionForGlobalModules($user)) {
+        if ($this->operatesWithGlobalScope($user, $session)) {
             return null;
         }
 

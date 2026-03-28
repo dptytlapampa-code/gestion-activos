@@ -31,7 +31,28 @@ class SearchControllerTest extends TestCase
 
         $labels = collect($response->json())->pluck('label')->all();
 
-        $this->assertSame(['Clinica Norte', 'Hospital Central', 'Sanatorio Sur'], $labels);
+        $this->assertSame(['Clinica Norte', 'Hospital Central', 'Nivel Central', 'Sanatorio Sur'], $labels);
+    }
+
+    public function test_admin_en_nivel_central_puede_buscar_instituciones_con_alcance_global(): void
+    {
+        $nivelCentral = Institution::query()
+            ->where('scope_type', Institution::SCOPE_GLOBAL)
+            ->firstOrFail();
+        Institution::create(['nombre' => 'Hospital Alfa']);
+        Institution::create(['nombre' => 'Hospital Beta']);
+
+        $adminCentral = $this->createUser(User::ROLE_ADMIN, $nivelCentral->id);
+
+        $response = $this->actingAs($adminCentral)
+            ->withSession([ActiveInstitutionContext::SESSION_KEY => $nivelCentral->id])
+            ->get('/api/search/institutions?q=...');
+
+        $response->assertOk();
+
+        $labels = collect($response->json())->pluck('label')->all();
+
+        $this->assertSame(['Hospital Alfa', 'Hospital Beta', 'Nivel Central'], $labels);
     }
 
     public function test_services_returns_all_for_selected_institution_when_query_is_three_dots(): void
@@ -186,6 +207,53 @@ class SearchControllerTest extends TestCase
 
         $this->assertCount(1, $payload);
         $this->assertSame('SER-ALL-1', $payload->first()['numero_serie']);
+    }
+
+    public function test_admin_en_nivel_central_puede_buscar_equipos_de_todo_el_sistema_sin_filtrar_institucion(): void
+    {
+        $nivelCentral = Institution::query()
+            ->where('scope_type', Institution::SCOPE_GLOBAL)
+            ->firstOrFail();
+        $institutionA = Institution::create(['nombre' => 'Hospital A']);
+        $institutionB = Institution::create(['nombre' => 'Hospital B']);
+        $serviceA = Service::create(['nombre' => 'Clinica A', 'institution_id' => $institutionA->id]);
+        $serviceB = Service::create(['nombre' => 'Clinica B', 'institution_id' => $institutionB->id]);
+        $officeA = Office::create(['nombre' => 'Oficina A', 'service_id' => $serviceA->id]);
+        $officeB = Office::create(['nombre' => 'Oficina B', 'service_id' => $serviceB->id]);
+        $tipo = TipoEquipo::create(['nombre' => 'CPU']);
+
+        Equipo::create([
+            'tipo' => $tipo->nombre,
+            'tipo_equipo_id' => $tipo->id,
+            'marca' => 'Dell',
+            'modelo' => 'A',
+            'numero_serie' => 'SER-CENTRAL-A',
+            'bien_patrimonial' => 'BP-CENTRAL-A',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => now()->toDateString(),
+            'oficina_id' => $officeA->id,
+        ]);
+
+        Equipo::create([
+            'tipo' => $tipo->nombre,
+            'tipo_equipo_id' => $tipo->id,
+            'marca' => 'Dell',
+            'modelo' => 'B',
+            'numero_serie' => 'SER-CENTRAL-B',
+            'bien_patrimonial' => 'BP-CENTRAL-B',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => now()->toDateString(),
+            'oficina_id' => $officeB->id,
+        ]);
+
+        $adminCentral = $this->createUser(User::ROLE_ADMIN, $nivelCentral->id);
+
+        $response = $this->actingAs($adminCentral)
+            ->withSession([ActiveInstitutionContext::SESSION_KEY => $nivelCentral->id])
+            ->get('/api/search/equipos?q=SER-CENTRAL');
+
+        $response->assertOk();
+        $this->assertCount(2, $response->json());
     }
 
     public function test_search_equipos_filtra_por_mac_y_codigo_interno(): void

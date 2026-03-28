@@ -169,15 +169,17 @@ class Acta extends Model
 
     public function scopeVisibleToUser(Builder $query, ?User $user): Builder
     {
-        $activeInstitutionId = $user !== null
-            ? app(ActiveInstitutionContext::class)->currentId($user)
-            : null;
+        $scopeIds = app(ActiveInstitutionContext::class)->globalAdministrationScopeIds($user);
 
-        return $query->when(
-            $activeInstitutionId !== null,
-            fn (Builder $builder) => $builder->where('institution_id', $activeInstitutionId),
-            fn (Builder $builder) => $builder->whereRaw('1 = 0')
-        );
+        if ($scopeIds === null) {
+            return $query;
+        }
+
+        if ($scopeIds === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->whereIn('institution_id', $scopeIds);
     }
 
     /**

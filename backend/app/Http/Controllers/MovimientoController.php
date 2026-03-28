@@ -50,7 +50,12 @@ class MovimientoController extends Controller
         $activeInstitutionId = $this->activeInstitutionId($request->user());
         $equipoInstitutionId = (int) ($equipo->oficina?->service?->institution_id ?? 0);
 
-        if ($activeInstitutionId !== null && $equipoInstitutionId > 0 && $equipoInstitutionId !== $activeInstitutionId) {
+        if (
+            ! $this->operatesWithGlobalScope($request->user())
+            && $activeInstitutionId !== null
+            && $equipoInstitutionId > 0
+            && $equipoInstitutionId !== $activeInstitutionId
+        ) {
             $institutionName = $equipo->oficina?->service?->institution?->nombre ?? 'la nueva institucion';
 
             return redirect()
@@ -69,22 +74,22 @@ class MovimientoController extends Controller
 
     private function scopedInstituciones(?User $user)
     {
-        return Institution::query()
-            ->when(
-                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-                fn ($query) => $query->whereIn('id', $user->accessibleInstitutionIds()->all())
-            )
+        return $this->applyGlobalAdministrationScope(
+            Institution::query(),
+            'id',
+            $user
+        )
             ->orderBy('nombre')
             ->get(['id', 'nombre']);
     }
 
     private function scopedServicios(?User $user)
     {
-        return Service::query()
-            ->when(
-                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-                fn ($query) => $query->whereIn('institution_id', $user->accessibleInstitutionIds()->all())
-            )
+        return $this->applyGlobalAdministrationScope(
+            Service::query(),
+            'institution_id',
+            $user
+        )
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'institution_id']);
     }
@@ -93,8 +98,18 @@ class MovimientoController extends Controller
     {
         return Office::query()
             ->when(
-                $user !== null && ! $user->hasRole(User::ROLE_SUPERADMIN),
-                fn ($query) => $query->whereHas('service', fn ($q) => $q->whereIn('institution_id', $user->accessibleInstitutionIds()->all()))
+                ($scopeIds = $this->globalAdministrationScopeIds($user)) !== null,
+                function ($query) use ($scopeIds): void {
+                    $query->whereHas('service', function ($serviceQuery) use ($scopeIds): void {
+                        if ($scopeIds === []) {
+                            $serviceQuery->whereRaw('1 = 0');
+
+                            return;
+                        }
+
+                        $serviceQuery->whereIn('institution_id', $scopeIds);
+                    });
+                }
             )
             ->orderBy('nombre')
             ->get(['id', 'nombre', 'service_id']);

@@ -26,7 +26,7 @@ class StoreMantenimientoRequest extends FormRequest
             return false;
         }
 
-        return app(ActiveInstitutionContext::class)->isActiveInstitution(
+        return app(ActiveInstitutionContext::class)->isWithinGlobalAdministrationScope(
             $user,
             $equipo->oficina?->service?->institution_id
         );

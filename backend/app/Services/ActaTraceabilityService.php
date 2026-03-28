@@ -207,7 +207,7 @@ class ActaTraceabilityService
                     return true;
                 }
 
-                return ! $user->canAccessInstitution((int) ($origen['institucion_id'] ?? 0));
+                return ! $this->canOperateInstitution($user, (int) ($origen['institucion_id'] ?? 0));
             })
             ->values();
 
@@ -324,7 +324,7 @@ class ActaTraceabilityService
             ? (int) $serviceDestino->institution_id
             : null);
 
-        if ($resolvedInstitutionDestinoId !== null && ! $user->canAccessInstitution($resolvedInstitutionDestinoId)) {
+        if ($resolvedInstitutionDestinoId !== null && ! $this->canOperateInstitution($user, $resolvedInstitutionDestinoId)) {
             throw ValidationException::withMessages([
                 'institution_destino_id' => 'No tiene permisos para operar con la institucion destino seleccionada.',
             ]);
@@ -337,6 +337,10 @@ class ActaTraceabilityService
      */
     private function validateActiveInstitutionScope(User $user, Collection $equipos, Collection $origenesPorEquipo, array $origenActa): void
     {
+        if ($this->activeInstitutionContext->operatesWithGlobalScope($user)) {
+            return;
+        }
+
         $activeInstitutionId = $this->activeInstitutionContext->currentId($user);
 
         if ($activeInstitutionId === null) {
@@ -739,6 +743,16 @@ class ActaTraceabilityService
         $trimmed = trim((string) $value);
 
         return $trimmed === '' ? null : $trimmed;
+    }
+
+    private function canOperateInstitution(User $user, int $institutionId): bool
+    {
+        if ($institutionId <= 0) {
+            return false;
+        }
+
+        return $this->activeInstitutionContext->operatesWithGlobalScope($user)
+            || $user->canAccessInstitution($institutionId);
     }
 
     private function recordActaCreated(Acta $acta, User $user, Collection $equipos, array $pivotPayload): void

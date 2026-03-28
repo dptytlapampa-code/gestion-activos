@@ -31,29 +31,40 @@ class StoreEquipoRequest extends FormRequest
             return true;
         }
 
-        $activeInstitutionId = app(ActiveInstitutionContext::class)->currentId($user);
         $office = Office::query()->with('service')->find($this->integer('office_id'));
 
-        if ($activeInstitutionId === null) {
+        if ($office === null || $office->service === null) {
             return false;
         }
 
-        return $office !== null
-            && $office->service !== null
-            && (int) $office->service->institution_id === $activeInstitutionId;
+        return app(ActiveInstitutionContext::class)->isWithinGlobalAdministrationScope(
+            $user,
+            (int) $office->service->institution_id
+        );
     }
 
     public function rules(): array
     {
-        $activeInstitutionId = app(ActiveInstitutionContext::class)->currentId($this->user());
+        $institutionRule = Rule::exists('institutions', 'id');
+        $scopeIds = app(ActiveInstitutionContext::class)->globalAdministrationScopeIds($this->user());
+
+        if ($scopeIds !== null) {
+            $institutionRule = $institutionRule->where(function ($query) use ($scopeIds): void {
+                if ($scopeIds === []) {
+                    $query->whereRaw('1 = 0');
+
+                    return;
+                }
+
+                $query->whereIn('id', $scopeIds);
+            });
+        }
 
         return [
             'institution_id' => [
                 'required',
                 'integer',
-                Rule::exists('institutions', 'id')->where(
-                    fn ($query) => $query->where('id', $activeInstitutionId ?? 0)
-                ),
+                $institutionRule,
             ],
             'service_id' => [
                 'required',

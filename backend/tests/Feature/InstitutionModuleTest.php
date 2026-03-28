@@ -34,7 +34,7 @@ class InstitutionModuleTest extends TestCase
             ->get(route('institutions.index'));
 
         $defaultResponse->assertOk();
-        $this->assertSame(22, $defaultResponse->viewData('institutions')->total());
+        $this->assertSame(23, $defaultResponse->viewData('institutions')->total());
         $this->assertSame(20, $defaultResponse->viewData('institutions')->perPage());
         $this->assertCount(20, $defaultResponse->viewData('institutions')->items());
 
