@@ -100,6 +100,11 @@ class ActaPdfTemplateTest extends TestCase
         $this->assertStringContainsString('Sistema Provincial de Gestion de Activos y Trazabilidad', $html);
         $this->assertStringContainsString('Hospital Origen', $html);
         $this->assertStringContainsString('Destino administrativo', $html);
+        $this->assertStringContainsString(
+            '<span class="footer-line">Documento generado por Sistema Provincial de Gestion de Activos y Trazabilidad</span>',
+            $html
+        );
+        $this->assertStringNotContainsString('<span class="footer-line">Hospital Origen</span>', $html);
         $this->assertStringNotContainsString('Cant.', $html);
         $this->assertStringNotContainsString('Origen individual', $html);
     }
@@ -193,6 +198,8 @@ class ActaPdfTemplateTest extends TestCase
         $this->assertStringContainsString('Origen individual', $html);
         $this->assertStringContainsString('Hospital A / Servicio A / Oficina A', $html);
         $this->assertStringContainsString('Hospital B / Servicio B / Oficina B', $html);
+        $this->assertStringNotContainsString('<span class="footer-line">Hospital A</span>', $html);
+        $this->assertStringNotContainsString('<span class="footer-line">Hospital B</span>', $html);
         $this->assertStringNotContainsString('Cant.', $html);
     }
 

@@ -370,7 +370,7 @@
         $documentTitle = $pdfDocumentTitle ?? strtoupper((string) ($titulo ?? 'ACTA DE EQUIPAMIENTO INFORMATICO'));
         $systemName = $pdfSystemName ?? config('app.name');
         $issuerInstitutionName = $pdfIssuerInstitutionName ?? ($pdfInstitutionName ?? ($acta->institution?->nombre ?: 'Institucion'));
-        $footerInstitutionName = $pdfFooterInstitutionName ?? $issuerInstitutionName;
+        $footerText = $pdfFooterText ?? ('Documento generado por '.$systemName);
         $clausulaTexto = $clausula ?? 'Se deja constancia institucional del evento de trazabilidad registrado sobre el equipamiento detallado en el presente documento.';
         $documentFacts = collect($pdfDocumentFacts ?? []);
         $originSummary = is_array($pdfOriginSummary ?? null) ? $pdfOriginSummary : [
@@ -656,8 +656,7 @@
         </div>
 
         <div class="footer keep-together">
-            <span class="footer-line">Documento generado por {{ $systemName }}</span>
-            <span class="footer-line">{{ $footerInstitutionName }}</span>
+            <span class="footer-line">{{ $footerText }}</span>
         </div>
     </div>
 </div>

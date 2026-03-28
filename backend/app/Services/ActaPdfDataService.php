@@ -44,7 +44,8 @@ class ActaPdfDataService
             'pdfSystemName' => $systemName,
             'pdfInstitutionName' => $issuerInstitutionName,
             'pdfIssuerInstitutionName' => $issuerInstitutionName,
-            'pdfFooterInstitutionName' => $issuerInstitutionName,
+            'pdfFooterInstitutionName' => $systemName,
+            'pdfFooterText' => $this->resolveFooterText($systemName),
             'pdfHeaderLogoPath' => $headerLogoPath,
             'pdfDocumentTitle' => $this->resolveTitle($acta),
             'pdfDocumentFacts' => $this->buildDocumentFacts($acta, $issuerInstitutionName),
@@ -343,6 +344,17 @@ class ActaPdfDataService
         return ($acta->status ?? Acta::STATUS_ACTIVA) === Acta::STATUS_ANULADA
             ? 'Anulada'
             : 'Activa';
+    }
+
+    private function resolveFooterText(string $systemName): string
+    {
+        $systemName = $this->nullableTrim($systemName);
+
+        if ($systemName !== null) {
+            return 'Documento generado por '.$systemName;
+        }
+
+        return 'Documento generado por el Sistema Institucional de Gestion de Activos Informaticos';
     }
 
     private function nullableTrim(mixed $value): ?string
