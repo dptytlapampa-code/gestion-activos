@@ -21,7 +21,7 @@
         position: fixed;
         top: 50%;
         left: 50%;
-        width: 140%;
+        width: 100%;
         text-align: center;
         white-space: nowrap;
         font-size: 70px;
@@ -32,12 +32,6 @@
         transform: translate(-50%, -50%) rotate(-32deg);
         transform-origin: center center;
         z-index: 0;
-    }
-
-    .watermark-prestamo {
-        margin-top: -35px;
-        margin-left: -70%;
-        transform: rotate(-32deg);
     }
 
     .content {
@@ -412,7 +406,7 @@
     @endphp
 
     @if ($isAnulada)
-        <div class="watermark{{ $isPrestamo ? ' watermark-prestamo' : '' }}">ACTA ANULADA</div>
+        <div class="watermark">ACTA ANULADA</div>
     @endif
 
     <div class="content">

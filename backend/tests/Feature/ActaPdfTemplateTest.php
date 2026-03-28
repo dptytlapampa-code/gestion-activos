@@ -211,6 +211,44 @@ class ActaPdfTemplateTest extends TestCase
         $this->assertStringNotContainsString('Cant.', $html);
     }
 
+    public function test_pdf_template_centra_watermark_en_actas_anuladas(): void
+    {
+        Storage::fake('public');
+
+        SystemSetting::query()->create([
+            'site_name' => 'Sistema Provincial de Activos',
+            'primary_color' => '#1F2937',
+            'sidebar_color' => '#1F2937',
+        ]);
+
+        Cache::forget(system_config_cache_key());
+
+        [$user, $institution] = $this->crearEscenarioBase('Anulada');
+
+        $acta = Acta::query()->create([
+            'institution_id' => $institution->id,
+            'tipo' => Acta::TIPO_PRESTAMO,
+            'fecha' => now()->toDateString(),
+            'status' => Acta::STATUS_ANULADA,
+            'created_by' => $user->id,
+            'evento_payload' => [
+                'institution_id' => $institution->id,
+                'institution_name' => $institution->nombre,
+                'origenes_por_equipo' => [],
+            ],
+        ]);
+
+        $html = view(
+            'actas.pdf.prestamo',
+            array_merge(['acta' => $acta], app(ActaPdfDataService::class)->build($acta))
+        )->render();
+
+        $this->assertStringContainsString('.watermark {', $html);
+        $this->assertStringContainsString('transform: translate(-50%, -50%) rotate(-32deg);', $html);
+        $this->assertStringContainsString('<div class="watermark">ACTA ANULADA</div>', $html);
+        $this->assertStringNotContainsString('watermark-prestamo', $html);
+    }
+
     private function crearEscenarioBase(string $suffix = 'Origen'): array
     {
         $institution = Institution::create(['nombre' => 'Hospital '.$suffix]);
