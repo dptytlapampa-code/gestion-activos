@@ -63,6 +63,7 @@ class ActaTraceabilityService
             $origenesPorEquipo = $this->resolveOrigenesPorEquipo($equipos);
             $origenActa = $this->resolveOrigenActa($user, $origenesPorEquipo);
             $this->validateScope($user, $data, $equipos, $origenesPorEquipo);
+            $this->validateActiveInstitutionScope($user, $equipos, $origenesPorEquipo, $origenActa);
 
             $tipo = (string) $data['tipo'];
             $destino = $this->resolveDestino($data, $origenActa, $tipo);
@@ -328,6 +329,46 @@ class ActaTraceabilityService
                 'institution_destino_id' => 'No tiene permisos para operar con la institucion destino seleccionada.',
             ]);
         }
+    }
+
+    /**
+     * @param  Collection<int, array{institucion_id:int,institucion_nombre:string,servicio_id:int,servicio_nombre:string,oficina_id:int,oficina_nombre:string}>  $origenesPorEquipo
+     * @param  array{institucion_id:int,institucion_nombre:string,servicio_id:int|null,oficina_id:int|null,origen_multiple:bool,instituciones_ids:array<int,int>}  $origenActa
+     */
+    private function validateActiveInstitutionScope(User $user, Collection $equipos, Collection $origenesPorEquipo, array $origenActa): void
+    {
+        $activeInstitutionId = $this->activeInstitutionContext->currentId($user);
+
+        if ($activeInstitutionId === null) {
+            throw ValidationException::withMessages([
+                'equipos' => 'Debe seleccionar una institucion activa habilitada para generar actas.',
+            ]);
+        }
+
+        $equiposFueraDelContextoActivo = $equipos
+            ->filter(function (Equipo $equipo) use ($origenesPorEquipo, $activeInstitutionId): bool {
+                $origen = $origenesPorEquipo->get($equipo->id);
+
+                return ! is_array($origen)
+                    || (int) ($origen['institucion_id'] ?? 0) !== $activeInstitutionId;
+            })
+            ->values();
+
+        if ($equiposFueraDelContextoActivo->isEmpty()) {
+            return;
+        }
+
+        $activeInstitutionName = $this->activeInstitutionContext->activeInstitution($user)?->nombre
+            ?? 'la institucion activa seleccionada';
+        $actaInstitutionName = (string) ($origenActa['institucion_nombre'] ?? 'otra institucion');
+
+        throw ValidationException::withMessages([
+            'equipos' => sprintf(
+                'Solo puede generar actas con equipos de %s. Revise la seleccion actual (%s) o cambie la institucion activa.',
+                $activeInstitutionName,
+                $actaInstitutionName
+            ),
+        ]);
     }
 
     /**

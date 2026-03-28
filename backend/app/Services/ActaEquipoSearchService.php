@@ -67,6 +67,13 @@ class ActaEquipoSearchService
             return $this->emptyResult($page, 'Seleccione una institucion activa para comenzar la busqueda.');
         }
 
+        if ($institutionId !== null && $activeInstitutionId !== null && $institutionId !== $activeInstitutionId) {
+            return $this->emptyResult(
+                $page,
+                'Solo puede buscar equipos de la institucion activa seleccionada para generar actas.'
+            );
+        }
+
         $hasUuid = Schema::hasColumn('equipos', 'uuid');
         $hasMacAddress = Schema::hasColumn('equipos', 'mac_address');
         $hasCodigoInterno = Schema::hasColumn('equipos', 'codigo_interno');
@@ -110,7 +117,7 @@ class ActaEquipoSearchService
             ->join('institutions', 'institutions.id', '=', 'services.institution_id')
             ->leftJoin('tipos_equipos', 'tipos_equipos.id', '=', 'equipos.tipo_equipo_id')
             ->when($allowedInstitutionIds !== null, fn (Builder $builder) => $builder->whereIn('institutions.id', $allowedInstitutionIds->all()))
-            ->where('institutions.id', $institutionId ?? $activeInstitutionId)
+            ->where('institutions.id', $activeInstitutionId ?? $institutionId)
             ->when($serviceId !== null, fn (Builder $builder) => $builder->where('services.id', $serviceId))
             ->when($officeId !== null, fn (Builder $builder) => $builder->where('offices.id', $officeId))
             ->when($tipoEquipoId !== null, fn (Builder $builder) => $builder->where('equipos.tipo_equipo_id', $tipoEquipoId))

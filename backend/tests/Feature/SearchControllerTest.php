@@ -9,6 +9,7 @@ use App\Models\Service;
 use App\Models\TipoEquipo;
 use App\Models\User;
 use App\Services\ActaEquipoSearchService;
+use App\Services\ActiveInstitutionContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
@@ -278,6 +279,7 @@ class SearchControllerTest extends TestCase
         Service::create(['nombre' => 'Servicio B', 'institution_id' => $institutionB->id]);
 
         $admin = $this->createUser(User::ROLE_ADMIN, $institutionA->id);
+        $admin->permittedInstitutions()->attach($institutionB->id);
 
         $this->actingAs($admin)
             ->get('/api/search/services?q=...&institution_id='.$institutionB->id)
@@ -304,6 +306,7 @@ class SearchControllerTest extends TestCase
         Office::create(['nombre' => 'Oficina B1', 'service_id' => $serviceB->id]);
 
         $admin = $this->createUser(User::ROLE_ADMIN, $institutionA->id);
+        $admin->permittedInstitutions()->attach($institutionB->id);
 
         $this->actingAs($admin)
             ->get('/api/search/offices?q=...&institution_id='.$institutionB->id.'&service_id='.$serviceB->id)
@@ -394,7 +397,7 @@ class SearchControllerTest extends TestCase
             ->assertJsonPath('items.0.tipo_equipo_id', $tipo->id);
     }
 
-    public function test_acta_search_respeta_permisos_de_instituciones_accesibles(): void
+    public function test_acta_search_respeta_la_institucion_activa_en_usuarios_multiinstitucion(): void
     {
         $institutionA = Institution::create(['nombre' => 'Hospital A']);
         $institutionB = Institution::create(['nombre' => 'Hospital B']);
@@ -433,7 +436,19 @@ class SearchControllerTest extends TestCase
         $admin = $this->createUser(User::ROLE_ADMIN, $institutionA->id);
         $admin->permittedInstitutions()->attach($institutionB->id);
 
+        $blockedByContextResponse = $this->actingAs($admin)
+            ->withSession([ActiveInstitutionContext::SESSION_KEY => $institutionA->id])
+            ->get('/api/search/acta-equipos?institution_id='.$institutionB->id.'&q=PERM');
+
+        $blockedByContextResponse->assertOk()
+            ->assertJsonCount(0, 'items')
+            ->assertJsonPath(
+                'meta.message',
+                'Solo puede buscar equipos de la institucion activa seleccionada para generar actas.'
+            );
+
         $allowedResponse = $this->actingAs($admin)
+            ->withSession([ActiveInstitutionContext::SESSION_KEY => $institutionB->id])
             ->get('/api/search/acta-equipos?institution_id='.$institutionB->id.'&q=PERM');
 
         $allowedResponse->assertOk()
@@ -441,6 +456,7 @@ class SearchControllerTest extends TestCase
             ->assertJsonPath('items.0.institucion', 'Hospital B');
 
         $blockedResponse = $this->actingAs($admin)
+            ->withSession([ActiveInstitutionContext::SESSION_KEY => $institutionB->id])
             ->get('/api/search/acta-equipos?institution_id='.$institutionC->id.'&q=PERM');
 
         $blockedResponse->assertOk()

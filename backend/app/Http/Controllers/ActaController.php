@@ -63,8 +63,11 @@ class ActaController extends Controller
         $this->authorize('create', Acta::class);
 
         $user = $request->user();
+        $activeInstitutionId = $this->activeInstitutionId($user);
         $destinationInstitutions = $this->accessibleInstitutions($user);
-        $originInstitutions = $this->accessibleInstitutions($user);
+        $originInstitutions = $destinationInstitutions
+            ->where('id', $activeInstitutionId)
+            ->values();
         $tiposEquipo = TipoEquipo::query()->orderBy('nombre')->get(['id', 'nombre']);
 
         $oldEquipoIds = collect(old('equipos', []))
@@ -126,7 +129,7 @@ class ActaController extends Controller
             'tipoLabels' => Acta::LABELS,
             'destinationInstitutions' => $destinationInstitutions,
             'originInstitutions' => $originInstitutions,
-            'activeInstitutionId' => $this->activeInstitutionId($user),
+            'activeInstitutionId' => $activeInstitutionId,
             'tipoEquipoOptions' => $tiposEquipo,
             'searchEndpoints' => [
                 'actaEquipos' => route('api.search.acta-equipos', [], false),
