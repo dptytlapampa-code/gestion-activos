@@ -64,11 +64,13 @@ class EquipoModuleTest extends TestCase
 
         $this->post(route('equipos.store'), $payload)->assertRedirect(route('equipos.index'));
         $equipo = Equipo::firstOrFail();
+        $codigoInternoOriginal = $equipo->codigo_interno;
 
-        $this->put(route('equipos.update', $equipo), array_merge($payload, ['modelo' => 'M2', 'numero_serie' => 'SER-002', 'bien_patrimonial' => 'BP-002']))
+        $this->put(route('equipos.update', $equipo), array_merge($payload, ['modelo' => 'M2', 'numero_serie' => 'SER-002', 'bien_patrimonial' => 'BP-002', 'codigo_interno' => 'MANUAL-123']))
             ->assertRedirect(route('equipos.index'));
 
         $this->get(route('equipos.show', $equipo))->assertOk()->assertSee('M2');
+        $this->assertSame($codigoInternoOriginal, $equipo->fresh()->codigo_interno);
 
         $this->delete(route('equipos.destroy', $equipo))->assertRedirect(route('equipos.index'));
         $this->assertDatabaseMissing('equipos', ['id' => $equipo->id]);
@@ -167,6 +169,37 @@ class EquipoModuleTest extends TestCase
             ->assertSee('search=Dell', false)
             ->assertSee('per_page=5', false)
             ->assertSee('page=2', false);
+    }
+
+    public function test_listado_principal_permita_busqueda_por_codigo_interno(): void
+    {
+        $institution = Institution::create(['nombre' => 'Hospital Codigo']);
+        $service = Service::create(['nombre' => 'Clinica', 'institution_id' => $institution->id]);
+        $office = Office::create(['nombre' => 'Oficina Codigo', 'service_id' => $service->id]);
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Monitor']);
+
+        $equipo = Equipo::create([
+            'tipo' => $tipoEquipo->nombre,
+            'tipo_equipo_id' => $tipoEquipo->id,
+            'marca' => 'Philips',
+            'modelo' => 'C50',
+            'numero_serie' => null,
+            'bien_patrimonial' => null,
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => now()->toDateString(),
+            'oficina_id' => $office->id,
+        ]);
+
+        $user = $this->crearUsuario(User::ROLE_SUPERADMIN);
+
+        $response = $this->actingAs($user)->get(route('equipos.index', [
+            'search' => $equipo->codigo_interno,
+        ]));
+
+        $response->assertOk()
+            ->assertSee($equipo->codigo_interno)
+            ->assertSee('Philips')
+            ->assertSee('C50');
     }
 
     public function test_permisos_por_hospital_para_admin_hospital(): void
@@ -285,7 +318,7 @@ class EquipoModuleTest extends TestCase
     }
 
 
-    public function test_creacion_permite_mac_address_y_codigo_interno_opcionales(): void
+    public function test_creacion_asigna_codigo_interno_automatico_y_permite_mac_address(): void
     {
         $institution = Institution::create(['nombre' => 'Hospital MAC']);
         $service = Service::create(['nombre' => 'Ingenieria Clinica', 'institution_id' => $institution->id]);
@@ -304,16 +337,47 @@ class EquipoModuleTest extends TestCase
             'numero_serie' => 'SER-MAC-001',
             'bien_patrimonial' => 'BP-MAC-001',
             'mac_address' => 'AA:BB:CC:DD:EE:FF',
-            'codigo_interno' => 'CI-MAC-001',
             'estado' => Equipo::ESTADO_OPERATIVO,
             'fecha_ingreso' => '2025-02-11',
         ])->assertRedirect(route('equipos.index'));
 
+        $equipo = Equipo::query()->where('numero_serie', 'SER-MAC-001')->firstOrFail();
+
+        $this->assertMatchesRegularExpression('/^GA-EQ-\d{9}$/', $equipo->codigo_interno);
         $this->assertDatabaseHas('equipos', [
             'numero_serie' => 'SER-MAC-001',
             'mac_address' => 'AA:BB:CC:DD:EE:FF',
-            'codigo_interno' => 'CI-MAC-001',
+            'codigo_interno' => $equipo->codigo_interno,
         ]);
+    }
+
+    public function test_creacion_permite_equipos_sin_serie_ni_patrimonial_y_asigna_codigo_interno(): void
+    {
+        $institution = Institution::create(['nombre' => 'Hospital Sin Identificadores']);
+        $service = Service::create(['nombre' => 'Bioingenieria', 'institution_id' => $institution->id]);
+        $office = Office::create(['nombre' => 'Deposito tecnico', 'service_id' => $service->id]);
+        $tipoEquipo = TipoEquipo::create(['nombre' => 'Monitor portatil']);
+
+        $superadmin = $this->crearUsuario(User::ROLE_SUPERADMIN);
+
+        $this->actingAs($superadmin)->post(route('equipos.store'), [
+            'institution_id' => $institution->id,
+            'service_id' => $service->id,
+            'oficina_id' => $office->id,
+            'tipo_equipo_id' => $tipoEquipo->id,
+            'marca' => 'Mindray',
+            'modelo' => 'uMEC',
+            'numero_serie' => '',
+            'bien_patrimonial' => '',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => '2025-02-12',
+        ])->assertRedirect(route('equipos.index'));
+
+        $equipo = Equipo::query()->firstOrFail();
+
+        $this->assertNull($equipo->numero_serie);
+        $this->assertNull($equipo->bien_patrimonial);
+        $this->assertMatchesRegularExpression('/^GA-EQ-\d{9}$/', $equipo->codigo_interno);
     }
 
     public function test_uuid_se_genera_automaticamente_al_crear_equipo(): void
@@ -399,6 +463,7 @@ class EquipoModuleTest extends TestCase
             ->assertOk()
             ->assertSee('Ficha publica del equipo')
             ->assertSee('Respirador')
+            ->assertSee($equipo->codigo_interno)
             ->assertSee('SER-PUBLICO-1')
             ->assertSee('Hospital Publico')
             ->assertSee($acta->codigo)

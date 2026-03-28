@@ -44,7 +44,7 @@
                     <div>
                         <h2 class="text-xl font-semibold text-slate-900">Configure el acta y agregue los equipos</h2>
                         <p class="mt-1 max-w-3xl text-sm text-slate-600">
-                            Primero elija el tipo de acta. Despues busque equipos por serie, patrimonial, UUID, MAC, marca, modelo o ubicacion y agreguelos al listado.
+                            Primero elija el tipo de acta. Despues busque equipos por codigo interno, serie, patrimonial, UUID, MAC, marca, modelo o ubicacion y agreguelos al listado.
                         </p>
                     </div>
                 </div>
@@ -124,7 +124,7 @@
                                 @input="onQueryInput()"
                                 @keydown.enter.prevent="search()"
                                 class="min-h-[56px] w-full rounded-2xl border-slate-300 px-4 text-base"
-                                placeholder="Serie, patrimonial, UUID, MAC, marca, modelo, tipo o texto relacionado"
+                                placeholder="Codigo interno, serie, patrimonial, UUID, MAC, marca, modelo, tipo o texto relacionado"
                                 autocomplete="off"
                             >
                         </div>
@@ -249,6 +249,7 @@
                                 <thead>
                                     <tr>
                                         <th>Equipo</th>
+                                        <th>Codigo interno</th>
                                         <th>Serie</th>
                                         <th>Patrimonial</th>
                                         <th>Ubicacion actual</th>
@@ -259,7 +260,7 @@
                                 <tbody class="text-sm">
                                     <template x-if="!results.length">
                                         <tr>
-                                            <td colspan="6" class="px-4 py-12 text-center">
+                                            <td colspan="7" class="px-4 py-12 text-center">
                                                 <div class="mx-auto max-w-lg space-y-2">
                                                     <p class="text-base font-semibold text-slate-900" x-text="emptyStateTitle()"></p>
                                                     <p class="text-sm text-slate-500" x-text="emptyStateDescription()"></p>
@@ -276,6 +277,7 @@
                                                     <div class="mt-1 app-cell-wrap text-slate-600" x-text="joinLabel([item.marca, item.modelo]) || '-'"></div>
                                                 </div>
                                             </td>
+                                            <td class="app-cell-nowrap font-mono text-xs font-semibold tracking-[0.14em] text-slate-900" x-text="item.codigo_interno || '-'"></td>
                                             <td class="app-cell-nowrap" x-text="item.numero_serie || '-'"></td>
                                             <td class="app-cell-nowrap" x-text="item.bien_patrimonial || '-'"></td>
                                             <td>
@@ -377,6 +379,10 @@
                                 <div class="flex items-start justify-between gap-3">
                                     <div class="min-w-0">
                                         <p class="truncate font-semibold text-slate-900" x-text="item.label || item.tipo"></p>
+                                        <p class="mt-1 text-sm text-slate-600">
+                                            Codigo interno:
+                                            <span class="font-mono font-semibold tracking-[0.14em] text-slate-900" x-text="item.codigo_interno || '-'"></span>
+                                        </p>
                                         <p class="mt-1 text-sm text-slate-600">
                                             Serie:
                                             <span class="font-medium text-slate-900" x-text="item.numero_serie || '-'"></span>

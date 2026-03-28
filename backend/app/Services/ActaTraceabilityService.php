@@ -216,7 +216,7 @@ class ActaTraceabilityService
                 ->take(5)
                 ->map(function (Equipo $equipo) use ($origenesPorEquipo): string {
                     $origen = $origenesPorEquipo->get($equipo->id, []);
-                    $identificador = $equipo->numero_serie ?: ('ID '.$equipo->id);
+                    $identificador = $equipo->primaryIdentifier();
                     $institucion = $origen['institucion_nombre'] ?? 'institucion no identificada';
 
                     return sprintf('%s (%s)', $identificador, $institucion);
@@ -524,7 +524,7 @@ class ActaTraceabilityService
     private function assertTransitionAllowed(Equipo $equipo, string $tipo): void
     {
         $estado = (string) $equipo->estado;
-        $identificador = $equipo->numero_serie ?: ('ID '.$equipo->id);
+        $identificador = $equipo->primaryIdentifier();
 
         if ($estado === Equipo::ESTADO_BAJA) {
             throw ValidationException::withMessages([
@@ -839,11 +839,7 @@ class ActaTraceabilityService
 
     private function equipmentReference(Equipo $equipo): string
     {
-        return collect([
-            $equipo->tipo ?: 'Equipo',
-            $equipo->numero_serie ? 'NS '.$equipo->numero_serie : null,
-            $equipo->bien_patrimonial ? 'BP '.$equipo->bien_patrimonial : null,
-        ])->filter()->implode(' / ');
+        return $equipo->reference();
     }
 
     private function actaTypeLabel(string $tipo): string

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\Auditing\Auditable;
 use App\Services\ActiveInstitutionContext;
+use App\Services\EquipoInternalCodeService;
 use App\Services\EquipoStatusResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,6 +20,9 @@ use Illuminate\Support\Str;
 class Equipo extends Model
 {
     use Auditable, HasFactory;
+
+    public const INTERNAL_CODE_PREFIX = 'GA-EQ-';
+    public const INTERNAL_CODE_PAD_LENGTH = 9;
 
     public const ESTADO_OPERATIVO = 'operativo';
     public const ESTADO_PRESTADO = 'prestado';
@@ -44,7 +48,6 @@ class Equipo extends Model
         'numero_serie',
         'bien_patrimonial',
         'mac_address',
-        'codigo_interno',
         'estado',
         'equipo_status_id',
         'fecha_ingreso',
@@ -55,9 +58,21 @@ class Equipo extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (Equipo $equipo): void {
+            $equipo->normalizeTrackedIdentifiers();
+        });
+
         static::creating(function (Equipo $equipo): void {
             if (Schema::hasColumn($equipo->getTable(), 'uuid') && empty($equipo->uuid)) {
                 $equipo->uuid = (string) Str::uuid();
+            }
+
+            if (
+                Schema::hasColumn($equipo->getTable(), 'codigo_interno')
+                && Schema::hasTable('internal_code_sequences')
+                && empty($equipo->codigo_interno)
+            ) {
+                $equipo->codigo_interno = app(EquipoInternalCodeService::class)->next();
             }
 
             if (! Schema::hasColumn($equipo->getTable(), 'equipo_status_id')) {
@@ -239,5 +254,44 @@ class Equipo extends Model
                         });
                 });
         });
+    }
+
+    public static function formatCodigoInterno(int $sequence): string
+    {
+        return sprintf('%s%0'.self::INTERNAL_CODE_PAD_LENGTH.'d', self::INTERNAL_CODE_PREFIX, $sequence);
+    }
+
+    public function primaryIdentifier(): string
+    {
+        return $this->codigo_interno
+            ?: $this->numero_serie
+            ?: $this->bien_patrimonial
+            ?: ('ID '.$this->id);
+    }
+
+    public function reference(): string
+    {
+        return collect([
+            $this->tipo ?: 'Equipo',
+            $this->codigo_interno ? 'CI '.$this->codigo_interno : null,
+            $this->numero_serie ? 'NS '.$this->numero_serie : null,
+            $this->bien_patrimonial ? 'BP '.$this->bien_patrimonial : null,
+        ])->filter()->implode(' / ');
+    }
+
+    private function normalizeTrackedIdentifiers(): void
+    {
+        foreach (['numero_serie', 'bien_patrimonial', 'mac_address', 'codigo_interno'] as $attribute) {
+            $value = $this->getAttribute($attribute);
+
+            if ($value === null) {
+                continue;
+            }
+
+            $trimmed = trim((string) $value);
+            $trimmed = $attribute === 'codigo_interno' ? strtoupper($trimmed) : $trimmed;
+
+            $this->setAttribute($attribute, $trimmed === '' ? null : $trimmed);
+        }
     }
 }

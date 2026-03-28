@@ -108,7 +108,7 @@ class DashboardController extends Controller
         $diasCasoMasAntiguo = $mantenimientoMasAntiguo?->fecha_ingreso_st?->diffInDays(now());
 
         $ultimosServicioTecnico = (clone $mantenimientoAbiertoScope)
-            ->with(['equipo:id,tipo,numero_serie'])
+            ->with(['equipo:id,tipo,numero_serie,codigo_interno'])
             ->latest('fecha')
             ->limit(self::OPEN_MAINTENANCE_LIMIT)
             ->get();
@@ -127,7 +127,7 @@ class DashboardController extends Controller
             ->count();
 
         $movimientos = (clone $movimientoScope)
-            ->with(['equipo:id,tipo,numero_serie', 'user:id,name'])
+            ->with(['equipo:id,tipo,numero_serie,codigo_interno', 'user:id,name'])
             ->latest('fecha')
             ->limit(self::RECENT_ACTIVITY_LIMIT)
             ->get();
@@ -533,7 +533,11 @@ class DashboardController extends Controller
 
                 return [
                     'title' => $this->movementLabel((string) $movimiento->tipo_movimiento),
-                    'meta' => $this->equipmentReference($movimiento->equipo?->tipo, $movimiento->equipo?->numero_serie),
+                    'meta' => $this->equipmentReference(
+                        $movimiento->equipo?->tipo,
+                        $movimiento->equipo?->codigo_interno,
+                        $movimiento->equipo?->numero_serie
+                    ),
                     'user' => $movimiento->user?->name ?? 'Usuario del sistema',
                     'datetime' => $movimiento->fecha?->format('d/m/Y H:i') ?? '-',
                     'relative' => $movimiento->fecha?->diffForHumans() ?? '',
@@ -593,9 +597,13 @@ class DashboardController extends Controller
         };
     }
 
-    private function equipmentReference(?string $tipo, ?string $serial): string
+    private function equipmentReference(?string $tipo, ?string $codigoInterno, ?string $serial): string
     {
-        $parts = collect([$tipo, $serial !== null && $serial !== '' ? "NS {$serial}" : null])
+        $parts = collect([
+            $tipo,
+            $codigoInterno !== null && $codigoInterno !== '' ? "CI {$codigoInterno}" : null,
+            $serial !== null && $serial !== '' ? "NS {$serial}" : null,
+        ])
             ->filter()
             ->values();
 

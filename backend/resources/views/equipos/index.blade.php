@@ -30,7 +30,7 @@
             search-id="equipos-search"
             per-page-id="equipos-per-page"
             search-label="Busqueda rapida"
-            search-placeholder="Tipo, marca, serie, patrimonial o ubicacion"
+            search-placeholder="Tipo, marca, serie, patrimonial, codigo interno o ubicacion"
             :clear-url="route('equipos.index')"
         />
 
@@ -85,6 +85,7 @@
                     <th>Marca</th>
                     <th>Modelo</th>
                     <th>Estado</th>
+                    <th>Codigo interno</th>
                     <th>N serie</th>
                     <th>Ubicacion</th>
                     <th>Acciones</th>
@@ -112,7 +113,8 @@
                         })
                         <span class="status-badge {{ $estadoClase }}">{{ strtoupper(str_replace('_', ' ', $equipo->estado)) }}</span>
                     </td>
-                    <td>{{ $equipo->numero_serie }}</td>
+                    <td class="font-mono text-xs font-semibold tracking-[0.16em] text-slate-900">{{ $equipo->codigo_interno }}</td>
+                    <td>{{ $equipo->numero_serie ?: '-' }}</td>
                     <td>
                         <div class="space-y-1">
                             <div class="font-semibold text-slate-900">{{ $equipo->oficina?->service?->institution?->nombre }}</div>
@@ -149,7 +151,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="py-10 text-center text-slate-500">Sin resultados.</td>
+                    <td colspan="8" class="py-10 text-center text-slate-500">Sin resultados.</td>
                 </tr>
             @endforelse
             </tbody>

@@ -62,11 +62,14 @@
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                        Nro Serie: {{ $equipo->numero_serie }}
+                    <span class="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 font-mono text-xs font-semibold tracking-[0.16em] text-indigo-700">
+                        Codigo interno: {{ $equipo->codigo_interno }}
                     </span>
                     <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                        Bien patrimonial: {{ $equipo->bien_patrimonial }}
+                        Nro Serie: {{ $equipo->numero_serie ?: '-' }}
+                    </span>
+                    <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                        Bien patrimonial: {{ $equipo->bien_patrimonial ?: '-' }}
                     </span>
                 </div>
             </div>
@@ -106,6 +109,10 @@
             <section x-show="activeTab === 'informacion'" x-cloak class="space-y-4">
                 <dl class="grid gap-4 md:grid-cols-2">
                     <div class="app-subcard p-4">
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Codigo interno</dt>
+                        <dd class="mt-1 font-mono text-base font-semibold tracking-[0.14em] text-slate-900">{{ $equipo->codigo_interno }}</dd>
+                    </div>
+                    <div class="app-subcard p-4">
                         <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tipo</dt>
                         <dd class="mt-1 text-base font-semibold text-slate-900">
                             <div class="flex items-center gap-3">
@@ -121,6 +128,14 @@
                     <div class="app-subcard p-4">
                         <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Modelo</dt>
                         <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->modelo }}</dd>
+                    </div>
+                    <div class="app-subcard p-4">
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Numero de serie</dt>
+                        <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->numero_serie ?: '-' }}</dd>
+                    </div>
+                    <div class="app-subcard p-4">
+                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Bien patrimonial</dt>
+                        <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->bien_patrimonial ?: '-' }}</dd>
                     </div>
                     <div class="app-subcard p-4">
                         <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Estado actual</dt>

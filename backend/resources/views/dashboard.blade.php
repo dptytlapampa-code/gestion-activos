@@ -215,7 +215,7 @@
                                             <div class="min-w-0">
                                                 <p class="font-semibold text-slate-900">{{ $equipo->tipo }}</p>
                                                 <p class="text-sm text-slate-500">{{ trim(($equipo->marca ?? '').' '.($equipo->modelo ?? '')) !== '' ? trim(($equipo->marca ?? '').' '.($equipo->modelo ?? '')) : 'Sin marca / modelo informado' }}</p>
-                                                <p class="text-xs text-slate-500">{{ $equipo->numero_serie ? 'NS '.$equipo->numero_serie : 'Sin numero de serie' }}</p>
+                                                <p class="text-xs text-slate-500">{{ $equipo->codigo_interno ? 'CI '.$equipo->codigo_interno : ($equipo->numero_serie ? 'NS '.$equipo->numero_serie : 'Sin identificacion visible') }}</p>
                                             </div>
                                         </div>
                                     </td>
@@ -309,7 +309,7 @@
                                         <div class="flex items-start justify-between gap-3">
                                             <div class="min-w-0">
                                                 <p class="text-sm font-medium text-slate-800">{{ $mantenimiento->equipo?->tipo ?? 'Equipo sin tipo' }}</p>
-                                                <p class="text-xs text-slate-500">{{ $mantenimiento->equipo?->numero_serie ? 'NS '.$mantenimiento->equipo->numero_serie : 'Sin numero de serie' }}</p>
+                                                <p class="text-xs text-slate-500">{{ $mantenimiento->equipo?->codigo_interno ? 'CI '.$mantenimiento->equipo->codigo_interno : ($mantenimiento->equipo?->numero_serie ? 'NS '.$mantenimiento->equipo->numero_serie : 'Sin identificacion visible') }}</p>
                                             </div>
 
                                             <div class="shrink-0 text-right text-xs text-slate-500">

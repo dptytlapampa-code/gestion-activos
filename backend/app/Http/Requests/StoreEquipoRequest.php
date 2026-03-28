@@ -16,6 +16,9 @@ class StoreEquipoRequest extends FormRequest
     {
         $this->merge([
             'office_id' => $this->input('office_id', $this->input('oficina_id')),
+            'numero_serie' => $this->normalizeNullableText($this->input('numero_serie')),
+            'bien_patrimonial' => $this->normalizeNullableText($this->input('bien_patrimonial')),
+            'mac_address' => $this->normalizeNullableText($this->input('mac_address')),
         ]);
     }
 
@@ -79,10 +82,9 @@ class StoreEquipoRequest extends FormRequest
             'tipo_equipo_id' => ['required', 'integer', 'exists:tipos_equipos,id'],
             'marca' => ['required', 'string', 'max:100'],
             'modelo' => ['required', 'string', 'max:100'],
-            'numero_serie' => ['required', 'string', 'max:120', 'unique:equipos,numero_serie'],
-            'bien_patrimonial' => ['required', 'string', 'max:120', 'unique:equipos,bien_patrimonial'],
+            'numero_serie' => ['nullable', 'string', 'max:120', 'unique:equipos,numero_serie'],
+            'bien_patrimonial' => ['nullable', 'string', 'max:120', 'unique:equipos,bien_patrimonial'],
             'mac_address' => ['nullable', 'string', 'max:50'],
-            'codigo_interno' => ['nullable', 'string', 'max:120'],
             'estado' => ['required', Rule::in(Equipo::ESTADOS)],
             'fecha_ingreso' => ['required', 'date'],
         ];
@@ -101,12 +103,9 @@ class StoreEquipoRequest extends FormRequest
             'tipo_equipo_id.exists' => 'El tipo de equipo seleccionado no es valido.',
             'marca.required' => 'El campo marca es obligatorio.',
             'modelo.required' => 'El campo modelo es obligatorio.',
-            'numero_serie.required' => 'El numero de serie es obligatorio.',
             'numero_serie.unique' => 'Ya existe un equipo con ese numero de serie.',
-            'bien_patrimonial.required' => 'El bien patrimonial es obligatorio.',
             'bien_patrimonial.unique' => 'Ya existe un equipo con ese bien patrimonial.',
             'mac_address.max' => 'La direccion MAC no puede superar los 50 caracteres.',
-            'codigo_interno.max' => 'El codigo interno no puede superar los 120 caracteres.',
             'estado.required' => 'Debe seleccionar un estado.',
             'estado.in' => 'El estado seleccionado no es valido.',
             'fecha_ingreso.required' => 'La fecha de ingreso es obligatoria.',
@@ -124,6 +123,17 @@ class StoreEquipoRequest extends FormRequest
                 );
             }
         });
+    }
+
+    private function normalizeNullableText(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $trimmed = trim((string) $value);
+
+        return $trimmed === '' ? null : $trimmed;
     }
 }
 

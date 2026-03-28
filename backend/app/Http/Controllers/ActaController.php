@@ -261,7 +261,7 @@ class ActaController extends Controller
             'equipos.oficina.service.institution',
             'documents.uploadedBy:id,name',
             'historial.usuario:id,name',
-            'historial.equipo:id,tipo,numero_serie',
+            'historial.equipo:id,tipo,numero_serie,codigo_interno',
         ]);
 
         return view('actas.show', ['acta' => $acta, 'tipoLabels' => Acta::LABELS]);

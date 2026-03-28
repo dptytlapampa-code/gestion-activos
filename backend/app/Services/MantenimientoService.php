@@ -368,10 +368,6 @@ class MantenimientoService
 
     private function equipmentReference(Equipo $equipo): string
     {
-        return collect([
-            $equipo->tipo ?: 'Equipo',
-            $equipo->numero_serie ? 'NS '.$equipo->numero_serie : null,
-            $equipo->bien_patrimonial ? 'BP '.$equipo->bien_patrimonial : null,
-        ])->filter()->implode(' / ');
+        return $equipo->reference();
     }
 }

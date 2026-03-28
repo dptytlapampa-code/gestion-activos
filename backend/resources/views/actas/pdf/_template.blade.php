@@ -565,6 +565,7 @@
                             <span class="detail-secondary">{{ $row['modelo'] ?: '-' }}</span>
                         </td>
                         <td>
+                            <span class="detail-meta-line"><span class="detail-inline-label">Cod. interno:</span> {{ $row['codigo_interno'] ?: '-' }}</span>
                             <span class="detail-meta-line"><span class="detail-inline-label">Serie:</span> {{ $row['serie'] ?: '-' }}</span>
                             <span class="detail-meta-line"><span class="detail-inline-label">Patrimonial:</span> {{ $row['patrimonial'] ?: '-' }}</span>
                         </td>

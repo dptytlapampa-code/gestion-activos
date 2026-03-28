@@ -185,7 +185,7 @@ class SearchControllerTest extends TestCase
         $office = Office::create(['nombre' => 'Oficina 1', 'service_id' => $service->id]);
         $tipo = TipoEquipo::create(['nombre' => 'CPU']);
 
-        Equipo::create([
+        $equipo = Equipo::create([
             'tipo' => $tipo->nombre,
             'tipo_equipo_id' => $tipo->id,
             'marca' => 'Dell',
@@ -193,7 +193,6 @@ class SearchControllerTest extends TestCase
             'numero_serie' => 'SER-ALL-1',
             'bien_patrimonial' => 'BP-ALL-1',
             'mac_address' => 'AA:BB:CC:DD:EE:11',
-            'codigo_interno' => 'CI-ALL-1',
             'estado' => Equipo::ESTADO_OPERATIVO,
             'fecha_ingreso' => now()->toDateString(),
             'oficina_id' => $office->id,
@@ -207,6 +206,7 @@ class SearchControllerTest extends TestCase
 
         $this->assertCount(1, $payload);
         $this->assertSame('SER-ALL-1', $payload->first()['numero_serie']);
+        $this->assertSame($equipo->codigo_interno, $payload->first()['codigo_interno']);
     }
 
     public function test_admin_en_nivel_central_puede_buscar_equipos_de_todo_el_sistema_sin_filtrar_institucion(): void
@@ -263,7 +263,7 @@ class SearchControllerTest extends TestCase
         $office = Office::create(['nombre' => 'Deposito', 'service_id' => $service->id]);
         $tipo = TipoEquipo::create(['nombre' => 'Notebook']);
 
-        Equipo::create([
+        $equipo = Equipo::create([
             'tipo' => $tipo->nombre,
             'tipo_equipo_id' => $tipo->id,
             'marca' => 'HP',
@@ -271,7 +271,6 @@ class SearchControllerTest extends TestCase
             'numero_serie' => 'SER-BUS-1',
             'bien_patrimonial' => 'BP-BUS-1',
             'mac_address' => 'AA:AA:AA:AA:AA:01',
-            'codigo_interno' => 'COD-INT-001',
             'estado' => Equipo::ESTADO_OPERATIVO,
             'fecha_ingreso' => now()->toDateString(),
             'oficina_id' => $office->id,
@@ -284,10 +283,11 @@ class SearchControllerTest extends TestCase
         $this->assertCount(1, $macResponse->json());
 
         $codigoResponse = $this->actingAs($this->createUser(User::ROLE_SUPERADMIN))
-            ->get('/api/search/equipos?q=COD-INT-001&institution_id='.$institution->id);
+            ->get('/api/search/equipos?q='.$equipo->codigo_interno.'&institution_id='.$institution->id);
 
         $codigoResponse->assertOk();
         $this->assertCount(1, $codigoResponse->json());
+        $this->assertSame($equipo->codigo_interno, $codigoResponse->json()[0]['codigo_interno']);
     }
 
 

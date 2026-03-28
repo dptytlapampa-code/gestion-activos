@@ -22,6 +22,10 @@
 
         <div class="grid gap-4 md:grid-cols-2">
             <div>
+                <p class="text-xs uppercase tracking-wide text-slate-500">Codigo interno</p>
+                <p class="font-mono text-sm font-semibold tracking-[0.16em] text-slate-800">{{ $equipo->codigo_interno }}</p>
+            </div>
+            <div>
                 <p class="text-xs uppercase tracking-wide text-slate-500">Tipo de equipo</p>
                 <div class="mt-1 flex items-center gap-2">
                     <x-tipo-equipo-image :tipo-equipo="$equipo->tipoEquipo" size="xs" class="rounded-lg" />

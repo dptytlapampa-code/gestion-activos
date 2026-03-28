@@ -37,7 +37,7 @@
 }">
     <div class="mb-6">
         <h3 class="text-lg font-semibold text-slate-900">Nuevo movimiento</h3>
-        <p class="mt-1 text-sm text-slate-500">Equipo: {{ $equipo->tipo }} - {{ $equipo->marca }} {{ $equipo->modelo }} (Serie: {{ $equipo->numero_serie }})</p>
+        <p class="mt-1 text-sm text-slate-500">Equipo: {{ $equipo->reference() }}</p>
     </div>
 
     <form method="POST" action="{{ route('equipos.movimientos.store', $equipo) }}" class="space-y-5">

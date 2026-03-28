@@ -128,6 +128,7 @@
                     <th>Tipo</th>
                     <th>Marca</th>
                     <th>Modelo</th>
+                    <th>Codigo interno</th>
                     <th>Serie</th>
                     <th>Patrimonial</th>
                     <th>Origen snapshot</th>
@@ -161,8 +162,9 @@
                         <td class="app-cell-nowrap font-medium text-slate-900">{{ $equipo->tipo }}</td>
                         <td class="app-cell-nowrap">{{ $equipo->marca }}</td>
                         <td class="app-cell-nowrap">{{ $equipo->modelo }}</td>
-                        <td class="app-cell-nowrap">{{ $equipo->numero_serie }}</td>
-                        <td class="app-cell-nowrap">{{ $equipo->bien_patrimonial }}</td>
+                        <td class="app-cell-nowrap font-mono text-xs font-semibold tracking-[0.14em] text-slate-900">{{ $equipo->codigo_interno }}</td>
+                        <td class="app-cell-nowrap">{{ $equipo->numero_serie ?: '-' }}</td>
+                        <td class="app-cell-nowrap">{{ $equipo->bien_patrimonial ?: '-' }}</td>
                         <td class="min-w-[16rem] app-cell-wrap">{{ $origenEquipo }}</td>
                         <td class="min-w-[18rem] app-cell-wrap">{{ $destinoEquipo }}</td>
                         <td class="app-cell-nowrap text-center">{{ $equipo->pivot->cantidad }}</td>
@@ -193,7 +195,7 @@
                 <tbody>
                     @forelse ($acta->historial as $item)
                         <tr>
-                            <td class="min-w-[14rem] app-cell-wrap">{{ $item->equipo?->tipo }} ({{ $item->equipo?->numero_serie }})</td>
+                            <td class="min-w-[14rem] app-cell-wrap">{{ $item->equipo?->tipo }} ({{ $item->equipo?->codigo_interno ?: ($item->equipo?->numero_serie ?: '-') }})</td>
                             <td class="app-cell-nowrap">{{ strtoupper(str_replace('_', ' ', $item->estado_anterior ?: '-')) }}</td>
                             <td class="app-cell-nowrap">{{ strtoupper(str_replace('_', ' ', $item->estado_nuevo ?: '-')) }}</td>
                             <td class="min-w-[16rem] app-cell-wrap">{{ $item->institucionAnterior?->nombre ?: '-' }} / {{ $item->servicioAnterior?->nombre ?: '-' }} / {{ $item->oficinaAnterior?->nombre ?: '-' }}</td>

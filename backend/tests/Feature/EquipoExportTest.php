@@ -37,7 +37,6 @@ class EquipoExportTest extends TestCase
             'modelo' => 'MX-100',
             'numero_serie' => 'EXP-SUP-001',
             'bien_patrimonial' => 'BP-EXP-SUP-001',
-            'codigo_interno' => 'CI-001',
             'mac_address' => 'AA:BB:CC:DD:EE:01',
         ]);
 
@@ -92,6 +91,7 @@ class EquipoExportTest extends TestCase
         $this->assertSame((string) $esperado->uuid, $rows[1][1]);
         $this->assertSame('Philips', $rows[1][3]);
         $this->assertSame('EXP-SUP-001', $rows[1][5]);
+        $this->assertSame($esperado->codigo_interno, $rows[1][7]);
         $this->assertSame('Hospital Central / Laboratorio / Oficina 1', $rows[1][14]);
     }
 
@@ -235,7 +235,6 @@ class EquipoExportTest extends TestCase
             'modelo' => 'CardioDay',
             'numero_serie' => 'CSV-001',
             'bien_patrimonial' => 'BP-CSV-001',
-            'codigo_interno' => 'INT-CSV-001',
             'mac_address' => 'AA:AA:AA:AA:AA:AA',
         ]);
 
@@ -255,7 +254,7 @@ class EquipoExportTest extends TestCase
         $this->assertSame('GE', $rows[1][3]);
         $this->assertSame('CardioDay', $rows[1][4]);
         $this->assertSame('BP-CSV-001', $rows[1][6]);
-        $this->assertSame('INT-CSV-001', $rows[1][7]);
+        $this->assertSame($equipo->codigo_interno, $rows[1][7]);
         $this->assertSame('AA:AA:AA:AA:AA:AA', $rows[1][8]);
         $this->assertSame('Hospital CSV', $rows[1][11]);
     }
@@ -297,7 +296,6 @@ class EquipoExportTest extends TestCase
      *     modelo?:string,
      *     numero_serie?:string,
      *     bien_patrimonial?:string,
-     *     codigo_interno?:string|null,
      *     mac_address?:string|null,
      *     estado?:string,
      *     fecha_ingreso?:string
@@ -312,7 +310,6 @@ class EquipoExportTest extends TestCase
             'modelo' => 'Linea Base',
             'numero_serie' => 'SER-'.uniqid(),
             'bien_patrimonial' => 'BP-'.uniqid(),
-            'codigo_interno' => null,
             'mac_address' => null,
             'estado' => Equipo::ESTADO_OPERATIVO,
             'fecha_ingreso' => '2026-03-19',
