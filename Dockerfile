@@ -21,6 +21,7 @@ RUN apt-get update \
         git \
         unzip \
         pkg-config \
+        $PHPIZE_DEPS \
         libpq-dev \
         libzip-dev \
         libpng-dev \
@@ -30,7 +31,7 @@ RUN apt-get update \
         libmagickwand-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_pgsql zip gd \
-    && printf "\n" | pecl install imagick-3.7.0 \
+    && printf "\n" | pecl install imagick-3.8.1 \
     && docker-php-ext-enable imagick \
     && rm -rf /var/lib/apt/lists/*
 
