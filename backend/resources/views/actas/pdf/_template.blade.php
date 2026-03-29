@@ -349,6 +349,12 @@
         height: 108px;
     }
 
+    .qr-code img {
+        display: block;
+        width: 108px;
+        height: 108px;
+    }
+
     .qr-text {
         padding-left: 14px;
         font-size: 10px;
@@ -426,7 +432,7 @@
             return is_array($card)
                 && filled($card['title'] ?? null)
                 && filled($card['url'] ?? null)
-                && filled($card['svg'] ?? null);
+                && filled($card['image_src'] ?? null);
         })->values();
         $isPrestamo = (bool) ($receptorData['is_prestamo'] ?? false);
         $signatureRightLabel = match ($acta->tipo) {
@@ -670,7 +676,9 @@
                                         <div class="qr-card-title">{{ $card['title'] }}</div>
                                         <table class="qr-table">
                                             <tr>
-                                                <td class="qr-code">{!! $card['svg'] !!}</td>
+                                                <td class="qr-code">
+                                                    <img src="{{ $card['image_src'] }}" alt="QR {{ $card['title'] }}" width="108" height="108">
+                                                </td>
                                                 <td class="qr-text">
                                                     {{ $card['description'] }}
                                                     <div class="qr-card-meta">{{ $card['meta'] }}</div>
@@ -687,7 +695,9 @@
                                             <div class="qr-card-title">{{ $card['title'] }}</div>
                                             <table class="qr-table">
                                                 <tr>
-                                                    <td class="qr-code">{!! $card['svg'] !!}</td>
+                                                    <td class="qr-code">
+                                                        <img src="{{ $card['image_src'] }}" alt="QR {{ $card['title'] }}" width="108" height="108">
+                                                    </td>
                                                     <td class="qr-text">
                                                         {{ $card['description'] }}
                                                         <div class="qr-card-meta">{{ $card['meta'] }}</div>

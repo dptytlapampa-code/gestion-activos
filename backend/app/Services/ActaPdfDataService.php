@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Acta;
 use App\Models\Equipo;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Throwable;
 
 class ActaPdfDataService
 {
@@ -34,8 +35,8 @@ class ActaPdfDataService
         $equipoPublicUrl = $equipoQr !== null
             ? route('equipos.public.show', ['uuid' => $equipoQr->uuid])
             : null;
-        $actaQrSvg = $this->generateQrSvg($actaPublicUrl, 112);
-        $equipoQrSvg = $this->generateQrSvg($equipoPublicUrl, 104);
+        $actaQrImageDataUri = $this->generateQrPngDataUri($actaPublicUrl, 112);
+        $equipoQrImageDataUri = $this->generateQrPngDataUri($equipoPublicUrl, 104);
 
         $originSummary = $this->buildOriginSummary($acta, $issuerInstitutionName);
         $destinoInstitucional = $this->buildDestinoInstitucional($acta);
@@ -58,10 +59,17 @@ class ActaPdfDataService
             'pdfReceptorData' => $receptorData,
             'pdfEquipmentTable' => $equipmentTable,
             'actaPublicUrl' => $actaPublicUrl,
-            'actaQrSvg' => $actaQrSvg,
+            'actaQrImageDataUri' => $actaQrImageDataUri,
             'equipoPublicUrl' => $equipoPublicUrl,
-            'equipoQrSvg' => $equipoQrSvg,
-            'pdfQrCards' => $this->buildQrCards($acta, $actaPublicUrl, $actaQrSvg, $equipoQr, $equipoPublicUrl, $equipoQrSvg),
+            'equipoQrImageDataUri' => $equipoQrImageDataUri,
+            'pdfQrCards' => $this->buildQrCards(
+                $acta,
+                $actaPublicUrl,
+                $actaQrImageDataUri,
+                $equipoQr,
+                $equipoPublicUrl,
+                $equipoQrImageDataUri
+            ),
             'pdfDestinoInstitucional' => $destinoInstitucional,
             'pdfPrestamoDestinatario' => $receptorData,
         ];
@@ -131,47 +139,58 @@ class ActaPdfDataService
             ->first(fn (Equipo $equipo): bool => is_string($equipo->uuid) && $equipo->uuid !== '');
     }
 
-    private function generateQrSvg(?string $url, int $size = 120): ?string
+    private function generateQrPngDataUri(?string $url, int $size = 120): ?string
     {
         if ($url === null || $url === '' || ! class_exists(QrCode::class)) {
             return null;
         }
 
-        return QrCode::format('svg')
-            ->size($size)
-            ->margin(1)
-            ->generate($url);
+        try {
+            $pngBinary = QrCode::format('png')
+                ->size($size)
+                ->margin(1)
+                ->errorCorrection('M')
+                ->generate($url);
+        } catch (Throwable) {
+            return null;
+        }
+
+        if (! is_string($pngBinary) || $pngBinary === '') {
+            return null;
+        }
+
+        return 'data:image/png;base64,'.base64_encode($pngBinary);
     }
 
     /**
-     * @return array<int, array{title:string,description:string,url:string,svg:string,meta:string}>
+     * @return array<int, array{title:string,description:string,url:string,image_src:string,meta:string}>
      */
     private function buildQrCards(
         Acta $acta,
         ?string $actaPublicUrl,
-        ?string $actaQrSvg,
+        ?string $actaQrImageDataUri,
         ?Equipo $equipoQr,
         ?string $equipoPublicUrl,
-        ?string $equipoQrSvg,
+        ?string $equipoQrImageDataUri,
     ): array {
         $cards = [];
 
-        if ($actaPublicUrl !== null && $actaQrSvg !== null) {
+        if ($actaPublicUrl !== null && $actaQrImageDataUri !== null) {
             $cards[] = [
                 'title' => 'Acta patrimonial',
                 'description' => 'Escanee este codigo para validar esta acta en modo de solo lectura.',
                 'url' => $actaPublicUrl,
-                'svg' => $actaQrSvg,
+                'image_src' => $actaQrImageDataUri,
                 'meta' => $acta->codigo,
             ];
         }
 
-        if ($equipoQr !== null && $equipoPublicUrl !== null && $equipoQrSvg !== null) {
+        if ($equipoQr !== null && $equipoPublicUrl !== null && $equipoQrImageDataUri !== null) {
             $cards[] = [
                 'title' => 'Ficha publica del equipo',
                 'description' => 'Disponible solo en actas con un unico equipo para reforzar la trazabilidad sin saturar el documento.',
                 'url' => $equipoPublicUrl,
-                'svg' => $equipoQrSvg,
+                'image_src' => $equipoQrImageDataUri,
                 'meta' => $this->nullableTrim($equipoQr->codigo_interno)
                     ?? $equipoQr->primaryIdentifier(),
             ];

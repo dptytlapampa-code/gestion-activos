@@ -65,14 +65,18 @@ class ActaPdfQrTest extends TestCase
         $html = view('actas.pdf.prestamo', array_merge(['acta' => $acta], $pdfData))->render();
 
         $this->assertSame(route('actas.public.show', ['uuid' => $acta->uuid]), $pdfData['actaPublicUrl']);
-        $this->assertNotNull($pdfData['actaQrSvg']);
+        $this->assertNotNull($pdfData['actaQrImageDataUri']);
+        $this->assertStringStartsWith('data:image/png;base64,', $pdfData['actaQrImageDataUri']);
         $this->assertSame(route('equipos.public.show', ['uuid' => $equipo->uuid]), $pdfData['equipoPublicUrl']);
-        $this->assertNotNull($pdfData['equipoQrSvg']);
+        $this->assertNotNull($pdfData['equipoQrImageDataUri']);
+        $this->assertStringStartsWith('data:image/png;base64,', $pdfData['equipoQrImageDataUri']);
         $this->assertCount(2, $pdfData['pdfQrCards']);
         $this->assertStringContainsString('Acta patrimonial', $html);
         $this->assertStringContainsString('Ficha publica del equipo', $html);
         $this->assertStringContainsString($pdfData['actaPublicUrl'], $html);
         $this->assertStringContainsString($pdfData['equipoPublicUrl'], $html);
+        $this->assertStringContainsString('<img src="data:image/png;base64,', $html);
+        $this->assertStringNotContainsString('<svg', $html);
     }
 
     public function test_pdf_con_varios_equipos_mantiene_solo_el_qr_principal_del_acta(): void
@@ -124,13 +128,16 @@ class ActaPdfQrTest extends TestCase
         $html = view('actas.pdf.entrega', array_merge(['acta' => $acta], $pdfData))->render();
 
         $this->assertSame(route('actas.public.show', ['uuid' => $acta->uuid]), $pdfData['actaPublicUrl']);
-        $this->assertNotNull($pdfData['actaQrSvg']);
+        $this->assertNotNull($pdfData['actaQrImageDataUri']);
+        $this->assertStringStartsWith('data:image/png;base64,', $pdfData['actaQrImageDataUri']);
         $this->assertNull($pdfData['equipoPublicUrl']);
-        $this->assertNull($pdfData['equipoQrSvg']);
+        $this->assertNull($pdfData['equipoQrImageDataUri']);
         $this->assertCount(1, $pdfData['pdfQrCards']);
         $this->assertStringContainsString($equipoA->codigo_interno, $html);
         $this->assertStringContainsString($equipoB->codigo_interno, $html);
         $this->assertStringNotContainsString('Ficha publica del equipo', $html);
+        $this->assertStringContainsString('<img src="data:image/png;base64,', $html);
+        $this->assertStringNotContainsString('<svg', $html);
     }
 
     private function crearEscenarioBase(): array
