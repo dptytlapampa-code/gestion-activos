@@ -4,11 +4,13 @@ namespace App\Services;
 
 use App\Models\Acta;
 use App\Models\Equipo;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
-use Throwable;
 
 class ActaPdfDataService
 {
+    public function __construct(
+        private readonly QrCodeService $qrCodeService,
+    ) {}
+
     /**
      * @return array<string, mixed>
      */
@@ -35,8 +37,25 @@ class ActaPdfDataService
         $equipoPublicUrl = $equipoQr !== null
             ? route('equipos.public.show', ['uuid' => $equipoQr->uuid])
             : null;
-        $actaQrImageDataUri = $this->generateQrPngDataUri($actaPublicUrl, 112);
-        $equipoQrImageDataUri = $this->generateQrPngDataUri($equipoPublicUrl, 104);
+        $actaQrImageDataUri = $this->qrCodeService->pngDataUri($actaPublicUrl, 112, 1, [
+            'module' => 'actas',
+            'feature' => 'pdf',
+            'qr_type' => 'acta',
+            'acta_id' => $acta->id,
+            'acta_uuid' => $acta->uuid,
+            'acta_codigo' => $acta->codigo,
+        ]);
+        $equipoQrImageDataUri = $this->qrCodeService->pngDataUri($equipoPublicUrl, 104, 1, [
+            'module' => 'actas',
+            'feature' => 'pdf',
+            'qr_type' => 'equipo',
+            'acta_id' => $acta->id,
+            'acta_uuid' => $acta->uuid,
+            'acta_codigo' => $acta->codigo,
+            'equipo_id' => $equipoQr?->id,
+            'equipo_uuid' => $equipoQr?->uuid,
+            'equipo_codigo_interno' => $equipoQr?->codigo_interno,
+        ]);
 
         $originSummary = $this->buildOriginSummary($acta, $issuerInstitutionName);
         $destinoInstitucional = $this->buildDestinoInstitucional($acta);
@@ -137,29 +156,6 @@ class ActaPdfDataService
 
         return $acta->equipos
             ->first(fn (Equipo $equipo): bool => is_string($equipo->uuid) && $equipo->uuid !== '');
-    }
-
-    private function generateQrPngDataUri(?string $url, int $size = 120): ?string
-    {
-        if ($url === null || $url === '' || ! class_exists(QrCode::class)) {
-            return null;
-        }
-
-        try {
-            $pngBinary = QrCode::format('png')
-                ->size($size)
-                ->margin(1)
-                ->errorCorrection('M')
-                ->generate($url);
-        } catch (Throwable) {
-            return null;
-        }
-
-        if (! is_string($pngBinary) || $pngBinary === '') {
-            return null;
-        }
-
-        return 'data:image/png;base64,'.base64_encode($pngBinary);
     }
 
     /**

@@ -8,14 +8,13 @@ use App\Models\Movimiento;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
-use Throwable;
 
 class MesaTecnicaService
 {
     public function __construct(
         private readonly ActaTraceabilityService $actaTraceabilityService,
         private readonly ActiveInstitutionContext $activeInstitutionContext,
+        private readonly QrCodeService $qrCodeService,
     ) {}
 
     /**
@@ -188,15 +187,12 @@ class MesaTecnicaService
         $publicUrl = $equipo->uuid
             ? route('equipos.public.show', ['uuid' => $equipo->uuid])
             : null;
-        $qrSvg = null;
-
-        if ($publicUrl !== null && $publicUrl !== '') {
-            try {
-                $qrSvg = QrCode::size(170)->margin(1)->generate($publicUrl);
-            } catch (Throwable) {
-                $qrSvg = null;
-            }
-        }
+        $qrSvg = $this->qrCodeService->svg($publicUrl, 170, 1, [
+            'module' => 'mesa_tecnica',
+            'feature' => 'label',
+            'equipo_id' => $equipo->id,
+            'equipo_uuid' => $equipo->uuid,
+        ]);
 
         return [
             'equipo' => $equipo,
