@@ -20,13 +20,18 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git \
         unzip \
+        pkg-config \
         libpq-dev \
         libzip-dev \
         libpng-dev \
         libjpeg-dev \
         libfreetype6-dev \
+        imagemagick \
+        libmagickwand-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_pgsql zip gd \
+    && printf "\n" | pecl install imagick-3.7.0 \
+    && docker-php-ext-enable imagick \
     && rm -rf /var/lib/apt/lists/*
 
 COPY backend /var/www/app
