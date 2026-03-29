@@ -4,13 +4,12 @@ namespace App\Services;
 
 use App\Models\Acta;
 use App\Models\Equipo;
+use Illuminate\Support\Facades\Log;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Throwable;
 
 class ActaPdfDataService
 {
-    public function __construct(
-        private readonly QrCodeService $qrCodeService,
-    ) {}
-
     /**
      * @return array<string, mixed>
      */
@@ -37,24 +36,20 @@ class ActaPdfDataService
         $equipoPublicUrl = $equipoQr !== null
             ? route('equipos.public.show', ['uuid' => $equipoQr->uuid])
             : null;
-        $actaQrImageDataUri = $this->qrCodeService->pngDataUri($actaPublicUrl, 112, 1, [
-            'module' => 'actas',
-            'feature' => 'pdf',
-            'qr_type' => 'acta',
+        $actaQrImageDataUri = $this->generateQrPngDataUri($actaPublicUrl, 112, [
             'acta_id' => $acta->id,
             'acta_uuid' => $acta->uuid,
             'acta_codigo' => $acta->codigo,
+            'qr_type' => 'acta',
         ]);
-        $equipoQrImageDataUri = $this->qrCodeService->pngDataUri($equipoPublicUrl, 104, 1, [
-            'module' => 'actas',
-            'feature' => 'pdf',
-            'qr_type' => 'equipo',
+        $equipoQrImageDataUri = $this->generateQrPngDataUri($equipoPublicUrl, 104, [
             'acta_id' => $acta->id,
             'acta_uuid' => $acta->uuid,
             'acta_codigo' => $acta->codigo,
             'equipo_id' => $equipoQr?->id,
             'equipo_uuid' => $equipoQr?->uuid,
             'equipo_codigo_interno' => $equipoQr?->codigo_interno,
+            'qr_type' => 'equipo',
         ]);
 
         $originSummary = $this->buildOriginSummary($acta, $issuerInstitutionName);
@@ -156,6 +151,37 @@ class ActaPdfDataService
 
         return $acta->equipos
             ->first(fn (Equipo $equipo): bool => is_string($equipo->uuid) && $equipo->uuid !== '');
+    }
+
+    private function generateQrPngDataUri(?string $url, int $size = 120, array $context = []): ?string
+    {
+        if (! is_string($url) || trim($url) === '') {
+            return null;
+        }
+
+        try {
+            $pngBinary = QrCode::format('png')
+                ->size($size)
+                ->margin(1)
+                ->errorCorrection('M')
+                ->generate($url);
+        } catch (Throwable $exception) {
+            Log::warning('acta pdf qr generation failed', [
+                'url' => $url,
+                'size' => $size,
+                'context' => $context,
+                'error' => $exception->getMessage(),
+                'exception' => get_class($exception),
+            ]);
+
+            return null;
+        }
+
+        if (! is_string($pngBinary) || $pngBinary === '') {
+            return null;
+        }
+
+        return 'data:image/png;base64,'.base64_encode($pngBinary);
     }
 
     /**
