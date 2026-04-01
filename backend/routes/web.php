@@ -15,9 +15,11 @@ use App\Http\Controllers\ActiveInstitutionController;
 use App\Http\Controllers\InstitutionController;
 use App\Http\Controllers\MantenimientoController;
 use App\Http\Controllers\MesaTecnicaController;
+use App\Http\Controllers\MesaTecnicaRecepcionController;
 use App\Http\Controllers\MovimientoController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RecepcionTecnicaPublicController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\TipoEquipoController;
@@ -32,6 +34,10 @@ Route::get('/actas/public/{uuid}', [ActaPublicController::class, 'show'])
     ->middleware('web')
     ->whereUuid('uuid')
     ->name('actas.public.show');
+Route::get('/mesa-tecnica/recepciones-tecnicas/public/{uuid}', [RecepcionTecnicaPublicController::class, 'show'])
+    ->middleware('web')
+    ->whereUuid('uuid')
+    ->name('mesa-tecnica.recepciones-tecnicas.public.show');
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/', DashboardController::class)->name('dashboard');
@@ -68,6 +74,14 @@ Route::middleware('auth')->group(function (): void {
         Route::post('recepciones', [MesaTecnicaController::class, 'storeRecepcion'])->name('recepciones.store');
         Route::post('entregas', [MesaTecnicaController::class, 'storeEntrega'])->name('entregas.store');
         Route::get('equipos/{equipo}/etiqueta', [MesaTecnicaController::class, 'label'])->name('label');
+        Route::get('recepciones-tecnicas', [MesaTecnicaRecepcionController::class, 'index'])->name('recepciones-tecnicas.index');
+        Route::get('recepciones-tecnicas/nuevo', [MesaTecnicaRecepcionController::class, 'create'])->name('recepciones-tecnicas.create');
+        Route::post('recepciones-tecnicas', [MesaTecnicaRecepcionController::class, 'store'])->name('recepciones-tecnicas.store');
+        Route::get('recepciones-tecnicas/{recepcionTecnica}', [MesaTecnicaRecepcionController::class, 'show'])->name('recepciones-tecnicas.show');
+        Route::get('recepciones-tecnicas/{recepcionTecnica}/imprimir', [MesaTecnicaRecepcionController::class, 'print'])->name('recepciones-tecnicas.print');
+        Route::get('recepciones-tecnicas/{recepcionTecnica}/incorporar', [MesaTecnicaRecepcionController::class, 'createIncorporation'])->name('recepciones-tecnicas.incorporate.create');
+        Route::post('recepciones-tecnicas/{recepcionTecnica}/incorporar', [MesaTecnicaRecepcionController::class, 'storeIncorporation'])->name('recepciones-tecnicas.incorporate.store');
+        Route::patch('recepciones-tecnicas/{recepcionTecnica}/estado', [MesaTecnicaRecepcionController::class, 'updateStatus'])->name('recepciones-tecnicas.status.update');
     });
 
     Route::post('equipos/{equipo}/documents', [DocumentController::class, 'storeForEquipo'])->name('equipos.documents.store');

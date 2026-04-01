@@ -6,20 +6,15 @@ use App\Models\Equipo;
 use App\Models\Office;
 use App\Models\User;
 use App\Services\ActiveInstitutionContext;
+use App\Support\Equipos\EquipoFormSchema;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class UpdateEquipoRequest extends FormRequest
 {
     protected function prepareForValidation(): void
     {
-        $this->merge([
-            'office_id' => $this->input('office_id', $this->input('oficina_id')),
-            'numero_serie' => $this->normalizeNullableText($this->input('numero_serie')),
-            'bien_patrimonial' => $this->normalizeNullableText($this->input('bien_patrimonial')),
-            'mac_address' => $this->normalizeNullableText($this->input('mac_address')),
-        ]);
+        $this->replace(app(EquipoFormSchema::class)->normalize($this->all()));
     }
 
     public function authorize(): bool
@@ -53,69 +48,12 @@ class UpdateEquipoRequest extends FormRequest
     {
         /** @var Equipo $equipo */
         $equipo = $this->route('equipo');
-        $institutionRule = Rule::exists('institutions', 'id');
-        $scopeIds = app(ActiveInstitutionContext::class)->globalAdministrationScopeIds($this->user());
-
-        if ($scopeIds !== null) {
-            $institutionRule = $institutionRule->where(function ($query) use ($scopeIds): void {
-                if ($scopeIds === []) {
-                    $query->whereRaw('1 = 0');
-
-                    return;
-                }
-
-                $query->whereIn('id', $scopeIds);
-            });
-        }
-
-        return [
-            'institution_id' => [
-                'required',
-                'integer',
-                $institutionRule,
-            ],
-            'service_id' => [
-                'required',
-                'integer',
-                Rule::exists('services', 'id')->where(fn ($query) => $query->where('institution_id', $this->integer('institution_id'))),
-            ],
-            'office_id' => [
-                'required',
-                'integer',
-                Rule::exists('offices', 'id')->where(fn ($query) => $query->where('service_id', $this->integer('service_id'))),
-            ],
-            'tipo_equipo_id' => ['required', 'integer', 'exists:tipos_equipos,id'],
-            'marca' => ['required', 'string', 'max:100'],
-            'modelo' => ['required', 'string', 'max:100'],
-            'numero_serie' => ['nullable', 'string', 'max:120', Rule::unique('equipos', 'numero_serie')->ignore($equipo->id)],
-            'bien_patrimonial' => ['nullable', 'string', 'max:120', Rule::unique('equipos', 'bien_patrimonial')->ignore($equipo->id)],
-            'mac_address' => ['nullable', 'string', 'max:50'],
-            'estado' => ['required', Rule::in(Equipo::ESTADOS)],
-            'fecha_ingreso' => ['required', 'date'],
-        ];
+        return app(EquipoFormSchema::class)->rules($this->user(), $this->all(), $equipo);
     }
 
     public function messages(): array
     {
-        return [
-            'institution_id.required' => 'Debe seleccionar una institucion.',
-            'institution_id.exists' => 'La institucion seleccionada no es valida.',
-            'service_id.required' => 'Debe seleccionar un servicio.',
-            'service_id.exists' => 'El servicio seleccionado no corresponde a la institucion.',
-            'office_id.required' => 'Debe seleccionar una oficina.',
-            'office_id.exists' => 'La oficina seleccionada no corresponde al servicio.',
-            'tipo_equipo_id.required' => 'Debe seleccionar un tipo de equipo.',
-            'tipo_equipo_id.exists' => 'El tipo de equipo seleccionado no es valido.',
-            'marca.required' => 'El campo marca es obligatorio.',
-            'modelo.required' => 'El campo modelo es obligatorio.',
-            'numero_serie.unique' => 'Ya existe un equipo con ese numero de serie.',
-            'bien_patrimonial.unique' => 'Ya existe un equipo con ese bien patrimonial.',
-            'mac_address.max' => 'La direccion MAC no puede superar los 50 caracteres.',
-            'estado.required' => 'Debe seleccionar un estado.',
-            'estado.in' => 'El estado seleccionado no es valido.',
-            'fecha_ingreso.required' => 'La fecha de ingreso es obligatoria.',
-            'fecha_ingreso.date' => 'La fecha de ingreso debe tener un formato valido.',
-        ];
+        return app(EquipoFormSchema::class)->messages();
     }
 
     public function withValidator(Validator $validator): void
@@ -128,34 +66,8 @@ class UpdateEquipoRequest extends FormRequest
                 return;
             }
 
-            $estado = (string) $this->input('estado');
-            $tieneMantenimientoAbierto = $equipo->tieneMantenimientoExternoAbierto();
-
-            if ($estado === Equipo::ESTADO_MANTENIMIENTO && ! $tieneMantenimientoAbierto) {
-                $validator->errors()->add(
-                    'estado',
-                    'El equipo solo puede quedar en Mantenimiento si existe un mantenimiento externo abierto registrado desde su ficha.'
-                );
-            }
-
-            if ($tieneMantenimientoAbierto && $estado !== Equipo::ESTADO_MANTENIMIENTO) {
-                $validator->errors()->add(
-                    'estado',
-                    'No puede cambiar manualmente el estado mientras exista un mantenimiento externo abierto. Registre el alta o la baja desde la ficha del equipo.'
-                );
-            }
+            app(EquipoFormSchema::class)->applyBusinessRules($validator, $this->all(), $equipo);
         });
-    }
-
-    private function normalizeNullableText(mixed $value): ?string
-    {
-        if ($value === null) {
-            return null;
-        }
-
-        $trimmed = trim((string) $value);
-
-        return $trimmed === '' ? null : $trimmed;
     }
 }
 

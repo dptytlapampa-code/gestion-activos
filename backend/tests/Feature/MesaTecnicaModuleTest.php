@@ -44,7 +44,8 @@ class MesaTecnicaModuleTest extends TestCase
             ->get(route('mesa-tecnica.index'))
             ->assertOk()
             ->assertSee('Mesa Tecnica')
-            ->assertSee('Recibir equipo');
+            ->assertSee('Recibir equipo')
+            ->assertSee('Ingreso tecnico');
 
         $this->actingAs($viewer)
             ->get(route('mesa-tecnica.index'))

@@ -290,6 +290,35 @@ class SearchControllerTest extends TestCase
         $this->assertSame($equipo->codigo_interno, $codigoResponse->json()[0]['codigo_interno']);
     }
 
+    public function test_search_equipos_permite_buscar_por_uuid_y_devuelve_ubicacion_resumida(): void
+    {
+        $institution = Institution::create(['nombre' => 'Hospital UUID']);
+        $service = Service::create(['nombre' => 'Bioingenieria', 'institution_id' => $institution->id]);
+        $office = Office::create(['nombre' => 'Taller Central', 'service_id' => $service->id]);
+        $tipo = TipoEquipo::create(['nombre' => 'Monitor']);
+
+        $equipo = Equipo::create([
+            'uuid' => '32dcff4a-9954-4dd1-9a9b-11e8f78ee123',
+            'tipo' => $tipo->nombre,
+            'tipo_equipo_id' => $tipo->id,
+            'marca' => 'Mindray',
+            'modelo' => 'ePM 10',
+            'numero_serie' => 'SER-UUID-01',
+            'bien_patrimonial' => 'BP-UUID-01',
+            'estado' => Equipo::ESTADO_OPERATIVO,
+            'fecha_ingreso' => now()->toDateString(),
+            'oficina_id' => $office->id,
+        ]);
+
+        $response = $this->actingAs($this->createUser(User::ROLE_SUPERADMIN))
+            ->get('/api/search/equipos?q=32dcff4a-9954-4dd1-9a9b-11e8f78ee123&acta_context=1');
+
+        $response->assertOk()
+            ->assertJsonPath('items.0.id', $equipo->id)
+            ->assertJsonPath('items.0.uuid', '32dcff4a-9954-4dd1-9a9b-11e8f78ee123')
+            ->assertJsonPath('items.0.ubicacion_resumida', 'Hospital UUID / Bioingenieria / Taller Central');
+    }
+
 
     public function test_search_equipos_excluye_baja_por_defecto_y_permite_incluirla(): void
     {

@@ -57,7 +57,7 @@
                                 Operatoria rapida para la mesa tecnica
                             </h2>
                             <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-600 sm:text-[0.98rem]">
-                                Este espacio concentra tareas operativas de recepcion, entrega, consulta y reimpresion de etiquetas sin alterar los modulos administrativos existentes.
+                                Este espacio concentra tareas operativas de recepcion, ingreso tecnico, entrega, consulta y reimpresion de etiquetas sin alterar los modulos administrativos existentes.
                             </p>
                         </div>
                     </div>
@@ -96,6 +96,14 @@
                         ])
 
                         @include('mesa-tecnica.partials.action-card', [
+                            'title' => 'Ingreso tecnico',
+                            'description' => 'Registrar el ingreso fisico al area tecnica con ticket, seguimiento y posible incorporacion al sistema.',
+                            'icon' => 'plus',
+                            'tone' => 'indigo',
+                            'click' => "window.location.href='".route('mesa-tecnica.recepciones-tecnicas.index')."'",
+                        ])
+
+                        @include('mesa-tecnica.partials.action-card', [
                             'title' => 'Ultimas actas',
                             'description' => 'Revisar la actividad reciente y volver a descargar documentos emitidos.',
                             'icon' => 'clipboard-list',
@@ -127,7 +135,8 @@
                         <ul class="mt-3 space-y-2 text-sm text-slate-600">
                             <li>Las entregas se registran con acta patrimonial y no saltean la trazabilidad.</li>
                             <li>La recepcion rapida se aplica a equipos actualmente prestados y genera acta de devolucion.</li>
-                            <li>El alta inicial de equipos sigue ocurriendo en el modulo tradicional de Equipos.</li>
+                            <li>Ingreso tecnico registra el comprobante operativo del area tecnica, incluso para equipos que todavia no existen en inventario.</li>
+                            <li>Si corresponde, el equipo puede incorporarse al sistema desde el flujo tecnico sin reemplazar las actas patrimoniales.</li>
                         </ul>
                     </div>
                 </aside>

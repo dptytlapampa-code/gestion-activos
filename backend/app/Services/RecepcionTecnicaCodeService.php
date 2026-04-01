@@ -1,0 +1,45 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\RecepcionTecnica;
+use Illuminate\Support\Facades\DB;
+
+class RecepcionTecnicaCodeService
+{
+    private const COUNTER_TABLE = 'internal_code_sequences';
+    private const COUNTER_RESOURCE = 'recepciones_tecnicas';
+
+    public function next(): string
+    {
+        return DB::transaction(function (): string {
+            $counter = DB::table(self::COUNTER_TABLE)
+                ->where('resource', self::COUNTER_RESOURCE)
+                ->lockForUpdate()
+                ->first(['last_value']);
+
+            $timestamp = now();
+            $currentValue = (int) ($counter->last_value ?? 0);
+
+            if ($counter === null) {
+                DB::table(self::COUNTER_TABLE)->insert([
+                    'resource' => self::COUNTER_RESOURCE,
+                    'last_value' => 0,
+                    'created_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                ]);
+            }
+
+            $nextValue = $currentValue + 1;
+
+            DB::table(self::COUNTER_TABLE)
+                ->where('resource', self::COUNTER_RESOURCE)
+                ->update([
+                    'last_value' => $nextValue,
+                    'updated_at' => $timestamp,
+                ]);
+
+            return RecepcionTecnica::formatCodigo($nextValue);
+        }, 3);
+    }
+}

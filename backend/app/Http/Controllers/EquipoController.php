@@ -14,6 +14,7 @@ use App\Models\TipoEquipo;
 use App\Models\User;
 use App\Services\Auditing\AuditLogService;
 use App\Services\EquipoListingService;
+use App\Services\EquipoRegistrationService;
 use App\Services\EquipoStatusResolver;
 use App\Services\MantenimientoService;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +32,7 @@ class EquipoController extends Controller
         private readonly EquipoListingService $equipoListingService,
         private readonly MantenimientoService $mantenimientoService,
         private readonly AuditLogService $auditLogService,
+        private readonly EquipoRegistrationService $equipoRegistrationService,
     ) {
         $this->authorizeResource(Equipo::class, 'equipo');
     }
@@ -77,60 +79,7 @@ class EquipoController extends Controller
 
     public function store(StoreEquipoRequest $request): RedirectResponse
     {
-        $tipoEquipo = TipoEquipo::query()->findOrFail($request->integer('tipo_equipo_id'));
-        $validated = $request->validated();
-        DB::transaction(function () use ($request, $tipoEquipo, $validated): void {
-            $data = [
-                'tipo_equipo_id' => $validated['tipo_equipo_id'],
-                'marca' => $validated['marca'],
-                'modelo' => $validated['modelo'],
-                'bien_patrimonial' => $validated['bien_patrimonial'] ?? null,
-                'mac_address' => $validated['mac_address'] ?? null,
-                'estado' => $validated['estado'],
-                'equipo_status_id' => $this->equipoStatusResolver->resolveIdByEstado($validated['estado'], 'estado'),
-                'fecha_ingreso' => $validated['fecha_ingreso'],
-                'oficina_id' => $validated['office_id'],
-                'tipo' => $tipoEquipo->nombre,
-                'numero_serie' => $validated['numero_serie'] ?? null,
-            ];
-
-            $equipo = Equipo::query()->create($data);
-
-            $oficinaDestino = Office::query()
-                ->with('service.institution')
-                ->find($equipo->oficina_id);
-
-            $ubicacionDestino = $this->mapOfficeLocation($oficinaDestino);
-
-            Movimiento::query()->create([
-                'equipo_id' => $equipo->id,
-                'user_id' => auth()->id(),
-                'tipo_movimiento' => 'ingreso',
-                'fecha' => now(),
-                'institucion_destino_id' => $ubicacionDestino['institucion_id'],
-                'servicio_destino_id' => $ubicacionDestino['servicio_id'],
-                'oficina_destino_id' => $ubicacionDestino['oficina_id'],
-                'observacion' => 'Ingreso de equipo',
-            ]);
-
-            $snapshot = $this->equipmentAuditSnapshot($equipo, $oficinaDestino);
-
-            $this->auditLogService->record([
-                'user' => $request->user(),
-                'institution_id' => $ubicacionDestino['institucion_id'],
-                'module' => 'equipos',
-                'action' => 'equipo_creado',
-                'entity_type' => 'equipo',
-                'entity_id' => $equipo->id,
-                'summary' => sprintf('Se dio de alta el equipo %s.', $this->equipmentReference($equipo)),
-                'after' => $snapshot,
-                'metadata' => [
-                    'details' => $snapshot,
-                ],
-                'level' => AuditLog::LEVEL_CRITICAL,
-                'is_critical' => true,
-            ]);
-        }, 3);
+        $this->equipoRegistrationService->create($request->user(), $request->validated());
 
         return redirect()->route('equipos.index')->with('status', 'Equipo creado correctamente.');
     }

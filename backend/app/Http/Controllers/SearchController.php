@@ -16,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use Throwable;
 
 class SearchController extends Controller
@@ -239,6 +240,7 @@ class SearchController extends Controller
 
         $hasMacAddress = Schema::hasColumn('equipos', 'mac_address');
         $hasCodigoInterno = Schema::hasColumn('equipos', 'codigo_interno');
+        $hasUuid = Schema::hasColumn('equipos', 'uuid');
 
         $select = [
             'equipos.id',
@@ -264,6 +266,10 @@ class SearchController extends Controller
             $select[] = 'equipos.codigo_interno';
         }
 
+        if ($hasUuid) {
+            $select[] = 'equipos.uuid';
+        }
+
         $query = Equipo::query()
             ->select($select)
             ->join('offices', 'offices.id', '=', 'equipos.oficina_id')
@@ -274,10 +280,11 @@ class SearchController extends Controller
                 fn ($query) => $query->whereIn('institutions.id', $institutionIds->all())
             )
             ->when(! $includeBaja, fn ($query) => $query->where('equipos.estado', '!=', Equipo::ESTADO_BAJA))
-            ->when(! $listAll, function ($query) use ($q, $hasMacAddress, $hasCodigoInterno): void {
+            ->when(! $listAll, function ($query) use ($q, $hasMacAddress, $hasCodigoInterno, $hasUuid): void {
                 $like = "%{$q}%";
+                $lowerLike = '%'.Str::lower($q).'%';
 
-                $query->where(function ($inner) use ($like, $hasMacAddress, $hasCodigoInterno): void {
+                $query->where(function ($inner) use ($like, $lowerLike, $hasMacAddress, $hasCodigoInterno, $hasUuid): void {
                     $inner
                         ->where('equipos.numero_serie', 'ilike', $like)
                         ->orWhere('equipos.bien_patrimonial', 'ilike', $like)
@@ -291,6 +298,10 @@ class SearchController extends Controller
 
                     if ($hasCodigoInterno) {
                         $inner->orWhere('equipos.codigo_interno', 'ilike', $like);
+                    }
+
+                    if ($hasUuid) {
+                        $inner->orWhereRaw('lower(cast(equipos.uuid as text)) like ?', [$lowerLike]);
                     }
                 });
             })
@@ -319,6 +330,12 @@ class SearchController extends Controller
                 'servicio_id' => (int) $equipo->getAttribute('servicio_id'),
                 'oficina' => $equipo->oficina_nombre,
                 'oficina_id' => (int) $equipo->getAttribute('oficina_id'),
+                'uuid' => $equipo->getAttribute('uuid'),
+                'ubicacion_resumida' => collect([
+                    $equipo->institucion_nombre,
+                    $equipo->servicio_nombre,
+                    $equipo->oficina_nombre,
+                ])->filter()->implode(' / '),
             ])
             ->values();
 
