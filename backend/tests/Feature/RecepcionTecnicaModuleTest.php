@@ -18,6 +18,11 @@ class RecepcionTecnicaModuleTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_modelo_recepcion_tecnica_usa_el_nombre_de_tabla_canonico(): void
+    {
+        $this->assertSame('recepciones_tecnicas', (new RecepcionTecnica())->getTable());
+    }
+
     public function test_admin_puede_registrar_ingreso_tecnico_para_equipo_existente(): void
     {
         [$admin, $institution, $service, $office] = $this->crearEscenarioBase();

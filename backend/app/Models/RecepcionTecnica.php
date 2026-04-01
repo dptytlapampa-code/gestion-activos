@@ -12,6 +12,8 @@ use Illuminate\Support\Str;
 
 class RecepcionTecnica extends Model
 {
+    protected $table = 'recepciones_tecnicas';
+
     public const CODIGO_PREFIX = 'GA-RT-';
     public const CODIGO_PAD_LENGTH = 9;
 
