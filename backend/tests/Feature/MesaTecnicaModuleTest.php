@@ -18,6 +18,8 @@ class MesaTecnicaModuleTest extends TestCase
 {
     use RefreshDatabase;
 
+    private const CSRF_TOKEN = 'mesa-tecnica-test-token';
+
     public function test_tecnico_puede_acceder_a_mesa_tecnica_y_viewer_no(): void
     {
         [, $institution] = $this->crearEscenarioBase();
@@ -68,7 +70,9 @@ class MesaTecnicaModuleTest extends TestCase
         $equipo = $this->crearEquipo($office, Equipo::ESTADO_PRESTADO, 'REC');
 
         $this->actingAs($admin)
+            ->withSession(['_token' => self::CSRF_TOKEN])
             ->post(route('mesa-tecnica.recepciones.store'), [
+                '_token' => self::CSRF_TOKEN,
                 'mesa_modal' => 'recepcion',
                 'fecha' => now()->toDateString(),
                 'equipo_id' => $equipo->id,
@@ -101,7 +105,9 @@ class MesaTecnicaModuleTest extends TestCase
 
         $this->actingAs($admin)
             ->from(route('mesa-tecnica.index'))
+            ->withSession(['_token' => self::CSRF_TOKEN])
             ->post(route('mesa-tecnica.recepciones.store'), [
+                '_token' => self::CSRF_TOKEN,
                 'mesa_modal' => 'recepcion',
                 'fecha' => now()->toDateString(),
                 'equipo_id' => $equipo->id,
@@ -124,7 +130,9 @@ class MesaTecnicaModuleTest extends TestCase
         $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO, 'ENT');
 
         $this->actingAs($admin)
+            ->withSession(['_token' => self::CSRF_TOKEN])
             ->post(route('mesa-tecnica.entregas.store'), [
+                '_token' => self::CSRF_TOKEN,
                 'mesa_modal' => 'entrega',
                 'fecha' => now()->toDateString(),
                 'equipo_id' => $equipo->id,

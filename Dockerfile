@@ -16,6 +16,8 @@ FROM php:8.3-fpm-bookworm AS app
 
 WORKDIR /var/www/app
 
+ARG COMPOSER_INSTALL_FLAGS="--no-dev --no-interaction --prefer-dist --optimize-autoloader"
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git \
@@ -43,7 +45,7 @@ RUN if [ ! -f /var/www/app/composer.lock ]; then \
         exit 1; \
     fi \
     && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
-    && composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --working-dir=/var/www/app \
+    && composer install ${COMPOSER_INSTALL_FLAGS} --working-dir=/var/www/app \
     && mkdir -p \
         /var/www/app/storage/app/public \
         /var/www/app/storage/framework/sessions \
@@ -55,7 +57,8 @@ RUN if [ ! -f /var/www/app/composer.lock ]; then \
 
 COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh \
+    && chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 9000
 

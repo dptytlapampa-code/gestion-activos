@@ -26,13 +26,13 @@
             'eyebrow' => 'bg-slate-100 text-slate-700',
         ],
         'amber' => [
-            'card' => 'border-amber-200 bg-amber-50/95 text-amber-950 hover:border-amber-300 hover:bg-amber-100/85',
+            'card' => 'border-amber-200 bg-amber-50/95 text-amber-950 hover:border-amber-300 hover:bg-amber-100/80',
             'icon' => 'bg-amber-500 text-amber-950 shadow-amber-200/80',
             'meta' => 'text-amber-700',
             'eyebrow' => 'bg-white/90 text-amber-700',
         ],
         'indigo' => [
-            'card' => 'border-indigo-200 bg-indigo-50/95 text-indigo-950 hover:border-indigo-300 hover:bg-indigo-100/85',
+            'card' => 'border-indigo-200 bg-indigo-50/95 text-indigo-950 hover:border-indigo-300 hover:bg-indigo-100/80',
             'icon' => 'bg-indigo-600 text-white shadow-indigo-200/70',
             'meta' => 'text-indigo-700',
             'eyebrow' => 'bg-white/90 text-indigo-700',

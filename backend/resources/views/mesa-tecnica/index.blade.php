@@ -151,7 +151,7 @@
                             <p class="mt-1 text-sm font-medium text-blue-950">Genera acta y destino final.</p>
                         </div>
 
-                        <div class="rounded-2xl border border-amber-200 bg-amber-50/85 px-4 py-3">
+                        <div class="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3">
                             <p class="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">Etiqueta</p>
                             <p class="mt-1 text-sm font-medium text-amber-950">QR estable para imprimir otra vez.</p>
                         </div>
@@ -161,7 +161,7 @@
         </section>
 
         @if ($result)
-            <section class="app-panel rounded-[2rem] border-emerald-200 bg-emerald-50/85 px-5 py-5 sm:px-6">
+            <section class="app-panel rounded-[2rem] border-emerald-200 bg-emerald-50/80 px-5 py-5 sm:px-6">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div class="flex items-start gap-3">
                         <div class="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white">
@@ -351,7 +351,7 @@
                     </button>
                 </div>
 
-                <div class="rounded-2xl border border-slate-200 bg-slate-50/85 p-4">
+                <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
                     <div class="flex items-center justify-between gap-3">
                         <p class="text-sm font-semibold text-slate-800">Resultados</p>
                         <p class="text-xs text-slate-500" x-text="lookup.loading ? 'Buscando...' : lookup.message"></p>
@@ -423,7 +423,7 @@
         ])
             <div class="grid gap-5 xl:grid-cols-[minmax(0,1.04fr)_minmax(20rem,0.96fr)]">
                 <section class="space-y-4">
-                    <div class="rounded-2xl border border-slate-200 bg-slate-50/85 p-4">
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
                         <label for="recepcion-busqueda" class="text-sm font-medium text-slate-700">Buscar equipo</label>
                         <div class="mt-2 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
                             <input
@@ -467,7 +467,7 @@
                 </section>
 
                 <section class="space-y-4">
-                    <div class="rounded-[1.75rem] border border-emerald-200 bg-emerald-50/85 p-4">
+                    <div class="rounded-[1.75rem] border border-emerald-200 bg-emerald-50/80 p-4">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Equipo</p>
@@ -484,11 +484,11 @@
                                         </div>
 
                                         <dl class="grid gap-3 sm:grid-cols-2">
-                                            <div class="rounded-xl bg-white/85 px-3 py-3">
+                                            <div class="rounded-xl bg-white/80 px-3 py-3">
                                                 <dt class="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">Serie</dt>
                                                 <dd class="mt-1 text-sm font-medium text-emerald-950" x-text="receive.selected.numero_serie || '-'"></dd>
                                             </div>
-                                            <div class="rounded-xl bg-white/85 px-3 py-3">
+                                            <div class="rounded-xl bg-white/80 px-3 py-3">
                                                 <dt class="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">Patrimonial</dt>
                                                 <dd class="mt-1 text-sm font-medium text-emerald-950" x-text="receive.selected.bien_patrimonial || '-'"></dd>
                                             </div>
@@ -582,7 +582,7 @@
         ])
             <div class="grid gap-5 xl:grid-cols-[minmax(0,1.04fr)_minmax(20rem,0.96fr)]">
                 <section class="space-y-4">
-                    <div class="rounded-2xl border border-slate-200 bg-slate-50/85 p-4">
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
                         <label for="entrega-busqueda" class="text-sm font-medium text-slate-700">Buscar equipo</label>
                         <div class="mt-2 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
                             <input
@@ -626,7 +626,7 @@
                 </section>
 
                 <section class="space-y-4">
-                    <div class="rounded-[1.75rem] border border-blue-200 bg-blue-50/85 p-4">
+                    <div class="rounded-[1.75rem] border border-blue-200 bg-blue-50/80 p-4">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Equipo</p>
@@ -643,11 +643,11 @@
                                         </div>
 
                                         <dl class="grid gap-3 sm:grid-cols-2">
-                                            <div class="rounded-xl bg-white/85 px-3 py-3">
+                                            <div class="rounded-xl bg-white/80 px-3 py-3">
                                                 <dt class="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-700">Serie</dt>
                                                 <dd class="mt-1 text-sm font-medium text-blue-950" x-text="delivery.selected.numero_serie || '-'"></dd>
                                             </div>
-                                            <div class="rounded-xl bg-white/85 px-3 py-3">
+                                            <div class="rounded-xl bg-white/80 px-3 py-3">
                                                 <dt class="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-700">Patrimonial</dt>
                                                 <dd class="mt-1 text-sm font-medium text-blue-950" x-text="delivery.selected.bien_patrimonial || '-'"></dd>
                                             </div>
@@ -814,7 +814,7 @@
         ])
             <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(19rem,0.92fr)]">
                 <section class="space-y-4">
-                    <div class="rounded-2xl border border-slate-200 bg-slate-50/85 p-4">
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
                         <label for="etiqueta-busqueda" class="text-sm font-medium text-slate-700">Buscar equipo</label>
                         <div class="mt-2 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
                             <input
@@ -858,7 +858,7 @@
                 </section>
 
                 <section class="space-y-4">
-                    <div class="rounded-[1.75rem] border border-amber-200 bg-amber-50/85 p-4">
+                    <div class="rounded-[1.75rem] border border-amber-200 bg-amber-50/80 p-4">
                         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">Equipo</p>
 
                         <template x-if="labelState.selected">
@@ -873,11 +873,11 @@
                                 </div>
 
                                 <dl class="grid gap-3 sm:grid-cols-2">
-                                    <div class="rounded-xl bg-white/85 px-3 py-3">
+                                    <div class="rounded-xl bg-white/80 px-3 py-3">
                                         <dt class="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700">Serie</dt>
                                         <dd class="mt-1 text-sm font-medium text-amber-950" x-text="labelState.selected.numero_serie || '-'"></dd>
                                     </div>
-                                    <div class="rounded-xl bg-white/85 px-3 py-3">
+                                    <div class="rounded-xl bg-white/80 px-3 py-3">
                                         <dt class="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700">Patrimonial</dt>
                                         <dd class="mt-1 text-sm font-medium text-amber-950" x-text="labelState.selected.bien_patrimonial || '-'"></dd>
                                     </div>

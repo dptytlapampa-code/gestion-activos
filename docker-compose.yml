@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
       target: app
+      args:
+        COMPOSER_INSTALL_FLAGS: "--no-interaction --prefer-dist --optimize-autoloader"
     depends_on:
       db:
         condition: service_healthy
