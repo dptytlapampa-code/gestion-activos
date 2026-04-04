@@ -133,6 +133,15 @@
         </svg>
         @break
 
+    @case('printer')
+        <svg {{ $iconAttributes }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $strokeWidth }}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M7 8V3h10v5" />
+            <path d="M6 17H4a2 2 0 0 1-2-2v-5a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v5a2 2 0 0 1-2 2h-2" />
+            <path d="M7 14h10v7H7z" />
+            <path d="M17 11h.01" />
+        </svg>
+        @break
+
     @case('shield-check')
         <svg {{ $iconAttributes }} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $strokeWidth }}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="m12 3 8 3v6c0 5.2-3.4 8.3-8 9-4.6-.7-8-3.8-8-9V6l8-3Z" />

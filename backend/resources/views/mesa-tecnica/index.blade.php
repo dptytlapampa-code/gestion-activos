@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Mesa Tecnica')
-@section('header', 'Mesa Tecnica')
+@section('title', 'Mesa tecnica')
+@section('header', 'Mesa tecnica')
 
 @section('content')
     @php
@@ -20,7 +20,8 @@
         ];
 
         $result = is_array($mesaResult ?? null) ? $mesaResult : null;
-        $operatesGlobally = (bool) (($authInstitutionContext['operatesGlobally'] ?? false));
+        $operatesGlobally = (bool) ($authInstitutionContext['operatesGlobally'] ?? false);
+        $activeInstitutionName = $authInstitutionContext['activeInstitution']->nombre ?? 'Sin institucion activa';
     @endphp
 
     <div
@@ -43,101 +44,117 @@
         })"
         x-init="init()"
         @keydown.escape.window="closeModal()"
-        class="space-y-6"
+        class="space-y-5 lg:space-y-6"
     >
         <section class="app-panel overflow-hidden rounded-[2rem]">
-            <div class="grid gap-6 px-5 py-5 sm:px-6 sm:py-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.9fr)] lg:items-start">
-                <div class="space-y-5">
-                    <div class="space-y-3">
-                        <span class="inline-flex items-center rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-white">
-                            Recepcion y Entrega de Equipos
-                        </span>
-                        <div>
-                            <h2 class="text-3xl font-semibold tracking-tight text-slate-950 sm:text-[2.1rem]">
-                                Operatoria rapida para la mesa tecnica
-                            </h2>
-                            <p class="mt-3 max-w-3xl text-sm leading-7 text-slate-600 sm:text-[0.98rem]">
-                                Este espacio concentra tareas operativas de recepcion, ingreso tecnico, entrega, consulta y reimpresion de etiquetas sin alterar los modulos administrativos existentes.
-                            </p>
-                        </div>
+            <div class="grid gap-5 px-5 py-5 sm:px-6 sm:py-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.75fr)]">
+                <div class="space-y-4">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="app-badge bg-slate-900 px-3 text-white">Mesa tecnica</span>
+                        <span class="app-badge bg-slate-100 px-3 text-slate-700">Operaciones rapidas</span>
                     </div>
 
-                    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    <div class="space-y-2">
+                        <h2 class="text-2xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]">
+                            Recibir, entregar y ubicar equipos mas rapido.
+                        </h2>
+                        <p class="max-w-3xl text-sm leading-6 text-slate-600">
+                            Flujo corto para trabajo de mostrador: busqueda por serie, QR o patrimonial, actas al instante y acceso rapido a ingresos tecnicos.
+                        </p>
+                    </div>
+
+                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                         @include('mesa-tecnica.partials.action-card', [
-                            'title' => 'Recibir equipo',
-                            'description' => 'Registrar devoluciones operativas con acta y trazabilidad completa.',
+                            'title' => 'Recibir',
+                            'description' => 'Devuelve un equipo prestado.',
+                            'meta' => 'Acta inmediata',
                             'icon' => 'download',
                             'tone' => 'emerald',
                             'click' => "openModal('recepcion')",
                         ])
 
                         @include('mesa-tecnica.partials.action-card', [
-                            'title' => 'Entregar equipo',
-                            'description' => 'Emitir acta de entrega con destino, receptor y ubicacion final.',
+                            'title' => 'Entregar',
+                            'description' => 'Registra destino y receptor.',
+                            'meta' => 'Acta de entrega',
                             'icon' => 'upload',
                             'tone' => 'blue',
                             'click' => "openModal('entrega')",
                         ])
 
                         @include('mesa-tecnica.partials.action-card', [
-                            'title' => 'Buscar equipo',
-                            'description' => 'Localizar rapidamente por codigo interno, serie, patrimonial o QR.',
+                            'title' => 'Buscar',
+                            'description' => 'Serie, QR o patrimonial.',
+                            'meta' => 'Consulta rapida',
                             'icon' => 'search',
                             'tone' => 'slate',
                             'click' => "openModal('busqueda')",
                         ])
 
                         @include('mesa-tecnica.partials.action-card', [
-                            'title' => 'Imprimir etiqueta',
-                            'description' => 'Generar o reimprimir una etiqueta institucional con QR estable.',
-                            'icon' => 'file-text',
+                            'title' => 'Etiqueta',
+                            'description' => 'Imprime o reimprime QR.',
+                            'meta' => 'Salida lista',
+                            'icon' => 'printer',
                             'tone' => 'amber',
                             'click' => "openModal('etiqueta')",
                         ])
 
                         @include('mesa-tecnica.partials.action-card', [
                             'title' => 'Ingreso tecnico',
-                            'description' => 'Registrar el ingreso fisico al area tecnica con ticket, seguimiento y posible incorporacion al sistema.',
-                            'icon' => 'plus',
+                            'description' => 'Registra ticket y seguimiento.',
+                            'meta' => 'Alta opcional',
+                            'icon' => 'wrench',
                             'tone' => 'indigo',
                             'click' => "window.location.href='".route('mesa-tecnica.recepciones-tecnicas.index')."'",
                         ])
 
                         @include('mesa-tecnica.partials.action-card', [
-                            'title' => 'Ultimas actas',
-                            'description' => 'Revisar la actividad reciente y volver a descargar documentos emitidos.',
+                            'title' => 'Actas',
+                            'description' => 'Revisa las ultimas emitidas.',
+                            'meta' => 'PDF al instante',
                             'icon' => 'clipboard-list',
-                            'tone' => 'indigo',
-                            'click' => "scrollToSection('mesa-tecnica-ultimas-actas')",
+                            'tone' => 'slate',
+                            'click' => "scrollToSection('mesa-tecnica-actas')",
                         ])
                     </div>
                 </div>
 
-                <aside class="space-y-4 rounded-[1.75rem] border border-slate-200 bg-slate-50/90 p-5">
-                    <div class="space-y-2">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Contexto operativo</p>
-                        <h3 class="text-lg font-semibold tracking-tight text-slate-950">Institucion activa</h3>
+                <aside class="space-y-3 rounded-[1.75rem] border border-slate-200 bg-slate-50/90 p-4 sm:p-5">
+                    <div class="flex items-center gap-3">
+                        <div class="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 text-white">
+                            <x-icon name="monitor" class="h-5 w-5" />
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Contexto</p>
+                            <h3 class="text-lg font-semibold tracking-tight text-slate-950">Turno tecnico</h3>
+                        </div>
                     </div>
 
                     <div class="rounded-2xl border border-slate-200 bg-white px-4 py-4">
-                        <p class="text-sm font-semibold text-slate-900">{{ $authInstitutionContext['activeInstitution']->nombre ?? 'Sin institucion activa' }}</p>
-                        <p class="mt-1 text-sm text-slate-500">
-                            @if ($operatesGlobally)
-                                El usuario opera con alcance global y puede consultar todas las instituciones habilitadas.
-                            @else
-                                La busqueda de equipos se limita a la institucion activa para evitar desvios operativos.
-                            @endif
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Institucion activa</p>
+                        <p class="mt-2 text-base font-semibold text-slate-950">{{ $activeInstitutionName }}</p>
+                        <p class="mt-1 text-sm text-slate-600">
+                            {{ $operatesGlobally ? 'Alcance global habilitado.' : 'Busqueda limitada a esta institucion.' }}
                         </p>
                     </div>
 
-                    <div class="rounded-2xl border border-slate-200 bg-white px-4 py-4">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Reglas de esta etapa</p>
-                        <ul class="mt-3 space-y-2 text-sm text-slate-600">
-                            <li>Las entregas se registran con acta patrimonial y no saltean la trazabilidad.</li>
-                            <li>La recepcion rapida se aplica a equipos actualmente prestados y genera acta de devolucion.</li>
-                            <li>Ingreso tecnico registra el comprobante operativo del area tecnica, incluso para equipos que todavia no existen en inventario.</li>
-                            <li>Si corresponde, el equipo puede incorporarse al sistema desde el flujo tecnico sin reemplazar las actas patrimoniales.</li>
-                        </ul>
+                    <div class="grid gap-2">
+                        <div class="rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3">
+                            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">Recepcion</p>
+                            <p class="mt-1 text-sm font-medium text-emerald-950">Solo para equipos prestados.</p>
+                        </div>
+
+                        <div class="rounded-2xl border border-blue-200 bg-blue-50/80 px-4 py-3">
+                            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">Entrega</p>
+                            <p class="mt-1 text-sm font-medium text-blue-950">Genera acta y destino final.</p>
+                        </div>
+
+                        <div class="rounded-2xl border border-amber-200 bg-amber-50/85 px-4 py-3">
+                            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">Etiqueta</p>
+                            <p class="mt-1 text-sm font-medium text-amber-950">QR estable para imprimir otra vez.</p>
+                        </div>
                     </div>
                 </aside>
             </div>
@@ -146,32 +163,38 @@
         @if ($result)
             <section class="app-panel rounded-[2rem] border-emerald-200 bg-emerald-50/85 px-5 py-5 sm:px-6">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div class="space-y-2">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Ultima operacion registrada</p>
-                        <h3 class="text-lg font-semibold tracking-tight text-emerald-950">
-                            {{ $result['acta_tipo'] ?? 'Operacion completada' }} {{ $result['acta_codigo'] ?? '' }}
-                        </h3>
-                        <p class="text-sm text-emerald-900">
-                            {{ $result['equipo_reference'] ?? 'Equipo identificado correctamente.' }}
-                        </p>
+                    <div class="flex items-start gap-3">
+                        <div class="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white">
+                            <x-icon name="check-circle-2" class="h-5 w-5" />
+                        </div>
+
+                        <div class="space-y-1">
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Ultima operacion</p>
+                            <h3 class="text-lg font-semibold tracking-tight text-emerald-950">
+                                {{ trim(($result['acta_tipo'] ?? 'Operacion lista').' '.($result['acta_codigo'] ?? '')) }}
+                            </h3>
+                            <p class="text-sm text-emerald-900">
+                                {{ $result['equipo_reference'] ?? 'Equipo identificado correctamente.' }}
+                            </p>
+                        </div>
                     </div>
 
                     <div class="flex flex-wrap items-center gap-2">
                         @if (! empty($result['acta_id']))
-                            <a href="{{ route('actas.show', $result['acta_id']) }}" class="btn btn-neutral">
+                            <a href="{{ route('actas.show', $result['acta_id']) }}" class="btn btn-slate">
                                 <x-icon name="eye" class="h-4 w-4" />
                                 Ver acta
                             </a>
-                            <a href="{{ route('actas.download', $result['acta_id']) }}" class="btn btn-neutral">
+                            <a href="{{ route('actas.download', $result['acta_id']) }}" class="btn btn-slate">
                                 <x-icon name="download" class="h-4 w-4" />
-                                Descargar PDF
+                                PDF
                             </a>
                         @endif
 
                         @if (! empty($result['equipo_id']))
-                            <a href="{{ route('mesa-tecnica.label', $result['equipo_id']) }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
-                                <x-icon name="file-text" class="h-4 w-4" />
-                                Imprimir etiqueta
+                            <a href="{{ route('mesa-tecnica.label', $result['equipo_id']) }}" target="_blank" rel="noopener noreferrer" class="btn btn-amber">
+                                <x-icon name="printer" class="h-4 w-4" />
+                                Etiqueta
                             </a>
                         @endif
                     </div>
@@ -179,45 +202,58 @@
             </section>
         @endif
 
-        <section id="mesa-tecnica-ultimas-actas" class="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+        <section id="mesa-tecnica-actas" class="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
             <div class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
                 <div class="flex items-center justify-between gap-4 border-b border-slate-200 pb-4">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Actividad documental</p>
-                        <h3 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Ultimas actas</h3>
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Documentos</p>
+                        <h3 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Actas recientes</h3>
                     </div>
+
                     <a href="{{ route('actas.index') }}" class="text-sm font-semibold text-indigo-700 transition hover:text-indigo-800">
-                        Ver listado completo
+                        Ver todas
                     </a>
                 </div>
 
                 <div class="mt-4 space-y-3">
                     @forelse ($recentActas as $acta)
+                        @php
+                            $actaTypeClasses = match ($acta['tipo'] ?? '') {
+                                \App\Models\Acta::TIPO_DEVOLUCION => 'bg-emerald-100 text-emerald-700',
+                                \App\Models\Acta::TIPO_ENTREGA => 'bg-blue-100 text-blue-700',
+                                default => 'bg-slate-100 text-slate-700',
+                            };
+                        @endphp
+
                         <article class="rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-4">
-                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                <div class="space-y-1">
+                            <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                <div class="space-y-2">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <span class="app-badge bg-slate-900 px-3 text-white">{{ $acta['tipo_label'] }}</span>
-                                        <span class="app-badge bg-slate-100 px-3 text-slate-700">{{ strtoupper((string) $acta['status_label']) }}</span>
+                                        <span class="app-badge px-3 {{ $actaTypeClasses }}">{{ $acta['tipo_label'] }}</span>
+                                        <span class="app-badge bg-white px-3 text-slate-700">{{ strtoupper((string) $acta['status_label']) }}</span>
                                     </div>
-                                    <p class="text-base font-semibold text-slate-900">{{ $acta['codigo'] }}</p>
-                                    <p class="text-sm text-slate-600">
-                                        {{ $acta['institution'] }}
-                                        @if ($acta['destination'])
-                                            <span class="text-slate-400">-&gt;</span> {{ $acta['destination'] }}
-                                        @endif
-                                    </p>
+
+                                    <div>
+                                        <p class="text-base font-semibold text-slate-950">{{ $acta['codigo'] }}</p>
+                                        <p class="mt-1 text-sm text-slate-600">
+                                            {{ $acta['institution'] }}
+                                            @if ($acta['destination'])
+                                                <span class="text-slate-400">-></span> {{ $acta['destination'] }}
+                                            @endif
+                                        </p>
+                                    </div>
+
                                     <p class="text-xs text-slate-500">
                                         {{ $acta['fecha'] }} | {{ $acta['equipos_count'] }} equipo(s) | {{ $acta['creator'] }}
                                     </p>
                                 </div>
 
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <a href="{{ route('actas.show', $acta['id']) }}" class="btn btn-neutral">
+                                    <a href="{{ route('actas.show', $acta['id']) }}" class="btn btn-slate">
                                         <x-icon name="eye" class="h-4 w-4" />
                                         Ver
                                     </a>
-                                    <a href="{{ route('actas.download', $acta['id']) }}" class="btn btn-neutral">
+                                    <a href="{{ route('actas.download', $acta['id']) }}" class="btn btn-slate">
                                         <x-icon name="download" class="h-4 w-4" />
                                         PDF
                                     </a>
@@ -226,7 +262,7 @@
                         </article>
                     @empty
                         <div class="rounded-2xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500">
-                            Todavia no hay actas visibles dentro del alcance actual.
+                            No hay actas visibles en el alcance actual.
                         </div>
                     @endforelse
                 </div>
@@ -234,30 +270,34 @@
 
             <div class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
                 <div class="border-b border-slate-200 pb-4">
-                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Seguimiento operativo</p>
-                    <h3 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Ultimas operaciones</h3>
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Actividad</p>
+                    <h3 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Movimientos recientes</h3>
                 </div>
 
                 <div class="mt-4 space-y-3">
                     @forelse ($recentMovements as $movement)
                         <article class="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
                             <div class="flex items-start gap-3">
-                                <div class="mt-0.5 inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                                <div class="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
                                     <x-icon name="clipboard-list" class="h-5 w-5" />
                                 </div>
 
-                                <div class="min-w-0 flex-1 space-y-1">
+                                <div class="min-w-0 flex-1 space-y-1.5">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <p class="font-semibold text-slate-900">{{ $movement['tipo_label'] }}</p>
                                         @if ($movement['acta_codigo'])
                                             <span class="app-badge bg-indigo-50 px-3 text-indigo-700">{{ $movement['acta_codigo'] }}</span>
                                         @endif
                                     </div>
-                                    <p class="text-sm text-slate-700">{{ $movement['equipo_reference'] }}</p>
-                                    <p class="text-xs text-slate-500">{{ $movement['fecha'] }} | {{ $movement['usuario'] }}</p>
-                                    <p class="text-sm text-slate-600">{{ $movement['observacion'] }}</p>
 
-                                    <div class="flex flex-wrap items-center gap-2 pt-1">
+                                    <p class="text-sm text-slate-800">{{ $movement['equipo_reference'] }}</p>
+                                    <p class="text-xs text-slate-500">{{ $movement['fecha'] }} | {{ $movement['usuario'] }}</p>
+
+                                    @if (($movement['observacion'] ?? 'Sin observaciones') !== 'Sin observaciones')
+                                        <p class="text-sm text-slate-600">{{ $movement['observacion'] }}</p>
+                                    @endif
+
+                                    <div class="flex flex-wrap items-center gap-3 pt-1">
                                         @if ($movement['equipo_id'])
                                             <a href="{{ route('equipos.show', $movement['equipo_id']) }}" class="text-sm font-semibold text-indigo-700 transition hover:text-indigo-800">
                                                 Ver equipo
@@ -274,7 +314,7 @@
                         </article>
                     @empty
                         <div class="rounded-2xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500">
-                            No hay movimientos recientes dentro del alcance actual.
+                            No hay movimientos recientes.
                         </div>
                     @endforelse
                 </div>
@@ -283,14 +323,16 @@
 
         @component('mesa-tecnica.partials.modal-shell', [
             'name' => 'busqueda',
-            'title' => 'Buscar equipo',
-            'subtitle' => 'Use codigo interno, serie, bien patrimonial o escanee el QR institucional.',
+            'title' => 'Buscar',
+            'subtitle' => 'Serie, patrimonial, codigo interno o QR.',
+            'icon' => 'search',
+            'tone' => 'slate',
             'maxWidth' => 'max-w-5xl',
         ])
-            <div class="space-y-5">
+            <div class="space-y-4">
                 <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
                     <div>
-                        <label for="mesa-busqueda" class="text-sm font-medium text-slate-700">Busqueda principal</label>
+                        <label for="mesa-busqueda" class="text-sm font-medium text-slate-700">Identificador</label>
                         <input
                             id="mesa-busqueda"
                             type="text"
@@ -298,12 +340,12 @@
                             @input.debounce.350ms="search('lookup')"
                             @keydown.enter.prevent="search('lookup')"
                             class="form-control"
-                            placeholder="Ejemplo: GA-EQ-000123, serie, patrimonial o QR"
+                            placeholder="GA-EQ-000123, serie, patrimonial o QR"
                             autocomplete="off"
                         >
                     </div>
 
-                    <button type="button" class="btn btn-primary self-end" @click="search('lookup')">
+                    <button type="button" class="btn btn-slate self-end" @click="search('lookup')">
                         <x-icon name="search" class="h-4 w-4" />
                         Buscar
                     </button>
@@ -311,51 +353,53 @@
 
                 <div class="rounded-2xl border border-slate-200 bg-slate-50/85 p-4">
                     <div class="flex items-center justify-between gap-3">
-                        <p class="text-sm font-medium text-slate-700">Resultados</p>
+                        <p class="text-sm font-semibold text-slate-800">Resultados</p>
                         <p class="text-xs text-slate-500" x-text="lookup.loading ? 'Buscando...' : lookup.message"></p>
                     </div>
 
-                    <div class="mt-4 grid gap-3 md:grid-cols-2">
+                    <div class="mt-4 grid gap-3 lg:grid-cols-2">
                         <template x-for="item in lookup.results" :key="`lookup-${item.id}`">
                             <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                                <div class="space-y-3">
-                                    <div>
-                                        <p class="text-base font-semibold text-slate-950" x-text="item.label || item.tipo"></p>
-                                        <p class="mt-1 text-sm text-slate-600" x-text="item.ubicacion_resumida || 'Sin ubicacion visible'"></p>
-                                    </div>
-
-                                    <div class="flex flex-wrap gap-2 text-xs">
-                                        <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="item.codigo_interno || 'Sin codigo interno'"></span>
-                                        <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="item.estado_label || humanizeEstado(item.estado)"></span>
-                                    </div>
-
-                                    <dl class="grid gap-2 text-sm text-slate-600 sm:grid-cols-2">
-                                        <div>
-                                            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Serie</dt>
-                                            <dd x-text="item.numero_serie || '-'"></dd>
+                                <div class="space-y-4">
+                                    <div class="space-y-2">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <span class="app-badge px-3" :class="equipmentStatusClass(item.estado)" x-text="item.estado_label || humanizeEstado(item.estado)"></span>
+                                            <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="item.codigo_interno || 'Sin codigo'"></span>
                                         </div>
+
                                         <div>
-                                            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Patrimonial</dt>
-                                            <dd x-text="item.bien_patrimonial || '-'"></dd>
+                                            <p class="text-base font-semibold text-slate-950" x-text="item.label || item.tipo"></p>
+                                            <p class="mt-1 text-sm text-slate-600" x-text="item.ubicacion_resumida || 'Sin ubicacion visible'"></p>
+                                        </div>
+                                    </div>
+
+                                    <dl class="grid gap-3 sm:grid-cols-2">
+                                        <div class="rounded-xl bg-slate-50 px-3 py-3">
+                                            <dt class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Serie</dt>
+                                            <dd class="mt-1 text-sm font-medium text-slate-900" x-text="item.numero_serie || '-'"></dd>
+                                        </div>
+                                        <div class="rounded-xl bg-slate-50 px-3 py-3">
+                                            <dt class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Patrimonial</dt>
+                                            <dd class="mt-1 text-sm font-medium text-slate-900" x-text="item.bien_patrimonial || '-'"></dd>
                                         </div>
                                     </dl>
 
-                                    <div class="flex flex-wrap gap-2 pt-1">
-                                        <button type="button" class="btn btn-neutral" @click="openModal('recepcion', item)">
+                                    <div class="flex flex-wrap gap-2">
+                                        <button type="button" class="btn btn-emerald" @click="openModal('recepcion', item)">
                                             <x-icon name="download" class="h-4 w-4" />
                                             Recibir
                                         </button>
-                                        <button type="button" class="btn btn-neutral" @click="openModal('entrega', item)">
+                                        <button type="button" class="btn btn-blue" @click="openModal('entrega', item)">
                                             <x-icon name="upload" class="h-4 w-4" />
                                             Entregar
                                         </button>
-                                        <a :href="equipoShowUrl(item.id)" class="btn btn-neutral">
-                                            <x-icon name="eye" class="h-4 w-4" />
-                                            Ver detalle
-                                        </a>
-                                        <a :href="labelUrl(item.id)" target="_blank" rel="noopener noreferrer" class="btn btn-neutral">
-                                            <x-icon name="file-text" class="h-4 w-4" />
+                                        <a :href="labelUrl(item.id)" target="_blank" rel="noopener noreferrer" class="btn btn-amber">
+                                            <x-icon name="printer" class="h-4 w-4" />
                                             Etiqueta
+                                        </a>
+                                        <a :href="equipoShowUrl(item.id)" class="btn btn-slate">
+                                            <x-icon name="eye" class="h-4 w-4" />
+                                            Ficha
                                         </a>
                                     </div>
                                 </div>
@@ -364,7 +408,7 @@
                     </div>
 
                     <div x-cloak x-show="!lookup.loading && lookup.results.length === 0" class="mt-4 rounded-2xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500">
-                        Escriba un identificador visible para comenzar la busqueda.
+                        Escriba un dato visible para empezar.
                     </div>
                 </div>
             </div>
@@ -372,10 +416,12 @@
 
         @component('mesa-tecnica.partials.modal-shell', [
             'name' => 'recepcion',
-            'title' => 'Recibir equipo',
-            'subtitle' => 'Recepcion rapida para devoluciones con trazabilidad patrimonial.',
+            'title' => 'Recibir',
+            'subtitle' => 'Devolucion rapida de un equipo prestado.',
+            'icon' => 'download',
+            'tone' => 'emerald',
         ])
-            <div class="grid gap-6 xl:grid-cols-[minmax(0,1.08fr)_minmax(20rem,0.92fr)]">
+            <div class="grid gap-5 xl:grid-cols-[minmax(0,1.04fr)_minmax(20rem,0.96fr)]">
                 <section class="space-y-4">
                     <div class="rounded-2xl border border-slate-200 bg-slate-50/85 p-4">
                         <label for="recepcion-busqueda" class="text-sm font-medium text-slate-700">Buscar equipo</label>
@@ -387,10 +433,10 @@
                                 @input.debounce.350ms="search('receive')"
                                 @keydown.enter.prevent="search('receive')"
                                 class="form-control !mt-0"
-                                placeholder="Codigo interno, serie, patrimonial o QR"
+                                placeholder="Codigo, serie, patrimonial o QR"
                                 autocomplete="off"
                             >
-                            <button type="button" class="btn btn-primary" @click="search('receive')">
+                            <button type="button" class="btn btn-slate" @click="search('receive')">
                                 <x-icon name="search" class="h-4 w-4" />
                                 Buscar
                             </button>
@@ -403,15 +449,15 @@
                             <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                     <div class="space-y-2">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <span class="app-badge px-3" :class="equipmentStatusClass(item.estado)" x-text="item.estado_label || humanizeEstado(item.estado)"></span>
+                                            <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="item.codigo_interno || 'Sin codigo'"></span>
+                                        </div>
                                         <p class="text-base font-semibold text-slate-950" x-text="item.label || item.tipo"></p>
                                         <p class="text-sm text-slate-600" x-text="item.ubicacion_resumida || 'Sin ubicacion visible'"></p>
-                                        <div class="flex flex-wrap gap-2 text-xs">
-                                            <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="item.codigo_interno || 'Sin codigo interno'"></span>
-                                            <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="item.estado_label || humanizeEstado(item.estado)"></span>
-                                        </div>
                                     </div>
 
-                                    <button type="button" class="btn btn-neutral" @click="selectEquipo('receive', item)">
+                                    <button type="button" class="btn btn-slate" @click="selectEquipo('receive', item)">
                                         Seleccionar
                                     </button>
                                 </div>
@@ -421,30 +467,45 @@
                 </section>
 
                 <section class="space-y-4">
-                    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div class="rounded-[1.75rem] border border-emerald-200 bg-emerald-50/85 p-4">
                         <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Equipo seleccionado</p>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Equipo</p>
+
                                 <template x-if="receive.selected">
-                                    <div class="mt-2 space-y-2">
-                                        <p class="text-lg font-semibold text-slate-950" x-text="receive.selected.label || receive.selected.tipo"></p>
-                                        <p class="text-sm text-slate-600" x-text="receive.selected.ubicacion_resumida || 'Sin ubicacion visible'"></p>
-                                        <div class="flex flex-wrap gap-2 text-xs">
-                                            <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="receive.selected.codigo_interno || 'Sin codigo interno'"></span>
-                                            <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="receive.selected.estado_label || humanizeEstado(receive.selected.estado)"></span>
+                                    <div class="mt-2 space-y-4">
+                                        <div>
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <span class="app-badge bg-white px-3 text-emerald-700" x-text="receive.selected.codigo_interno || 'Sin codigo'"></span>
+                                                <span class="app-badge px-3" :class="equipmentStatusClass(receive.selected.estado)" x-text="receive.selected.estado_label || humanizeEstado(receive.selected.estado)"></span>
+                                            </div>
+                                            <p class="mt-3 text-lg font-semibold text-emerald-950" x-text="receive.selected.label || receive.selected.tipo"></p>
+                                            <p class="mt-1 text-sm text-emerald-900" x-text="receive.selected.ubicacion_resumida || 'Sin ubicacion visible'"></p>
                                         </div>
+
+                                        <dl class="grid gap-3 sm:grid-cols-2">
+                                            <div class="rounded-xl bg-white/85 px-3 py-3">
+                                                <dt class="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">Serie</dt>
+                                                <dd class="mt-1 text-sm font-medium text-emerald-950" x-text="receive.selected.numero_serie || '-'"></dd>
+                                            </div>
+                                            <div class="rounded-xl bg-white/85 px-3 py-3">
+                                                <dt class="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">Patrimonial</dt>
+                                                <dd class="mt-1 text-sm font-medium text-emerald-950" x-text="receive.selected.bien_patrimonial || '-'"></dd>
+                                            </div>
+                                        </dl>
                                     </div>
                                 </template>
+
                                 <template x-if="!receive.selected">
-                                    <p class="mt-2 text-sm text-slate-500">Busque y seleccione un equipo antes de confirmar la recepcion.</p>
+                                    <p class="mt-2 text-sm text-emerald-900">Seleccione un equipo para continuar.</p>
                                 </template>
                             </div>
 
                             <button
                                 type="button"
-                                class="inline-flex rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-                                x-show="receive.selected"
                                 x-cloak
+                                x-show="receive.selected"
+                                class="inline-flex rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100/70"
                                 @click="clearSelected('receive')"
                             >
                                 Cambiar
@@ -454,13 +515,13 @@
 
                     <div
                         x-cloak
-                        x-show="receive.selected && receive.selected.estado !== 'prestado'"
+                        x-show="receive.selected && !canReceive(receive.selected)"
                         class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900"
                     >
-                        Esta recepcion rapida solo aplica a equipos prestados. Si el equipo requiere otro circuito, utilice el modulo habitual de Actas o Equipos.
+                        Solo puede recibirse rapido un equipo en estado Prestado.
                     </div>
 
-                    <form method="POST" action="{{ route('mesa-tecnica.recepciones.store') }}" class="rounded-2xl border border-slate-200 bg-slate-50/85 p-4">
+                    <form method="POST" action="{{ route('mesa-tecnica.recepciones.store') }}" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                         @csrf
                         <input type="hidden" name="mesa_modal" value="recepcion">
                         <input type="hidden" name="equipo_id" :value="receive.selected ? receive.selected.id : ''">
@@ -475,16 +536,16 @@
                             </div>
 
                             <div>
-                                <label for="recepcion-motivo" class="text-sm font-medium text-slate-700">Motivo o referencia</label>
-                                <input id="recepcion-motivo" type="text" name="motivo" value="{{ old('motivo') }}" class="form-control" placeholder="Ejemplo: devolucion por recambio temporal">
+                                <label for="recepcion-motivo" class="text-sm font-medium text-slate-700">Motivo</label>
+                                <input id="recepcion-motivo" type="text" name="motivo" value="{{ old('motivo') }}" class="form-control" placeholder="Devolucion, recambio o referencia">
                                 @error('motivo')
                                     <p class="form-error">{{ $message }}</p>
                                 @enderror
                             </div>
 
                             <div>
-                                <label for="recepcion-observaciones" class="text-sm font-medium text-slate-700">Observaciones</label>
-                                <textarea id="recepcion-observaciones" name="observaciones" rows="4" class="form-control" placeholder="Detalle complementario para el acta">{{ old('observaciones') }}</textarea>
+                                <label for="recepcion-observaciones" class="text-sm font-medium text-slate-700">Notas</label>
+                                <textarea id="recepcion-observaciones" name="observaciones" rows="3" class="form-control" placeholder="Dato util para el acta">{{ old('observaciones') }}</textarea>
                                 @error('observaciones')
                                     <p class="form-error">{{ $message }}</p>
                                 @enderror
@@ -494,16 +555,16 @@
                                 <p class="form-error">{{ $message }}</p>
                             @enderror
 
-                            <div class="flex flex-wrap justify-end gap-2 pt-2">
-                                <button type="button" class="btn btn-neutral" @click="closeModal()">Cancelar</button>
+                            <div class="flex flex-wrap justify-end gap-2 pt-1">
+                                <button type="button" class="btn btn-slate" @click="closeModal()">Cancelar</button>
                                 <button
                                     type="submit"
-                                    class="btn btn-primary"
-                                    :disabled="!receive.selected || receive.selected.estado !== 'prestado'"
-                                    :class="(!receive.selected || receive.selected.estado !== 'prestado') ? 'cursor-not-allowed opacity-60' : ''"
+                                    class="btn btn-emerald"
+                                    :disabled="!canReceive(receive.selected)"
+                                    :class="!canReceive(receive.selected) ? 'cursor-not-allowed opacity-60' : ''"
                                 >
                                     <x-icon name="download" class="h-4 w-4" />
-                                    Confirmar recepcion
+                                    Recibir
                                 </button>
                             </div>
                         </div>
@@ -514,10 +575,12 @@
 
         @component('mesa-tecnica.partials.modal-shell', [
             'name' => 'entrega',
-            'title' => 'Entregar equipo',
-            'subtitle' => 'Entrega rapida con destino, receptor y emision automatica del acta.',
+            'title' => 'Entregar',
+            'subtitle' => 'Destino, receptor y acta en un paso.',
+            'icon' => 'upload',
+            'tone' => 'blue',
         ])
-            <div class="grid gap-6 xl:grid-cols-[minmax(0,1.02fr)_minmax(20rem,0.98fr)]">
+            <div class="grid gap-5 xl:grid-cols-[minmax(0,1.04fr)_minmax(20rem,0.96fr)]">
                 <section class="space-y-4">
                     <div class="rounded-2xl border border-slate-200 bg-slate-50/85 p-4">
                         <label for="entrega-busqueda" class="text-sm font-medium text-slate-700">Buscar equipo</label>
@@ -529,10 +592,10 @@
                                 @input.debounce.350ms="search('delivery')"
                                 @keydown.enter.prevent="search('delivery')"
                                 class="form-control !mt-0"
-                                placeholder="Codigo interno, serie, patrimonial o QR"
+                                placeholder="Codigo, serie, patrimonial o QR"
                                 autocomplete="off"
                             >
-                            <button type="button" class="btn btn-primary" @click="search('delivery')">
+                            <button type="button" class="btn btn-slate" @click="search('delivery')">
                                 <x-icon name="search" class="h-4 w-4" />
                                 Buscar
                             </button>
@@ -545,15 +608,15 @@
                             <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                     <div class="space-y-2">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <span class="app-badge px-3" :class="equipmentStatusClass(item.estado)" x-text="item.estado_label || humanizeEstado(item.estado)"></span>
+                                            <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="item.codigo_interno || 'Sin codigo'"></span>
+                                        </div>
                                         <p class="text-base font-semibold text-slate-950" x-text="item.label || item.tipo"></p>
                                         <p class="text-sm text-slate-600" x-text="item.ubicacion_resumida || 'Sin ubicacion visible'"></p>
-                                        <div class="flex flex-wrap gap-2 text-xs">
-                                            <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="item.codigo_interno || 'Sin codigo interno'"></span>
-                                            <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="item.estado_label || humanizeEstado(item.estado)"></span>
-                                        </div>
                                     </div>
 
-                                    <button type="button" class="btn btn-neutral" @click="selectEquipo('delivery', item)">
+                                    <button type="button" class="btn btn-slate" @click="selectEquipo('delivery', item)">
                                         Seleccionar
                                     </button>
                                 </div>
@@ -563,30 +626,45 @@
                 </section>
 
                 <section class="space-y-4">
-                    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div class="rounded-[1.75rem] border border-blue-200 bg-blue-50/85 p-4">
                         <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Equipo seleccionado</p>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">Equipo</p>
+
                                 <template x-if="delivery.selected">
-                                    <div class="mt-2 space-y-2">
-                                        <p class="text-lg font-semibold text-slate-950" x-text="delivery.selected.label || delivery.selected.tipo"></p>
-                                        <p class="text-sm text-slate-600" x-text="delivery.selected.ubicacion_resumida || 'Sin ubicacion visible'"></p>
-                                        <div class="flex flex-wrap gap-2 text-xs">
-                                            <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="delivery.selected.codigo_interno || 'Sin codigo interno'"></span>
-                                            <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="delivery.selected.estado_label || humanizeEstado(delivery.selected.estado)"></span>
+                                    <div class="mt-2 space-y-4">
+                                        <div>
+                                            <div class="flex flex-wrap items-center gap-2">
+                                                <span class="app-badge bg-white px-3 text-blue-700" x-text="delivery.selected.codigo_interno || 'Sin codigo'"></span>
+                                                <span class="app-badge px-3" :class="equipmentStatusClass(delivery.selected.estado)" x-text="delivery.selected.estado_label || humanizeEstado(delivery.selected.estado)"></span>
+                                            </div>
+                                            <p class="mt-3 text-lg font-semibold text-blue-950" x-text="delivery.selected.label || delivery.selected.tipo"></p>
+                                            <p class="mt-1 text-sm text-blue-900" x-text="delivery.selected.ubicacion_resumida || 'Sin ubicacion visible'"></p>
                                         </div>
+
+                                        <dl class="grid gap-3 sm:grid-cols-2">
+                                            <div class="rounded-xl bg-white/85 px-3 py-3">
+                                                <dt class="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-700">Serie</dt>
+                                                <dd class="mt-1 text-sm font-medium text-blue-950" x-text="delivery.selected.numero_serie || '-'"></dd>
+                                            </div>
+                                            <div class="rounded-xl bg-white/85 px-3 py-3">
+                                                <dt class="text-[11px] font-semibold uppercase tracking-[0.16em] text-blue-700">Patrimonial</dt>
+                                                <dd class="mt-1 text-sm font-medium text-blue-950" x-text="delivery.selected.bien_patrimonial || '-'"></dd>
+                                            </div>
+                                        </dl>
                                     </div>
                                 </template>
+
                                 <template x-if="!delivery.selected">
-                                    <p class="mt-2 text-sm text-slate-500">Busque y seleccione un equipo antes de generar la entrega.</p>
+                                    <p class="mt-2 text-sm text-blue-900">Seleccione un equipo para generar la entrega.</p>
                                 </template>
                             </div>
 
                             <button
                                 type="button"
-                                class="inline-flex rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
-                                x-show="delivery.selected"
                                 x-cloak
+                                x-show="delivery.selected"
+                                class="inline-flex rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100/70"
                                 @click="clearSelected('delivery')"
                             >
                                 Cambiar
@@ -596,20 +674,20 @@
 
                     <div
                         x-cloak
-                        x-show="delivery.selected && delivery.selected.estado === 'baja'"
-                        class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-900"
+                        x-show="delivery.selected && !canDeliver(delivery.selected)"
+                        class="rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-900"
                     >
-                        Este equipo ya se encuentra dado de baja y no puede entregarse.
+                        Un equipo dado de baja no puede entregarse.
                     </div>
 
-                    <form method="POST" action="{{ route('mesa-tecnica.entregas.store') }}" class="rounded-2xl border border-slate-200 bg-slate-50/85 p-4">
+                    <form method="POST" action="{{ route('mesa-tecnica.entregas.store') }}" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                         @csrf
                         <input type="hidden" name="mesa_modal" value="entrega">
                         <input type="hidden" name="equipo_id" :value="delivery.selected ? delivery.selected.id : ''">
 
                         <div class="grid gap-4 md:grid-cols-2">
                             <div class="md:col-span-2">
-                                <label for="entrega-institucion" class="text-sm font-medium text-slate-700">Institucion destino</label>
+                                <label for="entrega-institucion" class="text-sm font-medium text-slate-700">Institucion</label>
                                 <select
                                     id="entrega-institucion"
                                     name="institution_destino_id"
@@ -628,7 +706,7 @@
                             </div>
 
                             <div>
-                                <label for="entrega-servicio" class="text-sm font-medium text-slate-700">Servicio destino</label>
+                                <label for="entrega-servicio" class="text-sm font-medium text-slate-700">Servicio</label>
                                 <select
                                     id="entrega-servicio"
                                     name="service_destino_id"
@@ -647,7 +725,7 @@
                             </div>
 
                             <div>
-                                <label for="entrega-oficina" class="text-sm font-medium text-slate-700">Oficina destino</label>
+                                <label for="entrega-oficina" class="text-sm font-medium text-slate-700">Oficina</label>
                                 <select
                                     id="entrega-oficina"
                                     name="office_destino_id"
@@ -665,7 +743,7 @@
                             </div>
 
                             <div>
-                                <label for="entrega-receptor" class="text-sm font-medium text-slate-700">Receptor</label>
+                                <label for="entrega-receptor" class="text-sm font-medium text-slate-700">Recibe</label>
                                 <input id="entrega-receptor" type="text" name="receptor_nombre" value="{{ old('receptor_nombre') }}" class="form-control" placeholder="Nombre y apellido">
                                 @error('receptor_nombre')
                                     <p class="form-error">{{ $message }}</p>
@@ -673,8 +751,8 @@
                             </div>
 
                             <div>
-                                <label for="entrega-dni" class="text-sm font-medium text-slate-700">Documento</label>
-                                <input id="entrega-dni" type="text" name="receptor_dni" value="{{ old('receptor_dni') }}" class="form-control" placeholder="DNI o identificacion">
+                                <label for="entrega-dni" class="text-sm font-medium text-slate-700">Doc.</label>
+                                <input id="entrega-dni" type="text" name="receptor_dni" value="{{ old('receptor_dni') }}" class="form-control" placeholder="DNI o referencia">
                                 @error('receptor_dni')
                                     <p class="form-error">{{ $message }}</p>
                                 @enderror
@@ -682,23 +760,23 @@
 
                             <div>
                                 <label for="entrega-cargo" class="text-sm font-medium text-slate-700">Cargo</label>
-                                <input id="entrega-cargo" type="text" name="receptor_cargo" value="{{ old('receptor_cargo') }}" class="form-control" placeholder="Cargo o rol">
+                                <input id="entrega-cargo" type="text" name="receptor_cargo" value="{{ old('receptor_cargo') }}" class="form-control" placeholder="Funcion o rol">
                                 @error('receptor_cargo')
                                     <p class="form-error">{{ $message }}</p>
                                 @enderror
                             </div>
 
                             <div>
-                                <label for="entrega-dependencia" class="text-sm font-medium text-slate-700">Dependencia / referencia</label>
-                                <input id="entrega-dependencia" type="text" name="receptor_dependencia" value="{{ old('receptor_dependencia') }}" class="form-control" placeholder="Servicio, oficina o referencia">
+                                <label for="entrega-dependencia" class="text-sm font-medium text-slate-700">Sector / ref.</label>
+                                <input id="entrega-dependencia" type="text" name="receptor_dependencia" value="{{ old('receptor_dependencia') }}" class="form-control" placeholder="Servicio, oficina o area">
                                 @error('receptor_dependencia')
                                     <p class="form-error">{{ $message }}</p>
                                 @enderror
                             </div>
 
                             <div class="md:col-span-2">
-                                <label for="entrega-observaciones" class="text-sm font-medium text-slate-700">Observaciones</label>
-                                <textarea id="entrega-observaciones" name="observaciones" rows="4" class="form-control" placeholder="Detalle complementario para el acta">{{ old('observaciones') }}</textarea>
+                                <label for="entrega-observaciones" class="text-sm font-medium text-slate-700">Notas</label>
+                                <textarea id="entrega-observaciones" name="observaciones" rows="3" class="form-control" placeholder="Dato util para el acta">{{ old('observaciones') }}</textarea>
                                 @error('observaciones')
                                     <p class="form-error">{{ $message }}</p>
                                 @enderror
@@ -710,15 +788,15 @@
                         @enderror
 
                         <div class="flex flex-wrap justify-end gap-2 pt-4">
-                            <button type="button" class="btn btn-neutral" @click="closeModal()">Cancelar</button>
+                            <button type="button" class="btn btn-slate" @click="closeModal()">Cancelar</button>
                             <button
                                 type="submit"
-                                class="btn btn-primary"
-                                :disabled="!delivery.selected || delivery.selected.estado === 'baja'"
-                                :class="(!delivery.selected || delivery.selected.estado === 'baja') ? 'cursor-not-allowed opacity-60' : ''"
+                                class="btn btn-blue"
+                                :disabled="!canDeliver(delivery.selected)"
+                                :class="!canDeliver(delivery.selected) ? 'cursor-not-allowed opacity-60' : ''"
                             >
                                 <x-icon name="upload" class="h-4 w-4" />
-                                Confirmar entrega
+                                Entregar
                             </button>
                         </div>
                     </form>
@@ -728,11 +806,13 @@
 
         @component('mesa-tecnica.partials.modal-shell', [
             'name' => 'etiqueta',
-            'title' => 'Imprimir etiqueta',
-            'subtitle' => 'Abra la vista imprimible para generar o reimprimir el identificador del equipo.',
+            'title' => 'Etiqueta',
+            'subtitle' => 'Abrir e imprimir el QR institucional.',
+            'icon' => 'printer',
+            'tone' => 'amber',
             'maxWidth' => 'max-w-5xl',
         ])
-            <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(18rem,0.92fr)]">
+            <div class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(19rem,0.92fr)]">
                 <section class="space-y-4">
                     <div class="rounded-2xl border border-slate-200 bg-slate-50/85 p-4">
                         <label for="etiqueta-busqueda" class="text-sm font-medium text-slate-700">Buscar equipo</label>
@@ -744,10 +824,10 @@
                                 @input.debounce.350ms="search('labelState')"
                                 @keydown.enter.prevent="search('labelState')"
                                 class="form-control !mt-0"
-                                placeholder="Codigo interno, serie, patrimonial o QR"
+                                placeholder="Codigo, serie, patrimonial o QR"
                                 autocomplete="off"
                             >
-                            <button type="button" class="btn btn-primary" @click="search('labelState')">
+                            <button type="button" class="btn btn-slate" @click="search('labelState')">
                                 <x-icon name="search" class="h-4 w-4" />
                                 Buscar
                             </button>
@@ -760,15 +840,15 @@
                             <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                     <div class="space-y-2">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <span class="app-badge px-3" :class="equipmentStatusClass(item.estado)" x-text="item.estado_label || humanizeEstado(item.estado)"></span>
+                                            <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="item.codigo_interno || 'Sin codigo'"></span>
+                                        </div>
                                         <p class="text-base font-semibold text-slate-950" x-text="item.label || item.tipo"></p>
                                         <p class="text-sm text-slate-600" x-text="item.ubicacion_resumida || 'Sin ubicacion visible'"></p>
-                                        <div class="flex flex-wrap gap-2 text-xs">
-                                            <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="item.codigo_interno || 'Sin codigo interno'"></span>
-                                            <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="item.estado_label || humanizeEstado(item.estado)"></span>
-                                        </div>
                                     </div>
 
-                                    <button type="button" class="btn btn-neutral" @click="selectEquipo('labelState', item)">
+                                    <button type="button" class="btn btn-slate" @click="selectEquipo('labelState', item)">
                                         Seleccionar
                                     </button>
                                 </div>
@@ -778,27 +858,37 @@
                 </section>
 
                 <section class="space-y-4">
-                    <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Etiqueta seleccionada</p>
+                    <div class="rounded-[1.75rem] border border-amber-200 bg-amber-50/85 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">Equipo</p>
 
                         <template x-if="labelState.selected">
-                            <div class="mt-3 space-y-3">
+                            <div class="mt-3 space-y-4">
                                 <div>
-                                    <p class="text-lg font-semibold text-slate-950" x-text="labelState.selected.label || labelState.selected.tipo"></p>
-                                    <p class="text-sm text-slate-600" x-text="labelState.selected.ubicacion_resumida || 'Sin ubicacion visible'"></p>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="app-badge bg-white px-3 text-amber-700" x-text="labelState.selected.codigo_interno || 'Sin codigo'"></span>
+                                        <span class="app-badge px-3" :class="equipmentStatusClass(labelState.selected.estado)" x-text="labelState.selected.estado_label || humanizeEstado(labelState.selected.estado)"></span>
+                                    </div>
+                                    <p class="mt-3 text-lg font-semibold text-amber-950" x-text="labelState.selected.label || labelState.selected.tipo"></p>
+                                    <p class="mt-1 text-sm text-amber-900" x-text="labelState.selected.ubicacion_resumida || 'Sin ubicacion visible'"></p>
                                 </div>
 
-                                <div class="flex flex-wrap gap-2 text-xs">
-                                    <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="labelState.selected.codigo_interno || 'Sin codigo interno'"></span>
-                                    <span class="app-badge bg-slate-100 px-3 text-slate-700" x-text="labelState.selected.estado_label || humanizeEstado(labelState.selected.estado)"></span>
-                                </div>
+                                <dl class="grid gap-3 sm:grid-cols-2">
+                                    <div class="rounded-xl bg-white/85 px-3 py-3">
+                                        <dt class="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700">Serie</dt>
+                                        <dd class="mt-1 text-sm font-medium text-amber-950" x-text="labelState.selected.numero_serie || '-'"></dd>
+                                    </div>
+                                    <div class="rounded-xl bg-white/85 px-3 py-3">
+                                        <dt class="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700">Patrimonial</dt>
+                                        <dd class="mt-1 text-sm font-medium text-amber-950" x-text="labelState.selected.bien_patrimonial || '-'"></dd>
+                                    </div>
+                                </dl>
 
-                                <div class="flex flex-wrap gap-2 pt-2">
-                                    <a :href="labelUrl(labelState.selected.id)" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
-                                        <x-icon name="file-text" class="h-4 w-4" />
+                                <div class="flex flex-wrap gap-2 pt-1">
+                                    <a :href="labelUrl(labelState.selected.id)" target="_blank" rel="noopener noreferrer" class="btn btn-amber">
+                                        <x-icon name="printer" class="h-4 w-4" />
                                         Abrir etiqueta
                                     </a>
-                                    <a :href="equipoShowUrl(labelState.selected.id)" class="btn btn-neutral">
+                                    <a :href="equipoShowUrl(labelState.selected.id)" class="btn btn-slate">
                                         <x-icon name="eye" class="h-4 w-4" />
                                         Ver ficha
                                     </a>
@@ -807,14 +897,12 @@
                         </template>
 
                         <template x-if="!labelState.selected">
-                            <p class="mt-3 text-sm text-slate-500">
-                                Seleccione un equipo para abrir la etiqueta institucional preparada para impresion.
-                            </p>
+                            <p class="mt-3 text-sm text-amber-900">Seleccione un equipo para imprimir.</p>
                         </template>
                     </div>
 
-                    <div class="rounded-2xl border border-slate-200 bg-slate-50/85 p-4 text-sm text-slate-600">
-                        La etiqueta abre en una vista independiente con QR estable, codigo interno y datos minimos del equipo. Puede imprimirse cuantas veces sea necesario.
+                    <div class="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600 shadow-sm">
+                        La vista abre en otra ventana con QR estable, codigo interno y datos minimos para impresion.
                     </div>
                 </section>
             </div>
@@ -890,6 +978,31 @@
                         this[stateName].message = 'Equipo listo para operar.';
                     },
 
+                    canReceive(item) {
+                        return Boolean(item) && String(item.estado) === 'prestado';
+                    },
+
+                    canDeliver(item) {
+                        return Boolean(item) && String(item.estado) !== 'baja';
+                    },
+
+                    equipmentStatusClass(state) {
+                        switch (String(state || '')) {
+                            case 'operativo':
+                                return 'bg-emerald-100 text-emerald-700';
+                            case 'prestado':
+                                return 'bg-blue-100 text-blue-700';
+                            case 'mantenimiento':
+                                return 'bg-amber-100 text-amber-700';
+                            case 'fuera_de_servicio':
+                                return 'bg-orange-100 text-orange-700';
+                            case 'baja':
+                                return 'bg-red-100 text-red-700';
+                            default:
+                                return 'bg-slate-100 text-slate-700';
+                        }
+                    },
+
                     async search(stateName) {
                         const state = this[stateName];
                         const normalizedQuery = this.normalizeEquipmentQuery(state.query);
@@ -940,7 +1053,7 @@
                                 ...item,
                                 estado_label: item.estado_label || this.humanizeEstado(item.estado),
                             }));
-                            state.message = metaMessage || (state.results.length > 0 ? 'Seleccione un equipo para continuar.' : 'No se encontraron equipos con ese criterio.');
+                            state.message = metaMessage || (state.results.length > 0 ? 'Seleccione un equipo.' : 'No se encontraron equipos.');
                         } catch (error) {
                             if (error?.name === 'AbortError') {
                                 return;
@@ -1087,5 +1200,5 @@
                 };
             }
         </script>
-
-    @endsection
+    </div>
+@endsection

@@ -43,9 +43,17 @@ class MesaTecnicaModuleTest extends TestCase
         $this->actingAs($tecnico)
             ->get(route('mesa-tecnica.index'))
             ->assertOk()
-            ->assertSee('Mesa Tecnica')
-            ->assertSee('Recibir equipo')
+            ->assertSee('Mesa tecnica')
+            ->assertSee('Recibir')
             ->assertSee('Ingreso tecnico');
+
+        $this->actingAs($tecnico)
+            ->get(route('mesa-tecnica.index'))
+            ->assertSee('data-desktop-sidebar-lock="collapsed"', false);
+
+        $this->actingAs($tecnico)
+            ->get(route('dashboard'))
+            ->assertDontSee('data-desktop-sidebar-lock="collapsed"', false);
 
         $this->actingAs($viewer)
             ->get(route('mesa-tecnica.index'))

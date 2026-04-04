@@ -8,6 +8,7 @@
         $siteName = $systemConfig->nombre_sistema;
         $logoInstitucionalUrl = $systemConfig->logo_url;
         $systemLogoUrl = $systemConfig->system_logo_url;
+        $isMesaTecnicaShell = request()->routeIs('mesa-tecnica.*');
         $institutionContext = $authInstitutionContext ?? [];
         $activeInstitution = $institutionContext['activeInstitution'] ?? null;
         $primaryInstitution = $institutionContext['primaryInstitution'] ?? null;
@@ -33,6 +34,8 @@
     :class="{ 'overflow-hidden': $store.appShell.mobileSidebarOpen }"
     @keydown.escape.window="$store.appShell.closeMobileSidebar()"
     class="hospital-body min-h-screen text-slate-800"
+    data-shell-context="{{ $isMesaTecnicaShell ? 'mesa-tecnica' : 'default' }}"
+    data-desktop-sidebar-lock="{{ $isMesaTecnicaShell ? 'collapsed' : 'free' }}"
 >
     <div class="hospital-layout min-h-screen p-3 sm:p-4 lg:p-5 xl:p-6">
         <div

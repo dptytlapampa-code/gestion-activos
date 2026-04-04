@@ -50,6 +50,8 @@
         <div class="relative flex flex-col gap-4 border-b border-white/10 pb-4" :class="$store.appShell.isDesktopSidebarCollapsed() ? 'px-2' : 'px-4'">
             <button
                 type="button"
+                x-cloak
+                x-show="!($store.appShell.isDesktop() && $store.appShell.isDesktopSidebarLocked())"
                 class="inline-flex h-11 w-full items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60"
                 :class="$store.appShell.isDesktopSidebarCollapsed() ? 'justify-center px-0' : ''"
                 @click="$store.appShell.toggleSidebar()"
@@ -107,13 +109,13 @@
             </a>
 
             @if ($institucionesGroupVisible)
-                <section class="space-y-1">
+                <section class="relative space-y-1" @click.outside="closeFlyout('instituciones')" @keydown.escape.window="closeFlyout('instituciones')">
                     <button
                         type="button"
                         class="app-sidebar-group-button min-h-[3rem] rounded-2xl {{ $institucionesGroupActive ? 'app-sidebar-group-button-active' : '' }}"
                         :class="$store.appShell.isDesktopSidebarCollapsed() ? 'justify-center px-0' : ''"
                         @click="toggle('instituciones')"
-                        :aria-expanded="(!$store.appShell.isDesktopSidebarCollapsed() && isOpen('instituciones')).toString()"
+                        :aria-expanded="($store.appShell.isDesktopSidebarCollapsed() ? showFlyout('instituciones') : isOpen('instituciones')).toString()"
                         :aria-label="$store.appShell.isDesktopSidebarCollapsed() ? 'Instituciones' : null"
                         :title="$store.appShell.isDesktopSidebarCollapsed() ? 'Instituciones' : ''"
                         aria-controls="sidebar-group-instituciones"
@@ -175,17 +177,60 @@
                             @endif
                         </div>
                     </div>
+
+                    <div
+                        x-cloak
+                        x-show="showFlyout('instituciones')"
+                        x-transition.origin.left.duration.150ms
+                        class="app-sidebar-flyout"
+                        :aria-hidden="(!showFlyout('instituciones')).toString()"
+                    >
+                        <p class="app-sidebar-flyout-title">Instituciones</p>
+
+                        @if ($canInstitutions)
+                            <a
+                                href="{{ route('institutions.index') }}"
+                                class="app-sidebar-flyout-link {{ request()->routeIs('institutions.*') ? 'app-sidebar-flyout-link-active' : '' }}"
+                                @click="$store.appShell.closeMobileSidebar(); closeFlyout('instituciones')"
+                            >
+                                <x-sidebar.icon name="institucion-item" class="h-4 w-4 shrink-0" />
+                                <span>Instituciones</span>
+                            </a>
+                        @endif
+
+                        @if ($canServices)
+                            <a
+                                href="{{ route('services.index') }}"
+                                class="app-sidebar-flyout-link {{ request()->routeIs('services.*') ? 'app-sidebar-flyout-link-active' : '' }}"
+                                @click="$store.appShell.closeMobileSidebar(); closeFlyout('instituciones')"
+                            >
+                                <x-sidebar.icon name="servicios" class="h-4 w-4 shrink-0" />
+                                <span>Servicios</span>
+                            </a>
+                        @endif
+
+                        @if ($canOffices)
+                            <a
+                                href="{{ route('offices.index') }}"
+                                class="app-sidebar-flyout-link {{ request()->routeIs('offices.*') ? 'app-sidebar-flyout-link-active' : '' }}"
+                                @click="$store.appShell.closeMobileSidebar(); closeFlyout('instituciones')"
+                            >
+                                <x-sidebar.icon name="oficinas" class="h-4 w-4 shrink-0" />
+                                <span>Oficinas</span>
+                            </a>
+                        @endif
+                    </div>
                 </section>
             @endif
 
             @if ($equiposGroupVisible)
-                <section class="space-y-1">
+                <section class="relative space-y-1" @click.outside="closeFlyout('equipos')" @keydown.escape.window="closeFlyout('equipos')">
                     <button
                         type="button"
                         class="app-sidebar-group-button min-h-[3rem] rounded-2xl {{ $equiposGroupActive ? 'app-sidebar-group-button-active' : '' }}"
                         :class="$store.appShell.isDesktopSidebarCollapsed() ? 'justify-center px-0' : ''"
                         @click="toggle('equipos')"
-                        :aria-expanded="(!$store.appShell.isDesktopSidebarCollapsed() && isOpen('equipos')).toString()"
+                        :aria-expanded="($store.appShell.isDesktopSidebarCollapsed() ? showFlyout('equipos') : isOpen('equipos')).toString()"
                         :aria-label="$store.appShell.isDesktopSidebarCollapsed() ? 'Equipos' : null"
                         :title="$store.appShell.isDesktopSidebarCollapsed() ? 'Equipos' : ''"
                         aria-controls="sidebar-group-equipos"
@@ -235,6 +280,38 @@
                             @endif
                         </div>
                     </div>
+
+                    <div
+                        x-cloak
+                        x-show="showFlyout('equipos')"
+                        x-transition.origin.left.duration.150ms
+                        class="app-sidebar-flyout"
+                        :aria-hidden="(!showFlyout('equipos')).toString()"
+                    >
+                        <p class="app-sidebar-flyout-title">Equipos</p>
+
+                        @if ($canTiposEquipos)
+                            <a
+                                href="{{ route('tipos-equipos.index') }}"
+                                class="app-sidebar-flyout-link {{ request()->routeIs('tipos-equipos.*') ? 'app-sidebar-flyout-link-active' : '' }}"
+                                @click="$store.appShell.closeMobileSidebar(); closeFlyout('equipos')"
+                            >
+                                <x-sidebar.icon name="tipos-equipo" class="h-4 w-4 shrink-0" />
+                                <span>Tipos de equipo</span>
+                            </a>
+                        @endif
+
+                        @if ($canEquipos)
+                            <a
+                                href="{{ route('equipos.index') }}"
+                                class="app-sidebar-flyout-link {{ request()->routeIs('equipos.*') ? 'app-sidebar-flyout-link-active' : '' }}"
+                                @click="$store.appShell.closeMobileSidebar(); closeFlyout('equipos')"
+                            >
+                                <x-sidebar.icon name="equipos" class="h-4 w-4 shrink-0" />
+                                <span>Equipos</span>
+                            </a>
+                        @endif
+                    </div>
                 </section>
             @endif
 
@@ -269,13 +346,13 @@
             @if ($administracionGroupVisible)
                 <div class="app-sidebar-divider"></div>
 
-                <section class="space-y-1">
+                <section class="relative space-y-1" @click.outside="closeFlyout('administracion')" @keydown.escape.window="closeFlyout('administracion')">
                     <button
                         type="button"
                         class="app-sidebar-group-button min-h-[3rem] rounded-2xl {{ $administracionGroupActive ? 'app-sidebar-group-button-active' : '' }}"
                         :class="$store.appShell.isDesktopSidebarCollapsed() ? 'justify-center px-0' : ''"
                         @click="toggle('administracion')"
-                        :aria-expanded="(!$store.appShell.isDesktopSidebarCollapsed() && isOpen('administracion')).toString()"
+                        :aria-expanded="($store.appShell.isDesktopSidebarCollapsed() ? showFlyout('administracion') : isOpen('administracion')).toString()"
                         :aria-label="$store.appShell.isDesktopSidebarCollapsed() ? 'Administracion' : null"
                         :title="$store.appShell.isDesktopSidebarCollapsed() ? 'Administracion' : ''"
                         aria-controls="sidebar-group-administracion"
@@ -330,6 +407,43 @@
                                 <span>Configuracion general</span>
                             </a>
                         </div>
+                    </div>
+
+                    <div
+                        x-cloak
+                        x-show="showFlyout('administracion')"
+                        x-transition.origin.left.duration.150ms
+                        class="app-sidebar-flyout"
+                        :aria-hidden="(!showFlyout('administracion')).toString()"
+                    >
+                        <p class="app-sidebar-flyout-title">Administracion</p>
+
+                        <a
+                            href="{{ route('admin.users.index') }}"
+                            class="app-sidebar-flyout-link {{ request()->routeIs('admin.users.*') ? 'app-sidebar-flyout-link-active' : '' }}"
+                            @click="$store.appShell.closeMobileSidebar(); closeFlyout('administracion')"
+                        >
+                            <x-sidebar.icon name="usuarios" class="h-4 w-4 shrink-0" />
+                            <span>Usuarios</span>
+                        </a>
+
+                        <a
+                            href="{{ route('admin.audit.live') }}"
+                            class="app-sidebar-flyout-link {{ request()->routeIs('admin.audit.*') ? 'app-sidebar-flyout-link-active' : '' }}"
+                            @click="$store.appShell.closeMobileSidebar(); closeFlyout('administracion')"
+                        >
+                            <x-sidebar.icon name="auditoria" class="h-4 w-4 shrink-0" />
+                            <span>Auditoria</span>
+                        </a>
+
+                        <a
+                            href="{{ route('admin.configuracion.general.edit') }}"
+                            class="app-sidebar-flyout-link {{ request()->routeIs('admin.configuracion.general.*') ? 'app-sidebar-flyout-link-active' : '' }}"
+                            @click="$store.appShell.closeMobileSidebar(); closeFlyout('administracion')"
+                        >
+                            <x-sidebar.icon name="configuracion" class="h-4 w-4 shrink-0" />
+                            <span>Configuracion general</span>
+                        </a>
                     </div>
                 </section>
             @endif

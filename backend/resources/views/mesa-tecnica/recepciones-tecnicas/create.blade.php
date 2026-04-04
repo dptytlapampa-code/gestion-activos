@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Nuevo ingreso tecnico')
-@section('header', 'Nuevo ingreso tecnico')
+@section('title', 'Ingreso tecnico')
+@section('header', 'Ingreso tecnico')
 
 @section('content')
     @php
@@ -31,29 +31,35 @@
             },
         })"
         x-init="init()"
-        class="space-y-6"
+        class="space-y-5 lg:space-y-6"
     >
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-                <h3 class="text-xl font-semibold text-slate-900">Registrar ingreso tecnico</h3>
-                <p class="mt-1 text-sm text-slate-500">
-                    Use esta pantalla para registrar el ingreso fisico de un equipo al area tecnica, aun si todavia no existe en el sistema.
-                </p>
+            <div class="space-y-2">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="app-badge bg-indigo-50 px-3 text-indigo-700">Ingreso tecnico</span>
+                    <span class="app-badge bg-slate-100 px-3 text-slate-700">Ticket operativo</span>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold tracking-tight text-slate-900">Nuevo ingreso</h3>
+                    <p class="mt-1 text-sm text-slate-500">
+                        Registre el equipo, la persona que lo entrega y la falla en una sola vista.
+                    </p>
+                </div>
             </div>
 
-            <a href="{{ route('mesa-tecnica.recepciones-tecnicas.index') }}" class="btn btn-neutral w-full sm:w-auto">
+            <a href="{{ route('mesa-tecnica.recepciones-tecnicas.index') }}" class="btn btn-slate w-full sm:w-auto">
                 <x-icon name="x" class="h-4 w-4" />
-                Volver al listado
+                Volver
             </a>
         </div>
 
-        <form method="POST" action="{{ route('mesa-tecnica.recepciones-tecnicas.store') }}" class="space-y-6">
+        <form method="POST" action="{{ route('mesa-tecnica.recepciones-tecnicas.store') }}" class="space-y-5 lg:space-y-6">
             @csrf
 
             <section class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
                 <div class="border-b border-slate-200 pb-4">
-                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Escenario de trabajo</p>
-                    <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Como ingresa este equipo</h2>
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Modo</p>
+                    <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Como entra el equipo</h2>
                 </div>
 
                 <div class="mt-4 grid gap-4 lg:grid-cols-2">
@@ -63,9 +69,9 @@
                         :class="mode === 'existente' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-900'"
                         class="rounded-[1.75rem] border px-5 py-5 text-left transition"
                     >
-                        <p class="text-sm font-semibold uppercase tracking-[0.14em]">Equipo ya existente</p>
-                        <p class="mt-2 text-base font-semibold">Buscar y vincular un equipo ya cargado</p>
-                        <p class="mt-2 text-sm opacity-80">Busque por codigo interno, serie, patrimonial o QR institucional y use el ticket solo como comprobante operativo.</p>
+                        <p class="text-sm font-semibold uppercase tracking-[0.14em]">Equipo existente</p>
+                        <p class="mt-2 text-base font-semibold">Vincular un equipo ya cargado</p>
+                        <p class="mt-2 text-sm opacity-80">Buscar por codigo, serie, patrimonial o QR.</p>
                     </button>
 
                     <button
@@ -74,9 +80,9 @@
                         :class="mode === 'nuevo' ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-900'"
                         class="rounded-[1.75rem] border px-5 py-5 text-left transition"
                     >
-                        <p class="text-sm font-semibold uppercase tracking-[0.14em]">Equipo no registrado</p>
-                        <p class="mt-2 text-base font-semibold">Cargar el ingreso aunque todavia no exista en inventario</p>
-                        <p class="mt-2 text-sm opacity-80">Registre el ticket con datos basicos y, si corresponde, incorpore el equipo al sistema desde este mismo flujo.</p>
+                        <p class="text-sm font-semibold uppercase tracking-[0.14em]">Equipo nuevo</p>
+                        <p class="mt-2 text-base font-semibold">Registrar aunque no este en inventario</p>
+                        <p class="mt-2 text-sm opacity-80">Ticket primero. Alta en sistema si hace falta.</p>
                     </button>
                 </div>
 
@@ -84,21 +90,21 @@
 
                 @if ($errors->any())
                     <div class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-800">
-                        Revise los campos marcados para continuar.
+                        Revise los campos marcados.
                     </div>
                 @endif
             </section>
 
             <section x-show="mode === 'existente'" x-cloak class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
                 <div class="border-b border-slate-200 pb-4">
-                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Busqueda rapida</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Busqueda</p>
                     <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Equipo existente</h2>
                 </div>
 
                 <div class="mt-4 space-y-4">
                     <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
                         <div>
-                            <label for="equipo-search" class="text-sm font-medium text-slate-700">Buscar equipo</label>
+                            <label for="equipo-search" class="text-sm font-medium text-slate-700">Identificador</label>
                             <input
                                 id="equipo-search"
                                 type="text"
@@ -106,12 +112,12 @@
                                 @input.debounce.350ms="searchEquipos()"
                                 @keydown.enter.prevent="searchEquipos()"
                                 class="app-input mt-2"
-                                placeholder="Codigo interno, serie, patrimonial o QR institucional"
+                                placeholder="Codigo, serie, patrimonial o QR"
                                 autocomplete="off"
                             >
                         </div>
 
-                        <button type="button" class="btn btn-primary self-end" @click="searchEquipos()">
+                        <button type="button" class="btn btn-slate self-end" @click="searchEquipos()">
                             <x-icon name="search" class="h-4 w-4" />
                             Buscar
                         </button>
@@ -142,7 +148,7 @@
                     <div x-show="selectedEquipo" x-cloak class="rounded-[1.75rem] border border-emerald-200 bg-emerald-50 px-5 py-5">
                         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                             <div class="space-y-2">
-                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Equipo seleccionado</p>
+                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Equipo</p>
                                 <p class="text-lg font-semibold text-emerald-950" x-text="selectedEquipo?.label || selectedEquipo?.tipo"></p>
                                 <p class="text-sm text-emerald-900" x-text="selectedEquipo?.ubicacion_resumida || 'Sin ubicacion visible'"></p>
                                 <div class="flex flex-wrap gap-2 text-xs">
@@ -154,7 +160,7 @@
 
                             <button type="button" class="btn btn-neutral" @click="clearSelectedEquipo()">
                                 <x-icon name="x" class="h-4 w-4" />
-                                Quitar seleccion
+                                Cambiar
                             </button>
                         </div>
                     </div>
@@ -168,22 +174,22 @@
 
             <section x-show="mode === 'nuevo'" x-cloak class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
                 <div class="border-b border-slate-200 pb-4">
-                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Identificacion inicial</p>
-                    <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Equipo todavia no registrado</h2>
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Equipo</p>
+                    <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Datos rapidos</h2>
                 </div>
 
                 <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     <div class="xl:col-span-3">
-                        <label for="referencia_equipo" class="mb-2 block text-sm font-medium text-slate-700">Referencia libre del equipo</label>
-                        <input id="referencia_equipo" name="referencia_equipo" type="text" value="{{ old('referencia_equipo') }}" class="app-input" placeholder="Ejemplo: notebook blanca de admision, monitor de terapia, CPU sin etiqueta">
+                        <label for="referencia_equipo" class="mb-2 block text-sm font-medium text-slate-700">Referencia</label>
+                        <input id="referencia_equipo" name="referencia_equipo" type="text" value="{{ old('referencia_equipo') }}" class="app-input" placeholder="Ej.: notebook blanca de admision, monitor de terapia">
                         @error('referencia_equipo')
                             <p class="form-error mt-2">{{ $message }}</p>
                         @enderror
                     </div>
 
                     <div>
-                        <label for="tipo_equipo_texto" class="mb-2 block text-sm font-medium text-slate-700">Tipo de equipo</label>
-                        <input id="tipo_equipo_texto" name="tipo_equipo_texto" type="text" value="{{ old('tipo_equipo_texto') }}" class="app-input" placeholder="Descripcion libre">
+                        <label for="tipo_equipo_texto" class="mb-2 block text-sm font-medium text-slate-700">Tipo</label>
+                        <input id="tipo_equipo_texto" name="tipo_equipo_texto" type="text" value="{{ old('tipo_equipo_texto') }}" class="app-input" placeholder="Tipo visible">
                         @error('tipo_equipo_texto')
                             <p class="form-error mt-2">{{ $message }}</p>
                         @enderror
@@ -206,7 +212,7 @@
                     </div>
 
                     <div>
-                        <label for="numero_serie" class="mb-2 block text-sm font-medium text-slate-700">Numero de serie</label>
+                        <label for="numero_serie" class="mb-2 block text-sm font-medium text-slate-700">Serie</label>
                         <input id="numero_serie" name="numero_serie" type="text" value="{{ old('numero_serie') }}" class="app-input" placeholder="Serie">
                         @error('numero_serie')
                             <p class="form-error mt-2">{{ $message }}</p>
@@ -214,8 +220,8 @@
                     </div>
 
                     <div>
-                        <label for="bien_patrimonial" class="mb-2 block text-sm font-medium text-slate-700">Bien patrimonial</label>
-                        <input id="bien_patrimonial" name="bien_patrimonial" type="text" value="{{ old('bien_patrimonial') }}" class="app-input" placeholder="Patrimonial">
+                        <label for="bien_patrimonial" class="mb-2 block text-sm font-medium text-slate-700">Patrimonial</label>
+                        <input id="bien_patrimonial" name="bien_patrimonial" type="text" value="{{ old('bien_patrimonial') }}" class="app-input" placeholder="Codigo patrimonial">
                         @error('bien_patrimonial')
                             <p class="form-error mt-2">{{ $message }}</p>
                         @enderror
@@ -226,8 +232,8 @@
                     <label class="flex cursor-pointer items-start gap-3">
                         <input type="checkbox" name="incorporar_equipo" value="1" x-model="incorporate" class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
                         <span>
-                            <span class="block text-sm font-semibold text-slate-900">Incorporar este equipo al sistema</span>
-                            <span class="mt-1 block text-sm text-slate-600">Si lo marca, se mostraran los campos necesarios para dar de alta el equipo reutilizando las validaciones reales del modulo Equipos.</span>
+                            <span class="block text-sm font-semibold text-slate-900">Dar de alta en Equipos</span>
+                            <span class="mt-1 block text-sm text-slate-600">Muestra solo los datos necesarios para incorporarlo al inventario.</span>
                         </span>
                     </label>
                     @error('incorporar_equipo')
@@ -237,19 +243,19 @@
 
                 <div x-show="incorporate" x-cloak class="mt-5 space-y-5 rounded-[1.75rem] border border-indigo-200 bg-indigo-50/70 px-4 py-4">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-700">Alta real del equipo</p>
-                        <h3 class="mt-1 text-lg font-semibold text-indigo-950">Destino e inventario</h3>
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-700">Inventario</p>
+                        <h3 class="mt-1 text-lg font-semibold text-indigo-950">Alta en sistema</h3>
                     </div>
 
                     <div
                         @autocomplete-selected.window="if ($event.detail.name === 'institution_id') { handleDestinoInstitutionSelected($event.detail.value); }"
                         @autocomplete-cleared.window="if ($event.detail.name === 'institution_id') { handleDestinoInstitutionSelected(''); }"
                     >
-                        <label for="institution_id" class="mb-2 block text-sm font-medium text-slate-700">Institucion destino</label>
+                        <label for="institution_id" class="mb-2 block text-sm font-medium text-slate-700">Institucion</label>
                         <x-autocomplete
                             name="institution_id"
                             endpoint="/api/search/institutions"
-                            placeholder="Buscar institucion..."
+                            placeholder="Buscar institucion"
                             :value="old('institution_id')"
                             :label="old('institution_id_label')"
                         />
@@ -264,11 +270,11 @@
                             @autocomplete-selected.window="if ($event.detail.name === 'service_id') { handleDestinoServiceSelected($event.detail.value); }"
                             @autocomplete-cleared.window="if ($event.detail.name === 'service_id') { handleDestinoServiceSelected(''); }"
                         >
-                            <label for="service_id" class="mb-2 block text-sm font-medium text-slate-700">Servicio destino</label>
+                            <label for="service_id" class="mb-2 block text-sm font-medium text-slate-700">Servicio</label>
                             <x-autocomplete
                                 name="service_id"
                                 endpoint="/api/search/services"
-                                placeholder="Buscar servicio..."
+                                placeholder="Buscar servicio"
                                 :value="old('service_id')"
                                 :label="old('service_id_label')"
                                 :params="['institution_id' => old('institution_id')]"
@@ -283,11 +289,11 @@
                             @autocomplete-selected.window="if ($event.detail.name === 'oficina_id') { destino.officeId = String($event.detail.value); }"
                             @autocomplete-cleared.window="if ($event.detail.name === 'oficina_id') { destino.officeId = ''; }"
                         >
-                            <label for="oficina_id" class="mb-2 block text-sm font-medium text-slate-700">Oficina destino</label>
+                            <label for="oficina_id" class="mb-2 block text-sm font-medium text-slate-700">Oficina</label>
                             <x-autocomplete
                                 name="oficina_id"
                                 endpoint="/api/search/offices"
-                                placeholder="Buscar oficina..."
+                                placeholder="Buscar oficina"
                                 :value="old('office_id', old('oficina_id'))"
                                 :label="old('office_id_label', old('oficina_id_label'))"
                                 :params="['service_id' => old('service_id'), 'institution_id' => old('institution_id')]"
@@ -305,11 +311,11 @@
                         @autocomplete-selected.window="if ($event.detail.name === 'tipo_equipo_id') { destino.tipoEquipoId = String($event.detail.value); }"
                         @autocomplete-cleared.window="if ($event.detail.name === 'tipo_equipo_id') { destino.tipoEquipoId = ''; }"
                     >
-                        <label for="tipo_equipo_id" class="mb-2 block text-sm font-medium text-slate-700">Tipo de equipo del inventario</label>
+                        <label for="tipo_equipo_id" class="mb-2 block text-sm font-medium text-slate-700">Tipo en inventario</label>
                         <x-autocomplete
                             name="tipo_equipo_id"
                             endpoint="/api/search/tipos-equipos"
-                            placeholder="Buscar tipo de equipo..."
+                            placeholder="Buscar tipo"
                             :value="old('tipo_equipo_id')"
                             :label="old('tipo_equipo_id_label')"
                         />
@@ -321,7 +327,7 @@
 
                     <div class="grid gap-4 md:grid-cols-2">
                         <div>
-                            <label for="estado" class="mb-2 block text-sm font-medium text-slate-700">Estado inicial</label>
+                            <label for="estado" class="mb-2 block text-sm font-medium text-slate-700">Estado</label>
                             <select id="estado" name="estado" class="app-input">
                                 <option value="">Seleccione un estado</option>
                                 @foreach ($equipmentStates as $state)
@@ -334,7 +340,7 @@
                         </div>
 
                         <div>
-                            <label for="fecha_ingreso" class="mb-2 block text-sm font-medium text-slate-700">Fecha de ingreso al inventario</label>
+                            <label for="fecha_ingreso" class="mb-2 block text-sm font-medium text-slate-700">Fecha alta</label>
                             <input id="fecha_ingreso" name="fecha_ingreso" type="date" value="{{ old('fecha_ingreso', $defaultReceptionDate) }}" class="app-input">
                             @error('fecha_ingreso')
                                 <p class="form-error mt-2">{{ $message }}</p>
@@ -348,13 +354,13 @@
                 <div class="space-y-6">
                     <section class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
                         <div class="border-b border-slate-200 pb-4">
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Datos del ingreso</p>
-                            <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Informacion general</h2>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Ticket</p>
+                            <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Datos base</h2>
                         </div>
 
                         <div class="mt-4 grid gap-4 md:grid-cols-2">
                             <div>
-                                <label for="fecha_recepcion" class="mb-2 block text-sm font-medium text-slate-700">Fecha del ingreso</label>
+                                <label for="fecha_recepcion" class="mb-2 block text-sm font-medium text-slate-700">Fecha</label>
                                 <input id="fecha_recepcion" name="fecha_recepcion" type="date" value="{{ old('fecha_recepcion', $defaultReceptionDate) }}" class="app-input">
                                 @error('fecha_recepcion')
                                     <p class="form-error mt-2">{{ $message }}</p>
@@ -362,7 +368,7 @@
                             </div>
 
                             <div>
-                                <label for="sector_receptor" class="mb-2 block text-sm font-medium text-slate-700">Sector receptor</label>
+                                <label for="sector_receptor" class="mb-2 block text-sm font-medium text-slate-700">Sector</label>
                                 <input id="sector_receptor" name="sector_receptor" type="text" value="{{ old('sector_receptor', 'Mesa Tecnica') }}" class="app-input" placeholder="Mesa Tecnica">
                                 @error('sector_receptor')
                                     <p class="form-error mt-2">{{ $message }}</p>
@@ -373,20 +379,20 @@
 
                     <section class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
                         <div class="border-b border-slate-200 pb-4">
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Quien entrega</p>
-                            <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Persona que deja el equipo</h2>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Entrega</p>
+                            <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Quien lo trae</h2>
                         </div>
 
                         <div class="mt-4 grid gap-4 md:grid-cols-2">
                             <div>
-                                <label for="persona_nombre" class="mb-2 block text-sm font-medium text-slate-700">Nombre y apellido</label>
+                                <label for="persona_nombre" class="mb-2 block text-sm font-medium text-slate-700">Nombre</label>
                                 <input id="persona_nombre" name="persona_nombre" type="text" value="{{ old('persona_nombre') }}" class="app-input" placeholder="Nombre completo">
                                 @error('persona_nombre')
                                     <p class="form-error mt-2">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div>
-                                <label for="persona_documento" class="mb-2 block text-sm font-medium text-slate-700">DNI / documento</label>
+                                <label for="persona_documento" class="mb-2 block text-sm font-medium text-slate-700">Doc.</label>
                                 <input id="persona_documento" name="persona_documento" type="text" value="{{ old('persona_documento') }}" class="app-input" placeholder="Documento">
                                 @error('persona_documento')
                                     <p class="form-error mt-2">{{ $message }}</p>
@@ -400,21 +406,21 @@
                                 @enderror
                             </div>
                             <div>
-                                <label for="persona_relacion_equipo" class="mb-2 block text-sm font-medium text-slate-700">Relacion con el equipo</label>
-                                <input id="persona_relacion_equipo" name="persona_relacion_equipo" type="text" value="{{ old('persona_relacion_equipo') }}" class="app-input" placeholder="Usuario, tecnico, mensajeria, tercero...">
+                                <label for="persona_relacion_equipo" class="mb-2 block text-sm font-medium text-slate-700">Relacion</label>
+                                <input id="persona_relacion_equipo" name="persona_relacion_equipo" type="text" value="{{ old('persona_relacion_equipo') }}" class="app-input" placeholder="Usuario, tecnico, mensajeria, tercero">
                                 @error('persona_relacion_equipo')
                                     <p class="form-error mt-2">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div>
-                                <label for="persona_area" class="mb-2 block text-sm font-medium text-slate-700">Area / servicio / dependencia</label>
+                                <label for="persona_area" class="mb-2 block text-sm font-medium text-slate-700">Area / servicio</label>
                                 <input id="persona_area" name="persona_area" type="text" value="{{ old('persona_area') }}" class="app-input" placeholder="Area o servicio">
                                 @error('persona_area')
                                     <p class="form-error mt-2">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div>
-                                <label for="persona_institucion" class="mb-2 block text-sm font-medium text-slate-700">Hospital / institucion</label>
+                                <label for="persona_institucion" class="mb-2 block text-sm font-medium text-slate-700">Institucion</label>
                                 <input id="persona_institucion" name="persona_institucion" type="text" value="{{ old('persona_institucion') }}" class="app-input" placeholder="Hospital o institucion">
                                 @error('persona_institucion')
                                     <p class="form-error mt-2">{{ $message }}</p>
@@ -427,8 +433,8 @@
                 <div class="space-y-6">
                     <section class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
                         <div class="border-b border-slate-200 pb-4">
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Procedencia</p>
-                            <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Origen del equipo</h2>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Origen</p>
+                            <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">De donde viene</h2>
                         </div>
 
                         <div class="mt-4 space-y-4">
@@ -436,11 +442,11 @@
                                 @autocomplete-selected.window="if ($event.detail.name === 'procedencia_institution_id') { handleProcedenciaInstitutionSelected($event.detail.value); }"
                                 @autocomplete-cleared.window="if ($event.detail.name === 'procedencia_institution_id') { handleProcedenciaInstitutionSelected(''); }"
                             >
-                                <label for="procedencia_institution_id" class="mb-2 block text-sm font-medium text-slate-700">Institucion de procedencia</label>
+                                <label for="procedencia_institution_id" class="mb-2 block text-sm font-medium text-slate-700">Institucion</label>
                                 <x-autocomplete
                                     name="procedencia_institution_id"
                                     endpoint="/api/search/institutions"
-                                    placeholder="Buscar institucion..."
+                                    placeholder="Buscar institucion"
                                     :value="old('procedencia_institution_id')"
                                     :label="old('procedencia_institution_id_label')"
                                 />
@@ -455,11 +461,11 @@
                                     @autocomplete-selected.window="if ($event.detail.name === 'procedencia_service_id') { handleProcedenciaServiceSelected($event.detail.value); }"
                                     @autocomplete-cleared.window="if ($event.detail.name === 'procedencia_service_id') { handleProcedenciaServiceSelected(''); }"
                                 >
-                                    <label for="procedencia_service_id" class="mb-2 block text-sm font-medium text-slate-700">Servicio de procedencia</label>
+                                    <label for="procedencia_service_id" class="mb-2 block text-sm font-medium text-slate-700">Servicio</label>
                                     <x-autocomplete
                                         name="procedencia_service_id"
                                         endpoint="/api/search/services"
-                                        placeholder="Buscar servicio..."
+                                        placeholder="Buscar servicio"
                                         :value="old('procedencia_service_id')"
                                         :label="old('procedencia_service_id_label')"
                                         :params="['institution_id' => old('procedencia_institution_id')]"
@@ -474,11 +480,11 @@
                                     @autocomplete-selected.window="if ($event.detail.name === 'procedencia_office_id') { procedencia.officeId = String($event.detail.value); }"
                                     @autocomplete-cleared.window="if ($event.detail.name === 'procedencia_office_id') { procedencia.officeId = ''; }"
                                 >
-                                    <label for="procedencia_office_id" class="mb-2 block text-sm font-medium text-slate-700">Oficina de procedencia</label>
+                                    <label for="procedencia_office_id" class="mb-2 block text-sm font-medium text-slate-700">Oficina</label>
                                     <x-autocomplete
                                         name="procedencia_office_id"
                                         endpoint="/api/search/offices"
-                                        placeholder="Buscar oficina..."
+                                        placeholder="Buscar oficina"
                                         :value="old('procedencia_office_id')"
                                         :label="old('procedencia_office_id_label')"
                                         :params="['service_id' => old('procedencia_service_id'), 'institution_id' => old('procedencia_institution_id')]"
@@ -491,15 +497,15 @@
                             </div>
 
                             <div>
-                                <label for="procedencia_hospital" class="mb-2 block text-sm font-medium text-slate-700">Hospital o institucion libre</label>
-                                <input id="procedencia_hospital" name="procedencia_hospital" type="text" value="{{ old('procedencia_hospital') }}" class="app-input" placeholder="Complete este campo si no corresponde usar la estructura institucional">
+                                <label for="procedencia_hospital" class="mb-2 block text-sm font-medium text-slate-700">Institucion libre</label>
+                                <input id="procedencia_hospital" name="procedencia_hospital" type="text" value="{{ old('procedencia_hospital') }}" class="app-input" placeholder="Use si no aplica la estructura institucional">
                                 @error('procedencia_hospital')
                                     <p class="form-error mt-2">{{ $message }}</p>
                                 @enderror
                             </div>
 
                             <div>
-                                <label for="procedencia_libre" class="mb-2 block text-sm font-medium text-slate-700">Procedencia libre</label>
+                                <label for="procedencia_libre" class="mb-2 block text-sm font-medium text-slate-700">Referencia libre</label>
                                 <input id="procedencia_libre" name="procedencia_libre" type="text" value="{{ old('procedencia_libre') }}" class="app-input" placeholder="Servicio, ambulancia, mensajeria u otra referencia">
                                 @error('procedencia_libre')
                                     <p class="form-error mt-2">{{ $message }}</p>
@@ -510,21 +516,21 @@
 
                     <section class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
                         <div class="border-b border-slate-200 pb-4">
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Problema reportado</p>
-                            <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Descripcion del ingreso</h2>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Falla</p>
+                            <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Descripcion</h2>
                         </div>
 
                         <div class="mt-4 space-y-4">
                             <div>
-                                <label for="falla_motivo" class="mb-2 block text-sm font-medium text-slate-700">Falla o motivo del ingreso</label>
+                                <label for="falla_motivo" class="mb-2 block text-sm font-medium text-slate-700">Motivo</label>
                                 <input id="falla_motivo" name="falla_motivo" type="text" value="{{ old('falla_motivo') }}" class="app-input" placeholder="Motivo principal">
                                 @error('falla_motivo')
                                     <p class="form-error mt-2">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div>
-                                <label for="descripcion_falla" class="mb-2 block text-sm font-medium text-slate-700">Descripcion libre</label>
-                                <textarea id="descripcion_falla" name="descripcion_falla" rows="4" class="app-input" placeholder="Detalle tecnico o referencia de la falla">{{ old('descripcion_falla') }}</textarea>
+                                <label for="descripcion_falla" class="mb-2 block text-sm font-medium text-slate-700">Detalle</label>
+                                <textarea id="descripcion_falla" name="descripcion_falla" rows="4" class="app-input" placeholder="Detalle tecnico o referencia">{{ old('descripcion_falla') }}</textarea>
                                 @error('descripcion_falla')
                                     <p class="form-error mt-2">{{ $message }}</p>
                                 @enderror
@@ -537,22 +543,22 @@
                                 @enderror
                             </div>
                             <div>
-                                <label for="estado_fisico_inicial" class="mb-2 block text-sm font-medium text-slate-700">Estado fisico visible</label>
+                                <label for="estado_fisico_inicial" class="mb-2 block text-sm font-medium text-slate-700">Estado fisico</label>
                                 <textarea id="estado_fisico_inicial" name="estado_fisico_inicial" rows="3" class="app-input" placeholder="Golpes, faltantes, carcasa, roturas, etc.">{{ old('estado_fisico_inicial') }}</textarea>
                                 @error('estado_fisico_inicial')
                                     <p class="form-error mt-2">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div>
-                                <label for="observaciones_recepcion" class="mb-2 block text-sm font-medium text-slate-700">Observaciones del comprobante</label>
-                                <textarea id="observaciones_recepcion" name="observaciones_recepcion" rows="3" class="app-input" placeholder="Dato visible que deba figurar en la impresion">{{ old('observaciones_recepcion') }}</textarea>
+                                <label for="observaciones_recepcion" class="mb-2 block text-sm font-medium text-slate-700">Obs. comprobante</label>
+                                <textarea id="observaciones_recepcion" name="observaciones_recepcion" rows="3" class="app-input" placeholder="Dato visible para la impresion">{{ old('observaciones_recepcion') }}</textarea>
                                 @error('observaciones_recepcion')
                                     <p class="form-error mt-2">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div>
-                                <label for="observaciones_internas" class="mb-2 block text-sm font-medium text-slate-700">Observaciones internas</label>
-                                <textarea id="observaciones_internas" name="observaciones_internas" rows="3" class="app-input" placeholder="Notas internas no publicas">{{ old('observaciones_internas') }}</textarea>
+                                <label for="observaciones_internas" class="mb-2 block text-sm font-medium text-slate-700">Obs. internas</label>
+                                <textarea id="observaciones_internas" name="observaciones_internas" rows="3" class="app-input" placeholder="Notas internas">{{ old('observaciones_internas') }}</textarea>
                                 @error('observaciones_internas')
                                     <p class="form-error mt-2">{{ $message }}</p>
                                 @enderror
@@ -563,10 +569,10 @@
             </section>
 
             <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                <a href="{{ route('mesa-tecnica.recepciones-tecnicas.index') }}" class="btn btn-neutral">Cancelar</a>
-                <button type="submit" class="btn btn-primary gap-2">
+                <a href="{{ route('mesa-tecnica.recepciones-tecnicas.index') }}" class="btn btn-slate">Cancelar</a>
+                <button type="submit" class="btn btn-indigo gap-2">
                     <x-icon name="check-circle-2" class="h-4 w-4" />
-                    <span x-text="mode === 'nuevo' && incorporate ? 'Registrar e incorporar equipo' : 'Registrar ingreso tecnico'"></span>
+                    <span x-text="mode === 'nuevo' && incorporate ? 'Registrar + alta' : 'Registrar ingreso'"></span>
                 </button>
             </div>
         </form>
@@ -595,7 +601,7 @@
                     query: '',
                     results: [],
                     loading: false,
-                    message: 'Escriba un identificador visible para comenzar.',
+                    message: 'Escriba un identificador para buscar.',
                     controller: null,
                 },
                 endpoints: config.endpoints,
@@ -619,7 +625,7 @@
                 selectEquipo(item) {
                     this.selectedEquipo = item;
                     this.search.results = [];
-                    this.search.message = 'Equipo listo para continuar.';
+                    this.search.message = 'Equipo listo.';
                 },
 
                 async searchEquipos() {
@@ -627,7 +633,7 @@
 
                     if (query === '') {
                         this.search.results = [];
-                        this.search.message = 'Escriba un identificador visible para comenzar.';
+                        this.search.message = 'Escriba un identificador para buscar.';
                         return;
                     }
 
@@ -667,7 +673,7 @@
 
                         this.search.results = items;
                         this.search.message = items.length > 0
-                            ? 'Seleccione un equipo para continuar.'
+                            ? 'Seleccione un equipo.'
                             : 'No se encontraron equipos con ese criterio.';
                     } catch (error) {
                         if (error?.name === 'AbortError') {

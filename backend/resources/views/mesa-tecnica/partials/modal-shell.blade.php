@@ -3,6 +3,16 @@
     $title = $title ?? '';
     $subtitle = $subtitle ?? null;
     $maxWidth = $maxWidth ?? 'max-w-6xl';
+    $icon = $icon ?? 'clipboard-list';
+    $tone = $tone ?? 'slate';
+
+    $toneClasses = [
+        'emerald' => 'bg-emerald-50 text-emerald-700',
+        'blue' => 'bg-blue-50 text-blue-700',
+        'amber' => 'bg-amber-50 text-amber-700',
+        'indigo' => 'bg-indigo-50 text-indigo-700',
+        'slate' => 'bg-slate-100 text-slate-700',
+    ];
 @endphp
 
 <div
@@ -21,26 +31,34 @@
     >
         <div class="border-b border-slate-200 bg-slate-50/90 px-5 py-4 sm:px-6">
             <div class="flex items-start justify-between gap-4">
-                <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Mesa Tecnica</p>
-                    <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">{{ $title }}</h2>
-                    @if ($subtitle)
-                        <p class="mt-1 text-sm text-slate-600">{{ $subtitle }}</p>
-                    @endif
+                <div class="flex min-w-0 items-start gap-3">
+                    <div class="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl {{ $toneClasses[$tone] ?? $toneClasses['slate'] }}">
+                        <x-icon :name="$icon" class="h-5 w-5" />
+                    </div>
+
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Mesa tecnica</p>
+                        <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">{{ $title }}</h2>
+                        @if ($subtitle)
+                            <p class="mt-1 text-sm text-slate-600">{{ $subtitle }}</p>
+                        @endif
+                    </div>
                 </div>
 
-                <button
-                    type="button"
-                    class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-                    @click="closeModal()"
-                    aria-label="Cerrar ventana"
-                >
-                    <x-icon name="x" class="h-5 w-5" />
-                </button>
+                <div class="flex-shrink-0">
+                    <button
+                        type="button"
+                        class="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                        @click="closeModal()"
+                        aria-label="Cerrar ventana"
+                    >
+                        <x-icon name="x" class="h-5 w-5" />
+                    </button>
+                </div>
             </div>
         </div>
 
-        <div class="max-h-[calc(100vh-8rem)] overflow-y-auto px-5 py-5 sm:px-6 sm:py-6">
+        <div class="max-h-[calc(100vh-8rem)] overflow-y-auto px-5 py-4 sm:px-6 sm:py-5">
             {{ $slot }}
         </div>
     </div>

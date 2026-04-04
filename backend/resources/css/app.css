@@ -281,6 +281,27 @@
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
     }
 
+    .app-sidebar-flyout {
+        @apply absolute left-full top-0 z-30 ml-3 hidden w-64 rounded-2xl border border-slate-200 bg-white/98 p-3 text-slate-800 shadow-2xl lg:block;
+        box-shadow: 0 26px 54px -30px rgba(15, 23, 42, 0.4), 0 14px 24px -22px rgba(15, 23, 42, 0.28);
+    }
+
+    .app-sidebar-flyout-title {
+        @apply px-2 pb-2 text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-500;
+    }
+
+    .app-sidebar-flyout-link {
+        @apply flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-all duration-200 ease-out;
+    }
+
+    .app-sidebar-flyout-link:hover {
+        @apply bg-slate-50 text-slate-950;
+    }
+
+    .app-sidebar-flyout-link-active {
+        @apply bg-slate-900 text-white;
+    }
+
     .nav-link {
         @apply flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-white/90 transition-all duration-200;
     }
@@ -337,6 +358,52 @@
 
     .btn-neutral:hover {
         background-color: var(--app-hover-bg);
+    }
+
+    .btn-slate {
+        @apply border text-slate-800;
+        border-color: rgba(203, 213, 225, 0.95);
+        background-color: rgba(241, 245, 249, 0.96);
+    }
+
+    .btn-slate:hover {
+        background-color: rgba(226, 232, 240, 0.96);
+    }
+
+    .btn-emerald {
+        @apply text-white;
+        background-color: #059669;
+    }
+
+    .btn-emerald:hover {
+        background-color: #047857;
+    }
+
+    .btn-blue {
+        @apply text-white;
+        background-color: #2563eb;
+    }
+
+    .btn-blue:hover {
+        background-color: #1d4ed8;
+    }
+
+    .btn-amber {
+        @apply text-amber-950;
+        background-color: #fbbf24;
+    }
+
+    .btn-amber:hover {
+        background-color: #f59e0b;
+    }
+
+    .btn-indigo {
+        @apply text-white;
+        background-color: #4f46e5;
+    }
+
+    .btn-indigo:hover {
+        background-color: #4338ca;
     }
 
     .app-alert {

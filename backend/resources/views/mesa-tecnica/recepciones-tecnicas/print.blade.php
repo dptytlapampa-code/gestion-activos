@@ -203,7 +203,7 @@
 <body>
     <div class="page">
         <div class="toolbar">
-            <a href="{{ route('mesa-tecnica.recepciones-tecnicas.show', $recepcionTecnica) }}">Volver al detalle</a>
+            <a href="{{ route('mesa-tecnica.recepciones-tecnicas.show', $recepcionTecnica) }}">Volver</a>
             <button type="button" onclick="window.print()">Imprimir</button>
         </div>
 

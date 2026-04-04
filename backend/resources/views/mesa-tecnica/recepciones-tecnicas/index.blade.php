@@ -1,30 +1,47 @@
 @extends('layouts.app')
 
-@section('title', 'Ingreso tecnico')
-@section('header', 'Ingreso tecnico')
+@section('title', 'Ingresos tecnicos')
+@section('header', 'Ingresos tecnicos')
 
 @section('content')
-    <div class="space-y-6">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-                <h3 class="text-xl font-semibold text-slate-900">Recepciones tecnicas</h3>
-                <p class="text-sm text-slate-500">Tickets operativos de ingreso al area tecnica con seguimiento, impresion y vinculacion opcional a Equipos.</p>
+    <div class="space-y-5 lg:space-y-6">
+        <section class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div class="space-y-2">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="app-badge bg-indigo-50 px-3 text-indigo-700">Ingreso tecnico</span>
+                        <span class="app-badge bg-slate-100 px-3 text-slate-700">{{ $recepcionesTecnicas->total() }} ticket(s)</span>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xl font-semibold tracking-tight text-slate-950">Seguimiento tecnico</h3>
+                        <p class="mt-1 text-sm text-slate-600">
+                            Busque, imprima y controle tickets de ingreso sin salir de Mesa Tecnica.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2 sm:flex-row">
+                    <a href="{{ route('mesa-tecnica.index') }}" class="btn btn-slate w-full sm:w-auto">
+                        <x-icon name="monitor" class="h-4 w-4" />
+                        Mesa tecnica
+                    </a>
+                    <a href="{{ route('mesa-tecnica.recepciones-tecnicas.create') }}" class="btn btn-indigo w-full sm:w-auto">
+                        <x-icon name="plus" class="h-4 w-4" />
+                        Nuevo ingreso
+                    </a>
+                </div>
             </div>
+        </section>
 
-            <a href="{{ route('mesa-tecnica.recepciones-tecnicas.create') }}" class="btn btn-primary min-h-[48px] w-full gap-2 sm:w-auto">
-                <x-icon name="plus" class="h-4 w-4" />
-                Nuevo ingreso tecnico
-            </a>
-        </div>
-
-        <div class="app-filter-panel p-4 sm:p-5 lg:p-6">
+        <section class="app-filter-panel p-4 sm:p-5">
             <form method="GET" class="space-y-4">
                 <x-listing.toolbar
                     :search="$listing->search"
                     :per-page="$listing->perPage"
                     search-id="recepciones-search"
                     per-page-id="recepciones-per-page"
-                    search-label="Busqueda rapida"
+                    search-label="Buscar"
                     search-placeholder="Codigo, serie, patrimonial, persona, procedencia o falla"
                     :clear-url="route('mesa-tecnica.recepciones-tecnicas.index')"
                 />
@@ -41,128 +58,137 @@
                     </div>
 
                     <div>
-                        <label for="fecha_desde" class="mb-2 block text-sm font-medium text-slate-700">Fecha desde</label>
+                        <label for="fecha_desde" class="mb-2 block text-sm font-medium text-slate-700">Desde</label>
                         <input id="fecha_desde" type="date" name="fecha_desde" value="{{ $filters['fecha_desde'] ?? '' }}" class="app-input">
                     </div>
 
                     <div>
-                        <label for="fecha_hasta" class="mb-2 block text-sm font-medium text-slate-700">Fecha hasta</label>
+                        <label for="fecha_hasta" class="mb-2 block text-sm font-medium text-slate-700">Hasta</label>
                         <input id="fecha_hasta" type="date" name="fecha_hasta" value="{{ $filters['fecha_hasta'] ?? '' }}" class="app-input">
                     </div>
 
                     <div>
-                        <label for="marca_modelo" class="mb-2 block text-sm font-medium text-slate-700">Marca o modelo</label>
-                        <input id="marca_modelo" type="text" name="marca_modelo" value="{{ $filters['marca_modelo'] ?? '' }}" class="app-input" placeholder="Marca, modelo o ambos">
+                        <label for="marca_modelo" class="mb-2 block text-sm font-medium text-slate-700">Marca / modelo</label>
+                        <input id="marca_modelo" type="text" name="marca_modelo" value="{{ $filters['marca_modelo'] ?? '' }}" class="app-input" placeholder="Marca o modelo">
                     </div>
 
                     <div>
-                        <label for="numero_serie" class="mb-2 block text-sm font-medium text-slate-700">Numero de serie</label>
+                        <label for="numero_serie" class="mb-2 block text-sm font-medium text-slate-700">Serie</label>
                         <input id="numero_serie" type="text" name="numero_serie" value="{{ $filters['numero_serie'] ?? '' }}" class="app-input" placeholder="Serie visible">
                     </div>
 
                     <div>
-                        <label for="bien_patrimonial" class="mb-2 block text-sm font-medium text-slate-700">Bien patrimonial</label>
-                        <input id="bien_patrimonial" type="text" name="bien_patrimonial" value="{{ $filters['bien_patrimonial'] ?? '' }}" class="app-input" placeholder="Patrimonial">
+                        <label for="bien_patrimonial" class="mb-2 block text-sm font-medium text-slate-700">Patrimonial</label>
+                        <input id="bien_patrimonial" type="text" name="bien_patrimonial" value="{{ $filters['bien_patrimonial'] ?? '' }}" class="app-input" placeholder="Codigo patrimonial">
                     </div>
 
                     <div>
-                        <label for="procedencia" class="mb-2 block text-sm font-medium text-slate-700">Hospital o institucion</label>
-                        <input id="procedencia" type="text" name="procedencia" value="{{ $filters['procedencia'] ?? '' }}" class="app-input" placeholder="Procedencia">
+                        <label for="procedencia" class="mb-2 block text-sm font-medium text-slate-700">Procedencia</label>
+                        <input id="procedencia" type="text" name="procedencia" value="{{ $filters['procedencia'] ?? '' }}" class="app-input" placeholder="Hospital o referencia">
                     </div>
 
                     <div>
-                        <label for="persona_entrega" class="mb-2 block text-sm font-medium text-slate-700">Quien entrega</label>
+                        <label for="persona_entrega" class="mb-2 block text-sm font-medium text-slate-700">Entrega</label>
                         <input id="persona_entrega" type="text" name="persona_entrega" value="{{ $filters['persona_entrega'] ?? '' }}" class="app-input" placeholder="Nombre o referencia">
                     </div>
                 </div>
 
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p class="text-xs text-slate-500">
-                        El buscador principal cruza codigo, persona, procedencia, identificadores y descripcion del problema.
+                        El buscador principal cruza ticket, persona, procedencia e identificadores.
                     </p>
 
-                    <button type="submit" class="btn btn-primary min-h-[44px] w-full gap-2 sm:w-auto">
-                        <x-icon name="search" class="h-4 w-4" />
-                        Aplicar filtros
-                    </button>
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                        @if ($hasActiveFilters)
+                            <a href="{{ route('mesa-tecnica.recepciones-tecnicas.index') }}" class="btn btn-slate w-full sm:w-auto">
+                                Limpiar
+                            </a>
+                        @endif
+
+                        <button type="submit" class="btn btn-indigo w-full gap-2 sm:w-auto">
+                            <x-icon name="search" class="h-4 w-4" />
+                            Filtrar
+                        </button>
+                    </div>
                 </div>
             </form>
-        </div>
+        </section>
 
         <div class="space-y-3 md:hidden">
             @forelse ($recepcionesTecnicas as $recepcion)
                 @php($equipo = $recepcion->resolvedEquipo())
-                <article class="app-subcard p-4">
-                    <div class="flex flex-col gap-3">
-                        <div class="flex flex-wrap items-start justify-between gap-3">
+
+                <article class="app-panel rounded-[1.75rem] px-4 py-4">
+                    <div class="space-y-4">
+                        <div class="flex items-start justify-between gap-3">
                             <div class="space-y-2">
-                                <div class="flex flex-wrap gap-2">
-                                    <span class="app-badge bg-slate-900 text-white">{{ $recepcion->codigo }}</span>
-                                    <span class="app-badge {{ $recepcion->estado === \App\Models\RecepcionTecnica::ESTADO_ANULADO ? 'bg-red-100 text-red-700' : ($recepcion->estado === \App\Models\RecepcionTecnica::ESTADO_ENTREGADO ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700') }}">
-                                        {{ $recepcion->statusLabel() }}
-                                    </span>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="app-badge bg-slate-900 px-3 text-white">{{ $recepcion->codigo }}</span>
+                                    @include('mesa-tecnica.partials.recepcion-status-badge', ['status' => $recepcion->estado, 'label' => $recepcion->statusLabel()])
                                 </div>
-                                <p class="text-base font-semibold text-slate-900">{{ $recepcion->equipmentReference() }}</p>
-                                <p class="text-sm text-slate-600">{{ $recepcion->receptorResumen() }}</p>
+
+                                <div>
+                                    <p class="text-base font-semibold text-slate-950">{{ $recepcion->equipmentReference() }}</p>
+                                    <p class="mt-1 text-sm text-slate-600">{{ $recepcion->receptorResumen() }}</p>
+                                </div>
                             </div>
 
                             <p class="text-sm font-medium text-slate-500">{{ $recepcion->fecha_recepcion?->format('d/m/Y') ?: '-' }}</p>
                         </div>
 
-                        <dl class="grid gap-3 sm:grid-cols-2">
-                            <div>
-                                <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Procedencia</dt>
-                                <dd class="mt-1 text-sm text-slate-700">{{ $recepcion->procedenciaResumen() }}</dd>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            <div class="rounded-xl bg-slate-50 px-3 py-3">
+                                <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Procedencia</p>
+                                <p class="mt-1 text-sm text-slate-900">{{ $recepcion->procedenciaResumen() }}</p>
                             </div>
-                            <div>
-                                <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Equipo en sistema</dt>
-                                <dd class="mt-1 text-sm text-slate-700">{{ $equipo?->codigo_interno ?: 'Todavia no vinculado' }}</dd>
+                            <div class="rounded-xl bg-slate-50 px-3 py-3">
+                                <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Equipo sistema</p>
+                                <p class="mt-1 text-sm font-semibold text-slate-900">{{ $equipo?->codigo_interno ?: 'Pendiente' }}</p>
                             </div>
-                        </dl>
+                        </div>
 
                         <div class="flex flex-col gap-2 sm:flex-row">
-                            <a href="{{ route('mesa-tecnica.recepciones-tecnicas.show', $recepcion) }}" class="btn btn-neutral w-full sm:w-auto !px-3 !py-1.5 gap-1.5">
+                            <a href="{{ route('mesa-tecnica.recepciones-tecnicas.show', $recepcion) }}" class="btn btn-slate w-full sm:w-auto">
                                 <x-icon name="eye" class="h-4 w-4" />
-                                Ver detalle
+                                Ver
                             </a>
-                            <a href="{{ route('mesa-tecnica.recepciones-tecnicas.print', $recepcion) }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary w-full sm:w-auto !px-3 !py-1.5 gap-1.5">
-                                <x-icon name="file-text" class="h-4 w-4" />
+                            <a href="{{ route('mesa-tecnica.recepciones-tecnicas.print', $recepcion) }}" target="_blank" rel="noopener noreferrer" class="btn btn-amber w-full sm:w-auto">
+                                <x-icon name="printer" class="h-4 w-4" />
                                 {{ (int) $recepcion->print_count > 0 ? 'Reimprimir' : 'Imprimir' }}
                             </a>
                         </div>
                     </div>
                 </article>
             @empty
-                <div class="rounded-2xl bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-                    No hay ingresos tecnicos registrados con los filtros actuales.
+                <div class="rounded-2xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500">
+                    No hay ingresos tecnicos para esos filtros.
                 </div>
             @endforelse
         </div>
 
         <div class="hidden md:block app-table-panel">
-            <table class="app-table min-w-[74rem] text-sm">
+            <table class="app-table min-w-[68rem] text-sm">
                 <thead>
                     <tr>
-                        <th>Codigo</th>
-                        <th>Fecha</th>
+                        <th>Ticket</th>
+                        <th>Ingreso</th>
                         <th>Estado</th>
                         <th>Equipo</th>
-                        <th>Quien entrega</th>
+                        <th>Entrega</th>
                         <th>Procedencia</th>
-                        <th>Equipo sistema</th>
+                        <th>Inventario</th>
                         <th class="text-right">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($recepcionesTecnicas as $recepcion)
                         @php($equipo = $recepcion->resolvedEquipo())
+
                         <tr>
-                            <td class="app-cell-nowrap font-medium text-slate-900">{{ $recepcion->codigo }}</td>
+                            <td class="app-cell-nowrap font-semibold text-slate-900">{{ $recepcion->codigo }}</td>
                             <td class="app-cell-nowrap">{{ $recepcion->fecha_recepcion?->format('d/m/Y') ?: '-' }}</td>
                             <td class="app-cell-nowrap">
-                                <span class="app-badge {{ $recepcion->estado === \App\Models\RecepcionTecnica::ESTADO_ANULADO ? 'bg-red-100 text-red-700' : ($recepcion->estado === \App\Models\RecepcionTecnica::ESTADO_ENTREGADO ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700') }}">
-                                    {{ $recepcion->statusLabel() }}
-                                </span>
+                                @include('mesa-tecnica.partials.recepcion-status-badge', ['status' => $recepcion->estado, 'label' => $recepcion->statusLabel()])
                             </td>
                             <td class="min-w-[18rem] app-cell-wrap">{{ $recepcion->equipmentReference() }}</td>
                             <td class="min-w-[14rem] app-cell-wrap">{{ $recepcion->receptorResumen() }}</td>
@@ -170,12 +196,12 @@
                             <td class="app-cell-nowrap">{{ $equipo?->codigo_interno ?: 'Pendiente' }}</td>
                             <td class="app-cell-nowrap text-right">
                                 <div class="flex justify-end gap-2">
-                                    <a href="{{ route('mesa-tecnica.recepciones-tecnicas.show', $recepcion) }}" class="btn btn-neutral !px-3 !py-1.5 gap-1.5">
+                                    <a href="{{ route('mesa-tecnica.recepciones-tecnicas.show', $recepcion) }}" class="btn btn-slate !px-3 !py-1.5">
                                         <x-icon name="eye" class="h-4 w-4" />
                                         Ver
                                     </a>
-                                    <a href="{{ route('mesa-tecnica.recepciones-tecnicas.print', $recepcion) }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary !px-3 !py-1.5 gap-1.5">
-                                        <x-icon name="file-text" class="h-4 w-4" />
+                                    <a href="{{ route('mesa-tecnica.recepciones-tecnicas.print', $recepcion) }}" target="_blank" rel="noopener noreferrer" class="btn btn-amber !px-3 !py-1.5">
+                                        <x-icon name="printer" class="h-4 w-4" />
                                         {{ (int) $recepcion->print_count > 0 ? 'Reimprimir' : 'Imprimir' }}
                                     </a>
                                 </div>

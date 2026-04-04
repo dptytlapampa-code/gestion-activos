@@ -19,14 +19,29 @@ const persistSidebarPreference = (value) => {
     }
 };
 
+const readShellConfig = () => {
+    const body = document.body;
+
+    return {
+        context: body?.dataset.shellContext ?? 'default',
+        desktopSidebarLock: body?.dataset.desktopSidebarLock ?? 'free',
+    };
+};
+
 window.Alpine = Alpine;
 
 document.addEventListener('alpine:init', () => {
     Alpine.store('appShell', {
         sidebarCollapsed: readSidebarPreference(),
         mobileSidebarOpen: false,
+        shellContext: 'default',
+        desktopSidebarLock: 'free',
 
         init() {
+            const shellConfig = readShellConfig();
+            this.shellContext = shellConfig.context;
+            this.desktopSidebarLock = shellConfig.desktopSidebarLock;
+
             const syncDesktopState = (event) => {
                 if (event.matches) {
                     this.mobileSidebarOpen = false;
@@ -44,8 +59,12 @@ document.addEventListener('alpine:init', () => {
             return desktopBreakpoint.matches;
         },
 
+        isDesktopSidebarLocked() {
+            return this.isDesktop() && this.desktopSidebarLock === 'collapsed';
+        },
+
         isDesktopSidebarCollapsed() {
-            return this.isDesktop() && this.sidebarCollapsed;
+            return this.isDesktop() && (this.isDesktopSidebarLocked() || this.sidebarCollapsed);
         },
 
         isDesktopSidebarOpen() {
@@ -54,6 +73,10 @@ document.addEventListener('alpine:init', () => {
 
         toggleSidebar() {
             if (this.isDesktop()) {
+                if (this.isDesktopSidebarLocked()) {
+                    return;
+                }
+
                 this.toggleDesktopSidebar();
 
                 return;
@@ -63,7 +86,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         toggleDesktopSidebar() {
-            if (!this.isDesktop()) {
+            if (!this.isDesktop() || this.isDesktopSidebarLocked()) {
                 return;
             }
 
@@ -72,7 +95,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         openDesktopSidebar() {
-            if (!this.isDesktopSidebarCollapsed()) {
+            if (!this.isDesktopSidebarCollapsed() || this.isDesktopSidebarLocked()) {
                 return;
             }
 
@@ -93,16 +116,26 @@ document.addEventListener('alpine:init', () => {
             equipos: Boolean(initialOpenGroups.equipos),
             administracion: Boolean(initialOpenGroups.administracion),
         },
+        flyoutGroup: null,
         pendingOpenTimer: null,
 
         toggle(group) {
-            if (Alpine.store('appShell').isDesktopSidebarCollapsed()) {
-                Alpine.store('appShell').openDesktopSidebar();
+            const appShell = Alpine.store('appShell');
+
+            if (appShell.isDesktopSidebarCollapsed()) {
+                if (appShell.isDesktopSidebarLocked()) {
+                    this.flyoutGroup = this.flyoutGroup === group ? null : group;
+
+                    return;
+                }
+
+                appShell.openDesktopSidebar();
                 this.queueGroupOpen(group);
 
                 return;
             }
 
+            this.flyoutGroup = null;
             this.openGroups[group] = !this.openGroups[group];
         },
 
@@ -121,6 +154,18 @@ document.addEventListener('alpine:init', () => {
             return this.openGroups[group] === true;
         },
 
+        showFlyout(group) {
+            const appShell = Alpine.store('appShell');
+
+            return appShell.isDesktopSidebarCollapsed() && appShell.isDesktopSidebarLocked() && this.flyoutGroup === group;
+        },
+
+        closeFlyout(group = null) {
+            if (group === null || this.flyoutGroup === group) {
+                this.flyoutGroup = null;
+            }
+        },
+
         submenuStyle(group, panelRef) {
             if (Alpine.store('appShell').isDesktopSidebarCollapsed() || !this.isOpen(group)) {
                 return 'max-height: 0px; opacity: 0;';
@@ -136,7 +181,13 @@ document.addEventListener('alpine:init', () => {
         },
 
         submenuTabIndex(group) {
-            return Alpine.store('appShell').isDesktopSidebarCollapsed() || !this.isOpen(group) ? -1 : 0;
+            const appShell = Alpine.store('appShell');
+
+            if (appShell.isDesktopSidebarCollapsed()) {
+                return appShell.isDesktopSidebarLocked() && this.showFlyout(group) ? 0 : -1;
+            }
+
+            return !this.isOpen(group) ? -1 : 0;
         },
     }));
 });
