@@ -118,6 +118,36 @@
         </div>
     </div>
 
+    @if ($recepcionTecnicaAbierta)
+        <div class="rounded-3xl border border-amber-200 bg-amber-50 px-5 py-5">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div class="space-y-2">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">Ingreso tecnico abierto</span>
+                        <span class="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-semibold text-amber-700">{{ $recepcionTecnicaAbierta->codigo }}</span>
+                    </div>
+                    <p class="text-lg font-semibold text-amber-950">Situacion operativa temporal: Mesa Tecnica / Nivel Central / {{ $recepcionTecnicaAbierta->statusLabel() }}</p>
+                    <p class="text-sm text-amber-900">
+                        Ubicacion patrimonial real: {{ collect([$equipo->oficina?->service?->institution?->nombre, $equipo->oficina?->service?->nombre, $equipo->oficina?->nombre])->filter()->implode(' / ') ?: '-' }}
+                    </p>
+                    <p class="text-sm text-amber-900">
+                        Ticket abierto el {{ $recepcionTecnicaAbierta->ingresado_at?->format('d/m/Y H:i') ?: '-' }} por {{ $recepcionTecnicaAbierta->recibidoPor?->name ?: 'sin dato' }}.
+                    </p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ route('mesa-tecnica.recepciones-tecnicas.show', $recepcionTecnicaAbierta) }}" class="btn btn-amber">
+                        <x-icon name="eye" class="h-4 w-4" />
+                        Ver ticket
+                    </a>
+                    <a href="{{ route('mesa-tecnica.recepciones-tecnicas.print', $recepcionTecnicaAbierta) }}" target="_blank" rel="noopener noreferrer" class="btn btn-slate">
+                        <x-icon name="printer" class="h-4 w-4" />
+                        Imprimir
+                    </a>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="card">
         <div class="border-b border-slate-200">
             <nav class="-mb-px flex flex-wrap gap-2 md:gap-6">
@@ -364,20 +394,34 @@
                                     Mantenimiento::TIPO_EXTERNO => 'bg-amber-100 text-amber-800',
                                     Mantenimiento::TIPO_ALTA => 'bg-emerald-100 text-emerald-800',
                                     Mantenimiento::TIPO_BAJA => 'bg-rose-100 text-rose-800',
+                                    Mantenimiento::TIPO_MESA_TECNICA => 'bg-indigo-100 text-indigo-800',
                                     Mantenimiento::TIPO_INTERNO => 'bg-sky-100 text-sky-800',
                                     default => 'bg-slate-100 text-slate-700',
+                                };
+                                $tipoLabel = match ($mantenimiento->tipo) {
+                                    Mantenimiento::TIPO_EXTERNO => 'Externo',
+                                    Mantenimiento::TIPO_ALTA => 'Alta',
+                                    Mantenimiento::TIPO_BAJA => 'Baja',
+                                    Mantenimiento::TIPO_MESA_TECNICA => 'Mesa tecnica',
+                                    Mantenimiento::TIPO_INTERNO => 'Interno',
+                                    default => ucfirst($mantenimiento->tipo),
                                 };
                             @endphp
                             <tr id="mantenimiento-{{ $mantenimiento->id }}">
                                 <td class="px-4 py-4 text-slate-700">{{ $mantenimiento->fecha?->format('d/m/Y') }}</td>
                                 <td class="px-4 py-4 text-slate-700">
                                     <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $tipoClase }}">
-                                        {{ ucfirst($mantenimiento->tipo) }}
+                                        {{ $tipoLabel }}
                                     </span>
                                 </td>
                                 <td class="px-4 py-4">
                                     <p class="font-medium text-slate-900">{{ $mantenimiento->titulo }}</p>
                                     <p class="mt-1 text-slate-700">{{ $mantenimiento->detalle }}</p>
+                                    @if ($mantenimiento->recepcionTecnica)
+                                        <p class="mt-2 text-xs font-semibold text-indigo-700">
+                                            Vinculado al ticket {{ $mantenimiento->recepcionTecnica->codigo }}
+                                        </p>
+                                    @endif
                                     <p class="mt-2 text-xs text-slate-500">
                                         Proveedor: {{ $mantenimiento->proveedor ?: $mantenimiento->mantenimientoExterno?->proveedor ?: 'No informado' }}
                                     </p>
@@ -421,6 +465,9 @@
                                     @elseif ($mantenimiento->mantenimientoExterno)
                                         <p>Relacionado con externo iniciado el {{ ($mantenimiento->mantenimientoExterno->fecha_ingreso_st ?? $mantenimiento->mantenimientoExterno->fecha)?->format('d/m/Y') }}</p>
                                         <p class="mt-1">Egreso registrado: {{ $mantenimiento->fecha_egreso_st?->format('d/m/Y') ?: '-' }}</p>
+                                    @elseif ($mantenimiento->recepcionTecnica)
+                                        <p>Ingreso tecnico: {{ $mantenimiento->fecha_ingreso_st?->format('d/m/Y') ?: '-' }}</p>
+                                        <p class="mt-1">Cierre tecnico: {{ $mantenimiento->fecha_egreso_st?->format('d/m/Y') ?: '-' }}</p>
                                     @else
                                         <p>Nota tecnica sin ciclo externo asociado.</p>
                                     @endif

@@ -36,8 +36,13 @@ class UpdateRecepcionTecnicaStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'estado' => ['required', Rule::in(RecepcionTecnica::ESTADOS)],
+            'estado' => ['required', Rule::in(RecepcionTecnica::ESTADOS_DE_SEGUIMIENTO)],
             'motivo_anulacion' => ['nullable', 'string'],
+            'diagnostico' => ['nullable', 'string'],
+            'accion_realizada' => ['nullable', 'string'],
+            'solucion_aplicada' => ['nullable', 'string'],
+            'informe_tecnico' => ['nullable', 'string'],
+            'observaciones_internas' => ['nullable', 'string'],
         ];
     }
 
@@ -53,8 +58,8 @@ class UpdateRecepcionTecnicaStatusRequest extends FormRequest
     {
         return [
             function ($validator): void {
-                if ($this->input('estado') === RecepcionTecnica::ESTADO_ANULADO && ! $this->filled('motivo_anulacion')) {
-                    $validator->errors()->add('motivo_anulacion', 'Debe indicar el motivo de anulacion.');
+                if ($this->input('estado') === RecepcionTecnica::ESTADO_CANCELADO && ! $this->filled('motivo_anulacion')) {
+                    $validator->errors()->add('motivo_anulacion', 'Debe indicar el motivo de cancelacion.');
                 }
             },
         ];

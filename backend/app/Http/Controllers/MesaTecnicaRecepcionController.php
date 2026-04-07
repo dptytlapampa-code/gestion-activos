@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\CloseRecepcionTecnicaRequest;
 use App\Http\Requests\StoreRecepcionTecnicaIncorporacionRequest;
 use App\Http\Requests\StoreRecepcionTecnicaRequest;
 use App\Http\Requests\UpdateRecepcionTecnicaStatusRequest;
@@ -45,7 +46,7 @@ class MesaTecnicaRecepcionController extends Controller
         $this->authorize('create', RecepcionTecnica::class);
 
         return view('mesa-tecnica.recepciones-tecnicas.create', [
-            'defaultReceptionDate' => $this->recepcionTecnicaService->defaultReceptionDate(),
+            'defaultReceptionTimestamp' => $this->recepcionTecnicaService->defaultReceptionTimestamp(),
             'statusOptions' => $this->recepcionTecnicaService->statusOptions(),
             'restoredSelectedEquipo' => app(MesaTecnicaService::class)->selectedEquipo(request()->user(), old('equipo_id')),
             'equipmentStates' => array_values(array_filter(
@@ -66,8 +67,8 @@ class MesaTecnicaRecepcionController extends Controller
         }
 
         $status = $recepcionTecnica->equipo_creado_id !== null
-            ? 'Recepcion tecnica registrada correctamente. El equipo fue incorporado al sistema y quedo vinculado al ticket de ingreso.'
-            : 'Recepcion tecnica registrada correctamente.';
+            ? 'Ingreso tecnico registrado correctamente. El equipo fue incorporado al sistema y quedo vinculado al ticket de ingreso.'
+            : 'Ingreso tecnico registrado correctamente.';
 
         return redirect()
             ->route('mesa-tecnica.recepciones-tecnicas.show', $recepcionTecnica)
@@ -174,6 +175,29 @@ class MesaTecnicaRecepcionController extends Controller
 
         return redirect()
             ->route('mesa-tecnica.recepciones-tecnicas.show', $recepcionTecnica)
-            ->with('status', 'Estado del ingreso tecnico actualizado correctamente.');
+            ->with('status', 'Seguimiento del ingreso tecnico actualizado correctamente.');
+    }
+
+    public function close(
+        CloseRecepcionTecnicaRequest $request,
+        RecepcionTecnica $recepcionTecnica
+    ): RedirectResponse {
+        $this->authorize('close', $recepcionTecnica);
+
+        try {
+            $recepcionTecnica = $this->recepcionTecnicaService->close(
+                $request->user(),
+                $recepcionTecnica,
+                $request->validated()
+            );
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            return $this->friendlyErrorRedirect($exception, false);
+        }
+
+        return redirect()
+            ->route('mesa-tecnica.recepciones-tecnicas.show', $recepcionTecnica)
+            ->with('status', 'Ingreso tecnico cerrado correctamente y agregado al historial de mantenimiento.');
     }
 }

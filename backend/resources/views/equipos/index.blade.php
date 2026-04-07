@@ -111,7 +111,14 @@
                             'baja' => 'status-baja',
                             default => 'bg-slate-100 text-slate-700'
                         })
-                        <span class="status-badge {{ $estadoClase }}">{{ strtoupper(str_replace('_', ' ', $equipo->estado)) }}</span>
+                        <div class="space-y-2">
+                            <span class="status-badge {{ $estadoClase }}">{{ strtoupper(str_replace('_', ' ', $equipo->estado)) }}</span>
+                            @if ($equipo->recepcionTecnicaAbierta)
+                                <a href="{{ route('mesa-tecnica.recepciones-tecnicas.show', $equipo->recepcionTecnicaAbierta) }}" class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100">
+                                    Ingreso tecnico {{ $equipo->recepcionTecnicaAbierta->codigo }}
+                                </a>
+                            @endif
+                        </div>
                     </td>
                     <td>
                         <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">{{ $equipo->codigo_interno }}</span>

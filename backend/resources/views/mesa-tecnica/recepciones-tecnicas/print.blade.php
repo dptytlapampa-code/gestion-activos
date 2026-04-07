@@ -227,8 +227,8 @@
                                 <h2 class="section-title">Datos del ingreso</h2>
                                 <div class="grid">
                                     <div class="field">
-                                        <div class="field-label">Fecha</div>
-                                        <div class="field-value">{{ $recepcionTecnica->fecha_recepcion?->format('d/m/Y') ?: '-' }}</div>
+                                        <div class="field-label">Fecha y hora</div>
+                                        <div class="field-value">{{ $recepcionTecnica->ingresado_at?->format('d/m/Y H:i') ?: '-' }}</div>
                                     </div>
                                     <div class="field">
                                         <div class="field-label">Estado</div>

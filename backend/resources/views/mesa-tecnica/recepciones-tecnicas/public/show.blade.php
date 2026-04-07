@@ -36,8 +36,8 @@
 
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <div class="app-subcard p-4">
-                    <p class="text-xs uppercase tracking-wide text-slate-500">Fecha</p>
-                    <p class="mt-1 text-sm font-semibold text-slate-900">{{ $recepcionTecnica->fecha_recepcion?->format('d/m/Y') ?: '-' }}</p>
+                    <p class="text-xs uppercase tracking-wide text-slate-500">Fecha y hora</p>
+                    <p class="mt-1 text-sm font-semibold text-slate-900">{{ $recepcionTecnica->ingresado_at?->format('d/m/Y H:i') ?: '-' }}</p>
                 </div>
                 <div class="app-subcard p-4">
                     <p class="text-xs uppercase tracking-wide text-slate-500">Equipo</p>

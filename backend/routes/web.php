@@ -71,8 +71,6 @@ Route::middleware('auth')->group(function (): void {
 
     Route::prefix('mesa-tecnica')->name('mesa-tecnica.')->middleware('can:mesa_tecnica_access')->group(function (): void {
         Route::get('/', [MesaTecnicaController::class, 'index'])->name('index');
-        Route::post('recepciones', [MesaTecnicaController::class, 'storeRecepcion'])->name('recepciones.store');
-        Route::post('entregas', [MesaTecnicaController::class, 'storeEntrega'])->name('entregas.store');
         Route::get('equipos/{equipo}/etiqueta', [MesaTecnicaController::class, 'label'])->name('label');
         Route::get('recepciones-tecnicas', [MesaTecnicaRecepcionController::class, 'index'])->name('recepciones-tecnicas.index');
         Route::get('recepciones-tecnicas/nuevo', [MesaTecnicaRecepcionController::class, 'create'])->name('recepciones-tecnicas.create');
@@ -82,6 +80,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('recepciones-tecnicas/{recepcionTecnica}/incorporar', [MesaTecnicaRecepcionController::class, 'createIncorporation'])->name('recepciones-tecnicas.incorporate.create');
         Route::post('recepciones-tecnicas/{recepcionTecnica}/incorporar', [MesaTecnicaRecepcionController::class, 'storeIncorporation'])->name('recepciones-tecnicas.incorporate.store');
         Route::patch('recepciones-tecnicas/{recepcionTecnica}/estado', [MesaTecnicaRecepcionController::class, 'updateStatus'])->name('recepciones-tecnicas.status.update');
+        Route::post('recepciones-tecnicas/{recepcionTecnica}/cerrar', [MesaTecnicaRecepcionController::class, 'close'])->name('recepciones-tecnicas.close');
     });
 
     Route::post('equipos/{equipo}/documents', [DocumentController::class, 'storeForEquipo'])->name('equipos.documents.store');

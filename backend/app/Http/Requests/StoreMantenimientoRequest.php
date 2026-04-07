@@ -38,7 +38,7 @@ class StoreMantenimientoRequest extends FormRequest
 
         return [
             'fecha' => ['required', 'date'],
-            'tipo' => ['required', Rule::in(Mantenimiento::TIPOS)],
+            'tipo' => ['required', Rule::in(Mantenimiento::TIPOS_MANUALES)],
             'titulo' => ['required', 'string', 'max:150'],
             'detalle' => ['required', 'string'],
             'proveedor' => ['nullable', 'string', 'max:150'],

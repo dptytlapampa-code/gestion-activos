@@ -7,6 +7,7 @@ use App\Services\RecepcionTecnicaCodeService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -18,28 +19,72 @@ class RecepcionTecnica extends Model
     public const CODIGO_PAD_LENGTH = 9;
 
     public const ESTADO_RECIBIDO = 'recibido';
-    public const ESTADO_EN_REVISION = 'en_revision';
-    public const ESTADO_PENDIENTE_REPUESTO = 'pendiente_repuesto';
-    public const ESTADO_REPARADO = 'reparado';
+    public const ESTADO_EN_DIAGNOSTICO = 'en_diagnostico';
+    public const ESTADO_EN_REPARACION = 'en_reparacion';
+    public const ESTADO_EN_ESPERA_REPUESTO = 'en_espera_repuesto';
+    public const ESTADO_LISTO_PARA_ENTREGAR = 'listo_para_entregar';
     public const ESTADO_ENTREGADO = 'entregado';
-    public const ESTADO_ANULADO = 'anulado';
+    public const ESTADO_NO_REPARABLE = 'no_reparable';
+    public const ESTADO_CANCELADO = 'cancelado';
 
     public const ESTADOS = [
         self::ESTADO_RECIBIDO,
-        self::ESTADO_EN_REVISION,
-        self::ESTADO_PENDIENTE_REPUESTO,
-        self::ESTADO_REPARADO,
+        self::ESTADO_EN_DIAGNOSTICO,
+        self::ESTADO_EN_REPARACION,
+        self::ESTADO_EN_ESPERA_REPUESTO,
+        self::ESTADO_LISTO_PARA_ENTREGAR,
         self::ESTADO_ENTREGADO,
-        self::ESTADO_ANULADO,
+        self::ESTADO_NO_REPARABLE,
+        self::ESTADO_CANCELADO,
+    ];
+
+    public const ESTADOS_ABIERTOS = [
+        self::ESTADO_RECIBIDO,
+        self::ESTADO_EN_DIAGNOSTICO,
+        self::ESTADO_EN_REPARACION,
+        self::ESTADO_EN_ESPERA_REPUESTO,
+        self::ESTADO_LISTO_PARA_ENTREGAR,
+    ];
+
+    public const ESTADOS_DE_CIERRE = [
+        self::ESTADO_ENTREGADO,
+        self::ESTADO_NO_REPARABLE,
+    ];
+
+    public const ESTADOS_DE_SEGUIMIENTO = [
+        self::ESTADO_RECIBIDO,
+        self::ESTADO_EN_DIAGNOSTICO,
+        self::ESTADO_EN_REPARACION,
+        self::ESTADO_EN_ESPERA_REPUESTO,
+        self::ESTADO_LISTO_PARA_ENTREGAR,
+        self::ESTADO_CANCELADO,
     ];
 
     public const LABELS = [
         self::ESTADO_RECIBIDO => 'Recibido',
-        self::ESTADO_EN_REVISION => 'En revision',
-        self::ESTADO_PENDIENTE_REPUESTO => 'Pendiente de repuesto',
-        self::ESTADO_REPARADO => 'Reparado',
+        self::ESTADO_EN_DIAGNOSTICO => 'En diagnostico',
+        self::ESTADO_EN_REPARACION => 'En reparacion',
+        self::ESTADO_EN_ESPERA_REPUESTO => 'En espera de repuesto',
+        self::ESTADO_LISTO_PARA_ENTREGAR => 'Listo para entregar',
         self::ESTADO_ENTREGADO => 'Entregado',
-        self::ESTADO_ANULADO => 'Anulado',
+        self::ESTADO_NO_REPARABLE => 'No reparable',
+        self::ESTADO_CANCELADO => 'Cancelado',
+    ];
+
+    public const CONDICION_REPARADO = 'reparado';
+    public const CONDICION_DEVUELTO_SIN_REPARAR = 'devuelto_sin_reparar';
+    public const CONDICION_NO_REPARABLE = 'no_reparable';
+
+    public const CONDICIONES_EGRESO = [
+        self::CONDICION_REPARADO,
+        self::CONDICION_DEVUELTO_SIN_REPARAR,
+        self::CONDICION_NO_REPARABLE,
+    ];
+
+    public const CONDICION_LABELS = [
+        self::CONDICION_REPARADO => 'Reparado',
+        self::CONDICION_DEVUELTO_SIN_REPARAR => 'Devuelto sin reparar',
+        self::CONDICION_NO_REPARABLE => 'No reparable',
     ];
 
     protected $fillable = [
@@ -47,6 +92,8 @@ class RecepcionTecnica extends Model
         'codigo',
         'institution_id',
         'created_by',
+        'recibido_por',
+        'cerrado_por',
         'anulada_por',
         'equipo_id',
         'equipo_creado_id',
@@ -54,6 +101,7 @@ class RecepcionTecnica extends Model
         'procedencia_service_id',
         'procedencia_office_id',
         'fecha_recepcion',
+        'ingresado_at',
         'estado',
         'sector_receptor',
         'referencia_equipo',
@@ -77,6 +125,15 @@ class RecepcionTecnica extends Model
         'estado_fisico_inicial',
         'observaciones_recepcion',
         'observaciones_internas',
+        'diagnostico',
+        'accion_realizada',
+        'solucion_aplicada',
+        'informe_tecnico',
+        'observaciones_cierre',
+        'persona_retiro_nombre',
+        'persona_retiro_documento',
+        'persona_retiro_cargo',
+        'condicion_egreso',
         'motivo_anulacion',
         'print_count',
         'printed_at',
@@ -107,6 +164,7 @@ class RecepcionTecnica extends Model
     {
         return [
             'fecha_recepcion' => 'date',
+            'ingresado_at' => 'datetime',
             'printed_at' => 'datetime',
             'last_printed_at' => 'datetime',
             'status_changed_at' => 'datetime',
@@ -123,6 +181,16 @@ class RecepcionTecnica extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function recibidoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'recibido_por');
+    }
+
+    public function cerradoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cerrado_por');
     }
 
     public function anuladaPor(): BelongsTo
@@ -155,6 +223,11 @@ class RecepcionTecnica extends Model
         return $this->belongsTo(Office::class, 'procedencia_office_id');
     }
 
+    public function maintenanceRecord(): HasOne
+    {
+        return $this->hasOne(Mantenimiento::class, 'recepcion_tecnica_id');
+    }
+
     public function resolvedEquipo(): ?Equipo
     {
         return $this->equipoCreado ?? $this->equipo;
@@ -163,6 +236,11 @@ class RecepcionTecnica extends Model
     public function statusLabel(): string
     {
         return self::LABELS[$this->estado] ?? ucfirst(str_replace('_', ' ', (string) $this->estado));
+    }
+
+    public function egressConditionLabel(): string
+    {
+        return self::CONDICION_LABELS[$this->condicion_egreso] ?? ucfirst(str_replace('_', ' ', (string) $this->condicion_egreso));
     }
 
     public function equipmentReference(): string
@@ -210,14 +288,44 @@ class RecepcionTecnica extends Model
         return $parts !== '' ? $parts : 'Sin persona informada';
     }
 
+    public function retiroResumen(): string
+    {
+        $parts = collect([
+            $this->persona_retiro_nombre,
+            $this->persona_retiro_cargo ? '('.$this->persona_retiro_cargo.')' : null,
+        ])->filter()->implode(' ');
+
+        return $parts !== '' ? $parts : 'Sin retiro registrado';
+    }
+
+    public function isOpen(): bool
+    {
+        return in_array($this->estado, self::ESTADOS_ABIERTOS, true);
+    }
+
+    public function isClosed(): bool
+    {
+        return in_array($this->estado, self::ESTADOS_DE_CIERRE, true);
+    }
+
+    public function isCancelled(): bool
+    {
+        return $this->estado === self::ESTADO_CANCELADO;
+    }
+
     public function canBeAnnulled(): bool
     {
-        return $this->estado !== self::ESTADO_ENTREGADO && $this->estado !== self::ESTADO_ANULADO;
+        return ! $this->isClosed() && ! $this->isCancelled();
+    }
+
+    public function canBeClosed(): bool
+    {
+        return $this->isOpen() && ! $this->isCancelled();
     }
 
     public function canBeIncorporated(): bool
     {
-        return $this->resolvedEquipo() === null && $this->estado !== self::ESTADO_ANULADO;
+        return $this->resolvedEquipo() === null && ! $this->isCancelled();
     }
 
     public function scopeVisibleToUser(Builder $query, ?User $user): Builder
@@ -233,6 +341,11 @@ class RecepcionTecnica extends Model
         }
 
         return $query->whereIn('institution_id', $scopeIds);
+    }
+
+    public function scopeOpen(Builder $query): Builder
+    {
+        return $query->whereIn('estado', self::ESTADOS_ABIERTOS);
     }
 
     /**
@@ -301,6 +414,8 @@ class RecepcionTecnica extends Model
                 ->orWhere('persona_documento', 'ilike', $like)
                 ->orWhere('persona_area', 'ilike', $like)
                 ->orWhere('falla_motivo', 'ilike', $like)
+                ->orWhere('diagnostico', 'ilike', $like)
+                ->orWhere('persona_retiro_nombre', 'ilike', $like)
                 ->orWhereHas('creator', fn (Builder $creatorQuery) => $creatorQuery->where('name', 'ilike', $like))
                 ->orWhereHas('procedenciaInstitution', fn (Builder $institutionQuery) => $institutionQuery->where('nombre', 'ilike', $like));
         });

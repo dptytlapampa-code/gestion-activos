@@ -4,11 +4,14 @@ namespace App\Services;
 
 use App\Models\AuditLog;
 use App\Models\Equipo;
+use App\Models\Mantenimiento;
 use App\Models\RecepcionTecnica;
 use App\Models\User;
 use App\Services\Auditing\AuditLogService;
 use App\Support\Listings\ListingState;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -28,6 +31,7 @@ class RecepcionTecnicaService
         private readonly ActiveInstitutionContext $activeInstitutionContext,
         private readonly AuditLogService $auditLogService,
         private readonly EquipoRegistrationService $equipoRegistrationService,
+        private readonly MantenimientoService $mantenimientoService,
     ) {}
 
     public function listingState(Request $request): ListingState
@@ -60,15 +64,18 @@ class RecepcionTecnicaService
         return RecepcionTecnica::query()
             ->with([
                 'creator:id,name',
+                'recibidoPor:id,name',
+                'cerradoPor:id,name',
                 'institution:id,nombre',
                 'procedenciaInstitution:id,nombre',
                 'equipo:id,tipo,marca,modelo,numero_serie,bien_patrimonial,codigo_interno',
                 'equipoCreado:id,tipo,marca,modelo,numero_serie,bien_patrimonial,codigo_interno',
+                'maintenanceRecord:id,recepcion_tecnica_id,equipo_id,tipo,titulo,fecha',
             ])
             ->visibleToUser($user)
             ->searchIndex($search)
             ->applyIndexFilters($filters)
-            ->latest('fecha_recepcion')
+            ->orderByDesc('ingresado_at')
             ->latest('id');
     }
 
@@ -85,6 +92,47 @@ class RecepcionTecnicaService
     }
 
     /**
+     * @return array<string, string>
+     */
+    public function statusOptions(): array
+    {
+        return RecepcionTecnica::LABELS;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function trackingStatusOptions(): array
+    {
+        return collect(RecepcionTecnica::ESTADOS_DE_SEGUIMIENTO)
+            ->mapWithKeys(fn (string $status): array => [$status => RecepcionTecnica::LABELS[$status]])
+            ->all();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function closureStatusOptions(): array
+    {
+        return collect(RecepcionTecnica::ESTADOS_DE_CIERRE)
+            ->mapWithKeys(fn (string $status): array => [$status => RecepcionTecnica::LABELS[$status]])
+            ->all();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function egressConditionOptions(): array
+    {
+        return RecepcionTecnica::CONDICION_LABELS;
+    }
+
+    public function defaultReceptionTimestamp(): string
+    {
+        return now()->format('Y-m-d\TH:i');
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      */
     public function create(User $user, array $data): RecepcionTecnica
@@ -92,26 +140,104 @@ class RecepcionTecnicaService
         $institutionId = $this->resolveActiveInstitutionId($user);
         $mode = (string) ($data['modo_equipo'] ?? self::MODO_EQUIPO_NUEVO);
 
-        /** @var RecepcionTecnica $recepcionTecnica */
-        $recepcionTecnica = DB::transaction(function () use ($user, $data, $institutionId, $mode): RecepcionTecnica {
-            $recepcionTecnica = new RecepcionTecnica($this->basePayload($data, $institutionId, $user));
-            $recepcionTecnica->save();
-
-            if ($mode === self::MODO_EQUIPO_EXISTENTE) {
-                $equipo = $this->resolveEquipoWithinScope($user, (int) $data['equipo_id']);
-                $this->syncSnapshotWithEquipo($recepcionTecnica, $equipo, false);
-                $recepcionTecnica->equipo_id = $equipo->id;
+        try {
+            /** @var RecepcionTecnica $recepcionTecnica */
+            $recepcionTecnica = DB::transaction(function () use ($user, $data, $institutionId, $mode): RecepcionTecnica {
+                $recepcionTecnica = new RecepcionTecnica($this->basePayload($data, $institutionId, $user));
                 $recepcionTecnica->save();
+
+                if ($mode === self::MODO_EQUIPO_EXISTENTE) {
+                    $equipo = $this->resolveOperableEquipoWithinScope($user, (int) $data['equipo_id']);
+                    $this->assertNoOpenReceptionForEquipment($equipo->id);
+                    $this->syncSnapshotWithEquipo($recepcionTecnica, $equipo, false);
+                    $recepcionTecnica->equipo_id = $equipo->id;
+                    $recepcionTecnica->save();
+                }
+
+                if ($mode === self::MODO_EQUIPO_NUEVO && (bool) ($data['incorporar_equipo'] ?? false)) {
+                    $equipo = $this->equipoRegistrationService->create(
+                        $user,
+                        $this->equipmentPayload($data),
+                        [
+                            'movement_observation' => sprintf('Ingreso tecnico %s incorporado al sistema.', $recepcionTecnica->codigo),
+                            'audit_summary' => sprintf(
+                                'Se dio de alta el equipo asociado al ingreso tecnico %s.',
+                                $recepcionTecnica->codigo
+                            ),
+                        ]
+                    );
+
+                    $this->syncSnapshotWithEquipo($recepcionTecnica, $equipo, true);
+                    $recepcionTecnica->equipo_creado_id = $equipo->id;
+                    $recepcionTecnica->save();
+                }
+
+                $this->recordCreated($recepcionTecnica, $user);
+
+                if ($recepcionTecnica->equipo_id !== null) {
+                    $this->recordLinkedExistingEquipo($recepcionTecnica, $user, $recepcionTecnica->equipo);
+                }
+
+                if ($recepcionTecnica->equipo_creado_id !== null) {
+                    $this->recordCreatedEquipo($recepcionTecnica, $user, $recepcionTecnica->equipoCreado);
+                }
+
+                return $recepcionTecnica;
+            }, 3);
+        } catch (QueryException $exception) {
+            if ($this->isOpenReceptionUniqueViolation($exception)) {
+                throw ValidationException::withMessages([
+                    'equipo_id' => 'Este equipo ya tiene un ingreso tecnico abierto.',
+                ]);
             }
 
-            if ($mode === self::MODO_EQUIPO_NUEVO && (bool) ($data['incorporar_equipo'] ?? false)) {
+            throw $exception;
+        }
+
+        return $this->loadFull($recepcionTecnica);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function incorporate(User $user, RecepcionTecnica $recepcionTecnica, array $data): RecepcionTecnica
+    {
+        if (! $recepcionTecnica->canBeIncorporated()) {
+            throw ValidationException::withMessages([
+                'equipo_id' => 'Este ingreso tecnico ya tiene un equipo vinculado o incorporado.',
+            ]);
+        }
+
+        $mode = (string) ($data['modo_incorporacion'] ?? self::MODO_INCORPORACION_NUEVO);
+
+        try {
+            DB::transaction(function () use ($user, $recepcionTecnica, $data, $mode): void {
+                $recepcionTecnica->refresh();
+
+                if (! $recepcionTecnica->canBeIncorporated()) {
+                    throw ValidationException::withMessages([
+                        'equipo_id' => 'Este ingreso tecnico ya tiene un equipo vinculado o incorporado.',
+                    ]);
+                }
+
+                if ($mode === self::MODO_INCORPORACION_EXISTENTE) {
+                    $equipo = $this->resolveOperableEquipoWithinScope($user, (int) $data['equipo_id']);
+                    $this->assertNoOpenReceptionForEquipment($equipo->id, $recepcionTecnica->id);
+                    $this->syncSnapshotWithEquipo($recepcionTecnica, $equipo, false);
+                    $recepcionTecnica->equipo_id = $equipo->id;
+                    $recepcionTecnica->save();
+                    $this->recordLinkedExistingEquipo($recepcionTecnica, $user, $equipo);
+
+                    return;
+                }
+
                 $equipo = $this->equipoRegistrationService->create(
                     $user,
                     $this->equipmentPayload($data),
                     [
-                        'movement_observation' => sprintf('Ingreso tecnico %s incorporado al sistema.', $recepcionTecnica->codigo),
+                        'movement_observation' => sprintf('Ingreso tecnico %s incorporado posteriormente al sistema.', $recepcionTecnica->codigo),
                         'audit_summary' => sprintf(
-                            'Se dio de alta el equipo asociado al ingreso tecnico %s.',
+                            'Se dio de alta el equipo desde la incorporacion posterior del ingreso tecnico %s.',
                             $recepcionTecnica->codigo
                         ),
                     ]
@@ -120,22 +246,19 @@ class RecepcionTecnicaService
                 $this->syncSnapshotWithEquipo($recepcionTecnica, $equipo, true);
                 $recepcionTecnica->equipo_creado_id = $equipo->id;
                 $recepcionTecnica->save();
+                $this->recordCreatedEquipo($recepcionTecnica, $user, $equipo);
+            }, 3);
+        } catch (QueryException $exception) {
+            if ($this->isOpenReceptionUniqueViolation($exception)) {
+                throw ValidationException::withMessages([
+                    'equipo_id' => 'Este equipo ya tiene un ingreso tecnico abierto.',
+                ]);
             }
 
-            $this->recordCreated($recepcionTecnica, $user);
+            throw $exception;
+        }
 
-            if ($recepcionTecnica->equipo_id !== null) {
-                $this->recordLinkedExistingEquipo($recepcionTecnica, $user, $recepcionTecnica->equipo);
-            }
-
-            if ($recepcionTecnica->equipo_creado_id !== null) {
-                $this->recordCreatedEquipo($recepcionTecnica, $user, $recepcionTecnica->equipoCreado);
-            }
-
-            return $recepcionTecnica;
-        }, 3);
-
-        return $this->loadFull($recepcionTecnica);
+        return $this->loadFull($recepcionTecnica->fresh());
     }
 
     /**
@@ -145,26 +268,33 @@ class RecepcionTecnicaService
     {
         $targetStatus = (string) $data['estado'];
 
-        if ($recepcionTecnica->estado === $targetStatus) {
+        $before = $this->trackingSnapshot($recepcionTecnica);
+
+        if (
+            $recepcionTecnica->estado === $targetStatus
+            && $this->nullableString($data['observaciones_internas'] ?? null) === $recepcionTecnica->observaciones_internas
+            && $this->nullableString($data['diagnostico'] ?? null) === $recepcionTecnica->diagnostico
+            && $this->nullableString($data['accion_realizada'] ?? null) === $recepcionTecnica->accion_realizada
+            && $this->nullableString($data['solucion_aplicada'] ?? null) === $recepcionTecnica->solucion_aplicada
+            && $this->nullableString($data['informe_tecnico'] ?? null) === $recepcionTecnica->informe_tecnico
+            && $this->nullableString($data['motivo_anulacion'] ?? null) === $recepcionTecnica->motivo_anulacion
+        ) {
             throw ValidationException::withMessages([
-                'estado' => 'La recepcion tecnica ya se encuentra en el estado seleccionado.',
+                'estado' => 'No hay cambios para guardar en el seguimiento del ingreso tecnico.',
             ]);
         }
 
-        $this->assertStatusTransitionAllowed($recepcionTecnica, $targetStatus);
-
-        $before = [
-            'estado' => $recepcionTecnica->statusLabel(),
-        ];
+        $this->assertTrackingTransitionAllowed($recepcionTecnica, $targetStatus);
 
         $recepcionTecnica->estado = $targetStatus;
         $recepcionTecnica->status_changed_at = now();
+        $recepcionTecnica->observaciones_internas = $this->nullableString($data['observaciones_internas'] ?? $recepcionTecnica->observaciones_internas);
+        $recepcionTecnica->diagnostico = $this->nullableString($data['diagnostico'] ?? $recepcionTecnica->diagnostico);
+        $recepcionTecnica->accion_realizada = $this->nullableString($data['accion_realizada'] ?? $recepcionTecnica->accion_realizada);
+        $recepcionTecnica->solucion_aplicada = $this->nullableString($data['solucion_aplicada'] ?? $recepcionTecnica->solucion_aplicada);
+        $recepcionTecnica->informe_tecnico = $this->nullableString($data['informe_tecnico'] ?? $recepcionTecnica->informe_tecnico);
 
-        if ($targetStatus === RecepcionTecnica::ESTADO_ENTREGADO) {
-            $recepcionTecnica->entregada_at = now();
-        }
-
-        if ($targetStatus === RecepcionTecnica::ESTADO_ANULADO) {
+        if ($targetStatus === RecepcionTecnica::ESTADO_CANCELADO) {
             $recepcionTecnica->anulada_at = now();
             $recepcionTecnica->anulada_por = $user->id;
             $recepcionTecnica->motivo_anulacion = $this->nullableString($data['motivo_anulacion'] ?? null);
@@ -172,23 +302,21 @@ class RecepcionTecnicaService
 
         $recepcionTecnica->save();
 
-        $after = [
-            'estado' => $recepcionTecnica->statusLabel(),
-        ];
+        $after = $this->trackingSnapshot($recepcionTecnica);
 
         $this->auditLogService->record([
             'user' => $user,
             'institution_id' => $recepcionTecnica->institution_id,
             'module' => 'mesa_tecnica',
-            'action' => $targetStatus === RecepcionTecnica::ESTADO_ANULADO
-                ? 'recepcion_tecnica_anulada'
-                : 'recepcion_tecnica_estado_actualizado',
+            'action' => $targetStatus === RecepcionTecnica::ESTADO_CANCELADO
+                ? 'ingreso_tecnico_cancelado'
+                : 'ingreso_tecnico_seguimiento_actualizado',
             'entity_type' => 'recepcion_tecnica',
             'entity_id' => $recepcionTecnica->id,
-            'summary' => $targetStatus === RecepcionTecnica::ESTADO_ANULADO
-                ? sprintf('Se anulo la recepcion tecnica %s.', $recepcionTecnica->codigo)
+            'summary' => $targetStatus === RecepcionTecnica::ESTADO_CANCELADO
+                ? sprintf('Se cancelo el ingreso tecnico %s.', $recepcionTecnica->codigo)
                 : sprintf(
-                    'La recepcion tecnica %s cambio a estado %s.',
+                    'Se actualizo el seguimiento del ingreso tecnico %s a %s.',
                     $recepcionTecnica->codigo,
                     $recepcionTecnica->statusLabel()
                 ),
@@ -199,10 +327,16 @@ class RecepcionTecnicaService
                     'codigo' => $recepcionTecnica->codigo,
                     'motivo_anulacion' => $recepcionTecnica->motivo_anulacion,
                 ], fn (mixed $value): bool => $value !== null && $value !== ''),
-                'changes' => $this->auditLogService->diff($before, $after, ['estado' => 'Estado']),
+                'changes' => $this->auditLogService->diff($before, $after, [
+                    'estado' => 'Estado',
+                    'diagnostico' => 'Diagnostico',
+                    'accion_realizada' => 'Accion realizada',
+                    'solucion_aplicada' => 'Solucion aplicada',
+                    'observaciones_internas' => 'Observaciones internas',
+                ]),
             ],
-            'level' => $targetStatus === RecepcionTecnica::ESTADO_ANULADO ? AuditLog::LEVEL_WARNING : AuditLog::LEVEL_INFO,
-            'is_critical' => $targetStatus === RecepcionTecnica::ESTADO_ANULADO,
+            'level' => $targetStatus === RecepcionTecnica::ESTADO_CANCELADO ? AuditLog::LEVEL_WARNING : AuditLog::LEVEL_INFO,
+            'is_critical' => $targetStatus === RecepcionTecnica::ESTADO_CANCELADO,
         ]);
 
         return $this->loadFull($recepcionTecnica->fresh());
@@ -211,54 +345,71 @@ class RecepcionTecnicaService
     /**
      * @param  array<string, mixed>  $data
      */
-    public function incorporate(User $user, RecepcionTecnica $recepcionTecnica, array $data): RecepcionTecnica
+    public function close(User $user, RecepcionTecnica $recepcionTecnica, array $data): RecepcionTecnica
     {
-        if (! $recepcionTecnica->canBeIncorporated()) {
-            throw ValidationException::withMessages([
-                'equipo_id' => 'Esta recepcion tecnica ya tiene un equipo vinculado o incorporado.',
-            ]);
-        }
+        $closeStatus = (string) $data['estado_cierre'];
 
-        $mode = (string) ($data['modo_incorporacion'] ?? self::MODO_INCORPORACION_NUEVO);
+        /** @var RecepcionTecnica $closedReception */
+        $closedReception = DB::transaction(function () use ($user, $recepcionTecnica, $data, $closeStatus): RecepcionTecnica {
+            /** @var RecepcionTecnica $lockedReception */
+            $lockedReception = RecepcionTecnica::query()
+                ->with(['equipo.oficina.service.institution', 'equipoCreado.oficina.service.institution', 'maintenanceRecord'])
+                ->lockForUpdate()
+                ->findOrFail($recepcionTecnica->id);
 
-        DB::transaction(function () use ($user, $recepcionTecnica, $data, $mode): void {
-            $recepcionTecnica->refresh();
-
-            if (! $recepcionTecnica->canBeIncorporated()) {
+            if ($lockedReception->isCancelled()) {
                 throw ValidationException::withMessages([
-                    'equipo_id' => 'Esta recepcion tecnica ya tiene un equipo vinculado o incorporado.',
+                    'estado_cierre' => 'No se puede cerrar un ingreso tecnico cancelado.',
                 ]);
             }
 
-            if ($mode === self::MODO_INCORPORACION_EXISTENTE) {
-                $equipo = $this->resolveEquipoWithinScope($user, (int) $data['equipo_id']);
-                $this->syncSnapshotWithEquipo($recepcionTecnica, $equipo, false);
-                $recepcionTecnica->equipo_id = $equipo->id;
-                $recepcionTecnica->save();
-                $this->recordLinkedExistingEquipo($recepcionTecnica, $user, $equipo);
-
-                return;
+            if ($lockedReception->isClosed()) {
+                throw ValidationException::withMessages([
+                    'estado_cierre' => 'Este ingreso tecnico ya se encuentra cerrado.',
+                ]);
             }
 
-            $equipo = $this->equipoRegistrationService->create(
+            $equipo = $lockedReception->resolvedEquipo();
+
+            if (! $equipo instanceof Equipo) {
+                throw ValidationException::withMessages([
+                    'equipo_id' => 'No se puede cerrar este ingreso tecnico hasta vincular el equipo al inventario.',
+                ]);
+            }
+
+            if ($lockedReception->maintenanceRecord instanceof Mantenimiento) {
+                throw ValidationException::withMessages([
+                    'estado_cierre' => 'Este ingreso tecnico ya genero su historial tecnico final.',
+                ]);
+            }
+
+            $lockedReception->estado = $closeStatus;
+            $lockedReception->cerrado_por = $user->id;
+            $lockedReception->status_changed_at = now();
+            $lockedReception->entregada_at = Carbon::parse((string) $data['fecha_entrega_real']);
+            $lockedReception->diagnostico = $this->nullableString($data['diagnostico'] ?? null);
+            $lockedReception->accion_realizada = $this->nullableString($data['accion_realizada'] ?? null);
+            $lockedReception->solucion_aplicada = $this->nullableString($data['solucion_aplicada'] ?? null);
+            $lockedReception->informe_tecnico = $this->nullableString($data['informe_tecnico'] ?? null);
+            $lockedReception->observaciones_cierre = $this->nullableString($data['observaciones_finales'] ?? null);
+            $lockedReception->persona_retiro_nombre = $this->nullableString($data['persona_retiro_nombre'] ?? null);
+            $lockedReception->persona_retiro_documento = $this->nullableString($data['persona_retiro_documento'] ?? null);
+            $lockedReception->persona_retiro_cargo = $this->nullableString($data['persona_retiro_cargo'] ?? null);
+            $lockedReception->condicion_egreso = $this->nullableString($data['condicion_egreso'] ?? null);
+            $lockedReception->save();
+
+            $mantenimiento = $this->mantenimientoService->registrarDesdeIngresoTecnico(
+                $equipo,
                 $user,
-                $this->equipmentPayload($data),
-                [
-                    'movement_observation' => sprintf('Ingreso tecnico %s incorporado posteriormente al sistema.', $recepcionTecnica->codigo),
-                    'audit_summary' => sprintf(
-                        'Se dio de alta el equipo desde la incorporacion posterior del ingreso tecnico %s.',
-                        $recepcionTecnica->codigo
-                    ),
-                ]
+                $lockedReception
             );
 
-            $this->syncSnapshotWithEquipo($recepcionTecnica, $equipo, true);
-            $recepcionTecnica->equipo_creado_id = $equipo->id;
-            $recepcionTecnica->save();
-            $this->recordCreatedEquipo($recepcionTecnica, $user, $equipo);
+            $this->recordClosed($lockedReception, $user, $mantenimiento);
+
+            return $lockedReception;
         }, 3);
 
-        return $this->loadFull($recepcionTecnica->fresh());
+        return $this->loadFull($closedReception->fresh());
     }
 
     /**
@@ -284,7 +435,7 @@ class RecepcionTecnicaService
             'user' => $user,
             'institution_id' => $recepcionTecnica->institution_id,
             'module' => 'mesa_tecnica',
-            'action' => $wasPrinted ? 'recepcion_tecnica_reimpresa' : 'recepcion_tecnica_impresa',
+            'action' => $wasPrinted ? 'ingreso_tecnico_reimpreso' : 'ingreso_tecnico_impreso',
             'entity_type' => 'recepcion_tecnica',
             'entity_id' => $recepcionTecnica->id,
             'summary' => $wasPrinted
@@ -311,34 +462,21 @@ class RecepcionTecnicaService
      * @return array{
      *     recepcionTecnica: RecepcionTecnica,
      *     publicUrl: string,
-     *     qrSvg: string|null,
-     *     generatedAt: string
+     *     trackingStatusOptions: array<string, string>,
+     *     closureStatusOptions: array<string, string>,
+     *     egressConditionOptions: array<string, string>
      * }
      */
-    public function printData(RecepcionTecnica $recepcionTecnica): array
+    public function detailData(RecepcionTecnica $recepcionTecnica): array
     {
         $recepcionTecnica = $this->loadFull($recepcionTecnica);
-        $publicUrl = route('mesa-tecnica.recepciones-tecnicas.public.show', ['uuid' => $recepcionTecnica->uuid]);
-        $qrSvg = null;
-
-        try {
-            $qrSvg = QrCode::size(132)
-                ->margin(1)
-                ->generate($publicUrl);
-        } catch (Throwable $exception) {
-            Log::warning('recepcion tecnica qr generation failed', [
-                'recepcion_tecnica_id' => $recepcionTecnica->id,
-                'codigo' => $recepcionTecnica->codigo,
-                'error' => $exception->getMessage(),
-                'exception' => get_class($exception),
-            ]);
-        }
 
         return [
             'recepcionTecnica' => $recepcionTecnica,
-            'publicUrl' => $publicUrl,
-            'qrSvg' => $qrSvg,
-            'generatedAt' => now()->format('d/m/Y H:i'),
+            'publicUrl' => route('mesa-tecnica.recepciones-tecnicas.public.show', ['uuid' => $recepcionTecnica->uuid]),
+            'trackingStatusOptions' => $this->trackingStatusOptions(),
+            'closureStatusOptions' => $this->closureStatusOptions(),
+            'egressConditionOptions' => $this->egressConditionOptions(),
         ];
     }
 
@@ -358,11 +496,13 @@ class RecepcionTecnicaService
             'publicStatus' => $recepcionTecnica->statusLabel(),
             'publicProgress' => match ($recepcionTecnica->estado) {
                 RecepcionTecnica::ESTADO_RECIBIDO => 'El equipo fue recibido y quedo registrado en Mesa Tecnica.',
-                RecepcionTecnica::ESTADO_EN_REVISION => 'El equipo se encuentra en revision tecnica.',
-                RecepcionTecnica::ESTADO_PENDIENTE_REPUESTO => 'El equipo se encuentra pendiente de repuesto o insumo.',
-                RecepcionTecnica::ESTADO_REPARADO => 'La intervencion tecnica finalizo y el equipo figura como reparado.',
-                RecepcionTecnica::ESTADO_ENTREGADO => 'El circuito tecnico fue cerrado y el equipo figura como entregado.',
-                RecepcionTecnica::ESTADO_ANULADO => 'El comprobante fue anulado y ya no se encuentra activo.',
+                RecepcionTecnica::ESTADO_EN_DIAGNOSTICO => 'El equipo se encuentra en diagnostico.',
+                RecepcionTecnica::ESTADO_EN_REPARACION => 'El equipo se encuentra en reparacion.',
+                RecepcionTecnica::ESTADO_EN_ESPERA_REPUESTO => 'El equipo se encuentra en espera de repuesto o insumo.',
+                RecepcionTecnica::ESTADO_LISTO_PARA_ENTREGAR => 'La reparacion finalizo y el equipo esta listo para entregar.',
+                RecepcionTecnica::ESTADO_ENTREGADO => 'El circuito tecnico fue cerrado correctamente.',
+                RecepcionTecnica::ESTADO_NO_REPARABLE => 'El circuito fue cerrado como no reparable.',
+                RecepcionTecnica::ESTADO_CANCELADO => 'El ingreso tecnico fue cancelado.',
                 default => 'El comprobante se encuentra registrado en Mesa Tecnica.',
             },
         ];
@@ -372,49 +512,35 @@ class RecepcionTecnicaService
      * @return array{
      *     recepcionTecnica: RecepcionTecnica,
      *     publicUrl: string,
-     *     statusOptions: array<string, string>
+     *     qrSvg: string|null,
+     *     generatedAt: string
      * }
      */
-    public function detailData(RecepcionTecnica $recepcionTecnica): array
+    public function printData(RecepcionTecnica $recepcionTecnica): array
     {
         $recepcionTecnica = $this->loadFull($recepcionTecnica);
+        $publicUrl = route('mesa-tecnica.recepciones-tecnicas.public.show', ['uuid' => $recepcionTecnica->uuid]);
+        $qrSvg = null;
+
+        try {
+            $qrSvg = QrCode::size(132)
+                ->margin(1)
+                ->generate($publicUrl);
+        } catch (Throwable $exception) {
+            Log::warning('ingreso tecnico qr generation failed', [
+                'recepcion_tecnica_id' => $recepcionTecnica->id,
+                'codigo' => $recepcionTecnica->codigo,
+                'error' => $exception->getMessage(),
+                'exception' => get_class($exception),
+            ]);
+        }
 
         return [
             'recepcionTecnica' => $recepcionTecnica,
-            'publicUrl' => route('mesa-tecnica.recepciones-tecnicas.public.show', ['uuid' => $recepcionTecnica->uuid]),
-            'statusOptions' => $this->statusOptions(),
+            'publicUrl' => $publicUrl,
+            'qrSvg' => $qrSvg,
+            'generatedAt' => now()->format('d/m/Y H:i'),
         ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    public function statusOptions(): array
-    {
-        return RecepcionTecnica::LABELS;
-    }
-
-    public function defaultReceptionDate(): string
-    {
-        return now()->toDateString();
-    }
-
-    private function loadFull(RecepcionTecnica $recepcionTecnica): RecepcionTecnica
-    {
-        return $recepcionTecnica->loadMissing([
-            'institution:id,nombre',
-            'creator:id,name',
-            'anuladaPor:id,name',
-            'procedenciaInstitution:id,nombre',
-            'procedenciaService:id,nombre',
-            'procedenciaOffice:id,nombre',
-            'equipo:id,tipo,marca,modelo,numero_serie,bien_patrimonial,codigo_interno,oficina_id,tipo_equipo_id',
-            'equipo.tipoEquipo:id,nombre',
-            'equipo.oficina.service.institution',
-            'equipoCreado:id,tipo,marca,modelo,numero_serie,bien_patrimonial,codigo_interno,oficina_id,tipo_equipo_id',
-            'equipoCreado.tipoEquipo:id,nombre',
-            'equipoCreado.oficina.service.institution',
-        ]);
     }
 
     /**
@@ -423,13 +549,17 @@ class RecepcionTecnicaService
      */
     private function basePayload(array $data, int $institutionId, User $user): array
     {
+        $ingresadoAt = Carbon::parse((string) $data['fecha_hora_ingreso']);
+
         return [
             'institution_id' => $institutionId,
             'created_by' => $user->id,
-            'fecha_recepcion' => $data['fecha_recepcion'],
+            'recibido_por' => $user->id,
+            'fecha_recepcion' => $ingresadoAt->toDateString(),
+            'ingresado_at' => $ingresadoAt,
             'estado' => RecepcionTecnica::ESTADO_RECIBIDO,
             'status_changed_at' => now(),
-            'sector_receptor' => $this->nullableString($data['sector_receptor'] ?? null) ?? 'Mesa Tecnica',
+            'sector_receptor' => $this->nullableString($data['sector_receptor'] ?? null) ?? 'Mesa Tecnica / Nivel Central',
             'referencia_equipo' => $this->nullableString($data['referencia_equipo'] ?? null),
             'tipo_equipo_texto' => $this->nullableString($data['tipo_equipo_texto'] ?? null),
             'marca' => $this->nullableString($data['marca'] ?? null),
@@ -490,16 +620,22 @@ class RecepcionTecnicaService
         return $institutionId;
     }
 
-    private function resolveEquipoWithinScope(User $user, int $equipoId): Equipo
+    private function resolveOperableEquipoWithinScope(User $user, int $equipoId): Equipo
     {
         $equipo = Equipo::query()
             ->visibleToUser($user)
-            ->with(['tipoEquipo:id,nombre', 'oficina.service.institution'])
+            ->with(['tipoEquipo:id,nombre', 'oficina.service.institution', 'equipoStatus'])
             ->find($equipoId);
 
         if (! $equipo instanceof Equipo) {
             throw ValidationException::withMessages([
                 'equipo_id' => 'No se encontro un equipo valido dentro del alcance actual.',
+            ]);
+        }
+
+        if ($equipo->isBaja()) {
+            throw ValidationException::withMessages([
+                'equipo_id' => 'Este equipo esta en baja y no admite nuevos ingresos tecnicos.',
             ]);
         }
 
@@ -517,6 +653,9 @@ class RecepcionTecnicaService
         $recepcionTecnica->numero_serie = $equipo->numero_serie;
         $recepcionTecnica->bien_patrimonial = $equipo->bien_patrimonial;
         $recepcionTecnica->codigo_interno_equipo = $equipo->codigo_interno;
+        $recepcionTecnica->procedencia_institution_id ??= $equipo->oficina?->service?->institution?->id;
+        $recepcionTecnica->procedencia_service_id ??= $equipo->oficina?->service?->id;
+        $recepcionTecnica->procedencia_office_id ??= $equipo->oficina?->id;
 
         if ($created) {
             $recepcionTecnica->equipo_creado_id = $equipo->id;
@@ -525,29 +664,38 @@ class RecepcionTecnicaService
         }
     }
 
-    private function assertStatusTransitionAllowed(RecepcionTecnica $recepcionTecnica, string $targetStatus): void
+    private function assertNoOpenReceptionForEquipment(int $equipoId, ?int $exceptReceptionId = null): void
     {
-        if (! in_array($targetStatus, RecepcionTecnica::ESTADOS, true)) {
+        $openReception = RecepcionTecnica::query()
+            ->open()
+            ->where('equipo_id', $equipoId)
+            ->when($exceptReceptionId !== null, fn (Builder $query) => $query->where('id', '!=', $exceptReceptionId))
+            ->exists();
+
+        if ($openReception) {
             throw ValidationException::withMessages([
-                'estado' => 'El estado seleccionado no es valido para la recepcion tecnica.',
+                'equipo_id' => 'Este equipo ya tiene un ingreso tecnico abierto.',
+            ]);
+        }
+    }
+
+    private function assertTrackingTransitionAllowed(RecepcionTecnica $recepcionTecnica, string $targetStatus): void
+    {
+        if (! in_array($targetStatus, RecepcionTecnica::ESTADOS_DE_SEGUIMIENTO, true)) {
+            throw ValidationException::withMessages([
+                'estado' => 'El estado seleccionado no es valido para el seguimiento del ingreso tecnico.',
             ]);
         }
 
-        if ($recepcionTecnica->estado === RecepcionTecnica::ESTADO_ANULADO) {
+        if ($recepcionTecnica->isClosed()) {
             throw ValidationException::withMessages([
-                'estado' => 'No se puede modificar una recepcion tecnica que ya fue anulada.',
+                'estado' => 'No se puede modificar un ingreso tecnico que ya fue cerrado.',
             ]);
         }
 
-        if ($targetStatus === RecepcionTecnica::ESTADO_ANULADO && ! $recepcionTecnica->canBeAnnulled()) {
+        if ($recepcionTecnica->isCancelled()) {
             throw ValidationException::withMessages([
-                'estado' => 'No se pudo anular la recepcion tecnica porque ya fue marcada como entregada.',
-            ]);
-        }
-
-        if ($recepcionTecnica->estado === RecepcionTecnica::ESTADO_ENTREGADO) {
-            throw ValidationException::withMessages([
-                'estado' => 'No se puede modificar una recepcion tecnica que ya fue marcada como entregada.',
+                'estado' => 'No se puede modificar un ingreso tecnico que ya fue cancelado.',
             ]);
         }
     }
@@ -558,10 +706,10 @@ class RecepcionTecnicaService
             'user' => $user,
             'institution_id' => $recepcionTecnica->institution_id,
             'module' => 'mesa_tecnica',
-            'action' => 'recepcion_tecnica_creada',
+            'action' => 'ingreso_tecnico_creado',
             'entity_type' => 'recepcion_tecnica',
             'entity_id' => $recepcionTecnica->id,
-            'summary' => sprintf('Se registro la recepcion tecnica %s.', $recepcionTecnica->codigo),
+            'summary' => sprintf('Se registro el ingreso tecnico %s.', $recepcionTecnica->codigo),
             'after' => [
                 'codigo' => $recepcionTecnica->codigo,
                 'estado' => $recepcionTecnica->statusLabel(),
@@ -571,7 +719,7 @@ class RecepcionTecnicaService
             'metadata' => [
                 'details' => array_filter([
                     'codigo' => $recepcionTecnica->codigo,
-                    'fecha_recepcion' => $recepcionTecnica->fecha_recepcion?->format('d/m/Y'),
+                    'ingresado_at' => $recepcionTecnica->ingresado_at?->format('d/m/Y H:i'),
                     'persona_entrega' => $recepcionTecnica->persona_nombre,
                     'procedencia' => $recepcionTecnica->procedenciaResumen(),
                     'falla_motivo' => $recepcionTecnica->falla_motivo,
@@ -591,11 +739,11 @@ class RecepcionTecnicaService
             'user' => $user,
             'institution_id' => $recepcionTecnica->institution_id,
             'module' => 'mesa_tecnica',
-            'action' => 'recepcion_tecnica_equipo_vinculado',
+            'action' => 'ingreso_tecnico_equipo_vinculado',
             'entity_type' => 'recepcion_tecnica',
             'entity_id' => $recepcionTecnica->id,
             'summary' => sprintf(
-                'La recepcion tecnica %s quedo vinculada al equipo %s.',
+                'El ingreso tecnico %s quedo vinculado al equipo %s.',
                 $recepcionTecnica->codigo,
                 $equipo->reference()
             ),
@@ -620,11 +768,11 @@ class RecepcionTecnicaService
             'user' => $user,
             'institution_id' => $recepcionTecnica->institution_id,
             'module' => 'mesa_tecnica',
-            'action' => 'recepcion_tecnica_equipo_incorporado',
+            'action' => 'ingreso_tecnico_equipo_incorporado',
             'entity_type' => 'recepcion_tecnica',
             'entity_id' => $recepcionTecnica->id,
             'summary' => sprintf(
-                'El equipo %s fue incorporado al sistema desde la recepcion tecnica %s.',
+                'El equipo %s fue incorporado al sistema desde el ingreso tecnico %s.',
                 $equipo->reference(),
                 $recepcionTecnica->codigo
             ),
@@ -637,6 +785,84 @@ class RecepcionTecnicaService
             ],
             'level' => AuditLog::LEVEL_CRITICAL,
             'is_critical' => true,
+        ]);
+    }
+
+    private function recordClosed(RecepcionTecnica $recepcionTecnica, User $user, Mantenimiento $mantenimiento): void
+    {
+        $before = [
+            'estado' => 'Abierto',
+        ];
+
+        $after = [
+            'estado' => $recepcionTecnica->statusLabel(),
+            'condicion_egreso' => $recepcionTecnica->egressConditionLabel(),
+            'retiro' => $recepcionTecnica->retiroResumen(),
+        ];
+
+        $this->auditLogService->record([
+            'user' => $user,
+            'institution_id' => $recepcionTecnica->institution_id,
+            'module' => 'mesa_tecnica',
+            'action' => 'ingreso_tecnico_cerrado',
+            'entity_type' => 'recepcion_tecnica',
+            'entity_id' => $recepcionTecnica->id,
+            'summary' => sprintf(
+                'Se cerro el ingreso tecnico %s y se genero el historial tecnico final.',
+                $recepcionTecnica->codigo
+            ),
+            'before' => $before,
+            'after' => $after,
+            'metadata' => [
+                'details' => array_filter([
+                    'codigo' => $recepcionTecnica->codigo,
+                    'fecha_entrega_real' => $recepcionTecnica->entregada_at?->format('d/m/Y H:i'),
+                    'mantenimiento_id' => $mantenimiento->id,
+                    'persona_retiro' => $recepcionTecnica->persona_retiro_nombre,
+                ], fn (mixed $value): bool => $value !== null && $value !== ''),
+                'changes' => $this->auditLogService->diff($before, $after, [
+                    'estado' => 'Estado',
+                    'condicion_egreso' => 'Condicion de egreso',
+                    'retiro' => 'Retiro',
+                ]),
+            ],
+            'level' => AuditLog::LEVEL_CRITICAL,
+            'is_critical' => true,
+        ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function trackingSnapshot(RecepcionTecnica $recepcionTecnica): array
+    {
+        return [
+            'estado' => $recepcionTecnica->statusLabel(),
+            'diagnostico' => $recepcionTecnica->diagnostico ?: 'Sin diagnostico',
+            'accion_realizada' => $recepcionTecnica->accion_realizada ?: 'Sin accion',
+            'solucion_aplicada' => $recepcionTecnica->solucion_aplicada ?: 'Sin solucion',
+            'observaciones_internas' => $recepcionTecnica->observaciones_internas ?: 'Sin observaciones',
+        ];
+    }
+
+    private function loadFull(RecepcionTecnica $recepcionTecnica): RecepcionTecnica
+    {
+        return $recepcionTecnica->loadMissing([
+            'institution:id,nombre',
+            'creator:id,name',
+            'recibidoPor:id,name',
+            'cerradoPor:id,name',
+            'anuladaPor:id,name',
+            'procedenciaInstitution:id,nombre',
+            'procedenciaService:id,nombre',
+            'procedenciaOffice:id,nombre',
+            'equipo:id,tipo,marca,modelo,numero_serie,bien_patrimonial,codigo_interno,oficina_id,tipo_equipo_id',
+            'equipo.tipoEquipo:id,nombre',
+            'equipo.oficina.service.institution',
+            'equipoCreado:id,tipo,marca,modelo,numero_serie,bien_patrimonial,codigo_interno,oficina_id,tipo_equipo_id',
+            'equipoCreado.tipoEquipo:id,nombre',
+            'equipoCreado.oficina.service.institution',
+            'maintenanceRecord:id,recepcion_tecnica_id,equipo_id,fecha,tipo,titulo,condicion_egreso',
         ]);
     }
 
@@ -660,5 +886,16 @@ class RecepcionTecnicaService
         $trimmed = trim((string) $value);
 
         return $trimmed === '' ? null : $trimmed;
+    }
+
+    private function isOpenReceptionUniqueViolation(QueryException $exception): bool
+    {
+        $sqlState = (string) ($exception->errorInfo[0] ?? $exception->getCode());
+
+        if (! in_array($sqlState, ['23000', '23505'], true)) {
+            return false;
+        }
+
+        return str_contains(strtolower($exception->getMessage()), 'recepciones_tecnicas_equipo_abierto_idx');
     }
 }

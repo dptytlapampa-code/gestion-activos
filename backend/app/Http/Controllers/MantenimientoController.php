@@ -29,7 +29,7 @@ class MantenimientoController extends Controller
         abort_unless($user?->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN), 403);
 
         $mantenimientos = Mantenimiento::query()
-            ->with(['equipo:id,tipo,numero_serie', 'estadoResultante:id,name,color'])
+            ->with(['equipo:id,tipo,numero_serie', 'estadoResultante:id,name,color', 'recepcionTecnica:id,codigo'])
             ->when(
                 $scopeIds !== null,
                 fn (Builder $query) => $scopeIds === []

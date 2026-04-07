@@ -331,7 +331,6 @@
                     try {
                         const url = new URL(this.endpoints.equipos, window.location.origin);
                         url.searchParams.set('q', query);
-                        url.searchParams.set('acta_context', '1');
 
                         if (!this.operatesGlobally && this.activeInstitutionId) {
                             url.searchParams.set('institution_id', String(this.activeInstitutionId));

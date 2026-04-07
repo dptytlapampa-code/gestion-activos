@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Ingreso tecnico')
-@section('header', 'Ingreso tecnico')
+@section('title', 'Recibir para reparacion')
+@section('header', 'Recibir para reparacion')
 
 @section('content')
     @php
@@ -36,13 +36,13 @@
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div class="space-y-2">
                 <div class="flex flex-wrap items-center gap-2">
-                    <span class="app-badge bg-indigo-50 px-3 text-indigo-700">Ingreso tecnico</span>
-                    <span class="app-badge bg-slate-100 px-3 text-slate-700">Ticket operativo</span>
+                    <span class="app-badge bg-indigo-50 px-3 text-indigo-700">Ingreso tecnico temporal</span>
+                    <span class="app-badge bg-slate-100 px-3 text-slate-700">No altera patrimonio</span>
                 </div>
                 <div>
-                    <h3 class="text-xl font-semibold tracking-tight text-slate-900">Nuevo ingreso</h3>
+                    <h3 class="text-xl font-semibold tracking-tight text-slate-900">Recibir equipo para reparacion</h3>
                     <p class="mt-1 text-sm text-slate-500">
-                        Registre el equipo, la persona que lo entrega y la falla en una sola vista.
+                        Registre el equipo, quien lo entrega y la falla reportada sin mover su ubicacion patrimonial.
                     </p>
                 </div>
             </div>
@@ -82,7 +82,7 @@
                     >
                         <p class="text-sm font-semibold uppercase tracking-[0.14em]">Equipo nuevo</p>
                         <p class="mt-2 text-base font-semibold">Registrar aunque no este en inventario</p>
-                        <p class="mt-2 text-sm opacity-80">Ticket primero. Alta en sistema si hace falta.</p>
+                        <p class="mt-2 text-sm opacity-80">Ticket primero. Alta en sistema solo si el equipo aun no existe.</p>
                     </button>
                 </div>
 
@@ -93,6 +93,10 @@
                         Revise los campos marcados.
                     </div>
                 @endif
+
+                <div class="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-4 text-sm text-indigo-900">
+                    Este ingreso tecnico deja constancia de la custodia temporal en Mesa Tecnica. La institucion, el servicio y la oficina patrimonial del equipo no cambian desde aqui.
+                </div>
             </section>
 
             <section x-show="mode === 'existente'" x-cloak class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
@@ -341,7 +345,7 @@
 
                         <div>
                             <label for="fecha_ingreso" class="mb-2 block text-sm font-medium text-slate-700">Fecha alta</label>
-                            <input id="fecha_ingreso" name="fecha_ingreso" type="date" value="{{ old('fecha_ingreso', $defaultReceptionDate) }}" class="app-input">
+                            <input id="fecha_ingreso" name="fecha_ingreso" type="date" value="{{ old('fecha_ingreso', now()->toDateString()) }}" class="app-input">
                             @error('fecha_ingreso')
                                 <p class="form-error mt-2">{{ $message }}</p>
                             @enderror
@@ -360,16 +364,16 @@
 
                         <div class="mt-4 grid gap-4 md:grid-cols-2">
                             <div>
-                                <label for="fecha_recepcion" class="mb-2 block text-sm font-medium text-slate-700">Fecha</label>
-                                <input id="fecha_recepcion" name="fecha_recepcion" type="date" value="{{ old('fecha_recepcion', $defaultReceptionDate) }}" class="app-input">
-                                @error('fecha_recepcion')
+                                <label for="fecha_hora_ingreso" class="mb-2 block text-sm font-medium text-slate-700">Fecha y hora</label>
+                                <input id="fecha_hora_ingreso" name="fecha_hora_ingreso" type="datetime-local" value="{{ old('fecha_hora_ingreso', $defaultReceptionTimestamp) }}" class="app-input">
+                                @error('fecha_hora_ingreso')
                                     <p class="form-error mt-2">{{ $message }}</p>
                                 @enderror
                             </div>
 
                             <div>
                                 <label for="sector_receptor" class="mb-2 block text-sm font-medium text-slate-700">Sector</label>
-                                <input id="sector_receptor" name="sector_receptor" type="text" value="{{ old('sector_receptor', 'Mesa Tecnica') }}" class="app-input" placeholder="Mesa Tecnica">
+                                <input id="sector_receptor" name="sector_receptor" type="text" value="{{ old('sector_receptor', 'Mesa Tecnica / Nivel Central') }}" class="app-input" placeholder="Mesa Tecnica / Nivel Central">
                                 @error('sector_receptor')
                                     <p class="form-error mt-2">{{ $message }}</p>
                                 @enderror
@@ -572,7 +576,7 @@
                 <a href="{{ route('mesa-tecnica.recepciones-tecnicas.index') }}" class="btn btn-slate">Cancelar</a>
                 <button type="submit" class="btn btn-indigo gap-2">
                     <x-icon name="check-circle-2" class="h-4 w-4" />
-                    <span x-text="mode === 'nuevo' && incorporate ? 'Registrar + alta' : 'Registrar ingreso'"></span>
+                    <span x-text="mode === 'nuevo' && incorporate ? 'Registrar ingreso + alta' : 'Registrar ticket tecnico'"></span>
                 </button>
             </div>
         </form>
@@ -647,8 +651,6 @@
                     try {
                         const url = new URL(this.endpoints.equipos, window.location.origin);
                         url.searchParams.set('q', query);
-                        url.searchParams.set('acta_context', '1');
-
                         const scopedInstitutionId = this.scopeInstitutionId();
                         if (scopedInstitutionId) {
                             url.searchParams.set('institution_id', String(scopedInstitutionId));

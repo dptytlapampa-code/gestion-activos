@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AuditLog;
 use App\Models\Equipo;
 use App\Models\Mantenimiento;
+use App\Models\RecepcionTecnica;
 use App\Models\User;
 use App\Services\Auditing\AuditLogService;
 use Carbon\Carbon;
@@ -128,6 +129,87 @@ class MantenimientoService
     public function mensajeRegistroBloqueado(): string
     {
         return 'Los mantenimientos que abren o cierran un ciclo tecnico no se pueden editar ni eliminar para preservar la trazabilidad del equipo.';
+    }
+
+    public function registrarDesdeIngresoTecnico(Equipo $equipo, User $user, RecepcionTecnica $recepcionTecnica): Mantenimiento
+    {
+        $equipo->loadMissing(['oficina.service.institution', 'equipoStatus']);
+
+        $institutionId = (int) $equipo->oficina?->service?->institution_id;
+
+        if ($institutionId <= 0) {
+            throw ValidationException::withMessages([
+                'mantenimiento' => 'No se pudo determinar la institucion patrimonial del equipo para registrar el historial tecnico.',
+            ]);
+        }
+
+        $fechaIngresoAt = $recepcionTecnica->ingresado_at ?? $recepcionTecnica->created_at ?? now();
+        $fechaEgresoAt = $recepcionTecnica->entregada_at ?? now();
+
+        if ($fechaEgresoAt->lt($fechaIngresoAt)) {
+            throw ValidationException::withMessages([
+                'fecha_entrega_real' => 'La fecha de entrega no puede ser anterior al ingreso tecnico.',
+            ]);
+        }
+
+        $duracionMinutos = $fechaIngresoAt->diffInMinutes($fechaEgresoAt);
+        $dias = Carbon::parse($fechaIngresoAt->toDateString())->diffInDays(Carbon::parse($fechaEgresoAt->toDateString()));
+
+        $problemaReportado = collect([
+            $recepcionTecnica->falla_motivo,
+            $recepcionTecnica->descripcion_falla,
+        ])->filter()->implode("\n\n");
+
+        $mantenimiento = Mantenimiento::query()->create([
+            'equipo_id' => $equipo->id,
+            'institution_id' => $institutionId,
+            'created_by' => $user->id,
+            'tecnico_responsable_id' => $recepcionTecnica->cerrado_por ?? $user->id,
+            'fecha' => $fechaEgresoAt->toDateString(),
+            'tipo' => Mantenimiento::TIPO_MESA_TECNICA,
+            'titulo' => sprintf('Ingreso tecnico %s', $recepcionTecnica->codigo),
+            'detalle' => $this->buildTechnicalReceptionDetail($recepcionTecnica),
+            'problema_reportado' => $problemaReportado !== '' ? $problemaReportado : null,
+            'diagnostico' => $recepcionTecnica->diagnostico,
+            'solucion_aplicada' => $recepcionTecnica->solucion_aplicada,
+            'informe_tecnico' => $recepcionTecnica->informe_tecnico,
+            'proveedor' => null,
+            'fecha_ingreso_st' => $fechaIngresoAt->toDateString(),
+            'fecha_egreso_st' => $fechaEgresoAt->toDateString(),
+            'dias_en_servicio' => $dias,
+            'duracion_minutos' => $duracionMinutos,
+            'condicion_egreso' => $recepcionTecnica->condicion_egreso,
+            'mantenimiento_externo_id' => null,
+            'recepcion_tecnica_id' => $recepcionTecnica->id,
+            'estado_resultante_id' => $equipo->equipo_status_id
+                ?: $this->equipoStatusResolver->resolveIdByEstado((string) $equipo->estado, 'mantenimientos'),
+        ]);
+
+        $this->auditLogService->record([
+            'user' => $user,
+            'institution_id' => $institutionId,
+            'module' => 'mantenimientos',
+            'action' => 'mantenimiento_desde_ingreso_tecnico_registrado',
+            'entity_type' => 'equipo',
+            'entity_id' => $equipo->id,
+            'summary' => sprintf(
+                'Se consolido en mantenimiento el ingreso tecnico %s del equipo %s.',
+                $recepcionTecnica->codigo,
+                $this->equipmentReference($equipo)
+            ),
+            'metadata' => [
+                'details' => [
+                    'mantenimiento_id' => $mantenimiento->id,
+                    'recepcion_tecnica_id' => $recepcionTecnica->id,
+                    'recepcion_tecnica_codigo' => $recepcionTecnica->codigo,
+                    'condicion_egreso' => $recepcionTecnica->egressConditionLabel(),
+                ],
+            ],
+            'level' => AuditLog::LEVEL_WARNING,
+            'is_critical' => true,
+        ]);
+
+        return $mantenimiento;
     }
 
     private function registrarExterno(
@@ -369,5 +451,20 @@ class MantenimientoService
     private function equipmentReference(Equipo $equipo): string
     {
         return $equipo->reference();
+    }
+
+    private function buildTechnicalReceptionDetail(RecepcionTecnica $recepcionTecnica): string
+    {
+        $sections = collect([
+            $recepcionTecnica->accion_realizada ? 'Accion realizada: '.$recepcionTecnica->accion_realizada : null,
+            $recepcionTecnica->diagnostico ? 'Diagnostico: '.$recepcionTecnica->diagnostico : null,
+            $recepcionTecnica->solucion_aplicada ? 'Solucion aplicada: '.$recepcionTecnica->solucion_aplicada : null,
+            $recepcionTecnica->informe_tecnico ? 'Informe tecnico: '.$recepcionTecnica->informe_tecnico : null,
+            $recepcionTecnica->observaciones_cierre ? 'Observaciones finales: '.$recepcionTecnica->observaciones_cierre : null,
+        ])->filter();
+
+        return $sections->isEmpty()
+            ? 'Ingreso tecnico cerrado sin detalle adicional.'
+            : $sections->implode("\n\n");
     }
 }

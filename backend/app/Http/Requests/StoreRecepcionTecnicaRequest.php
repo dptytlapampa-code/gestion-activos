@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\RecepcionTecnica;
+use App\Models\Equipo;
 use App\Services\RecepcionTecnicaService;
 use App\Support\Equipos\EquipoFormSchema;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -19,6 +20,10 @@ class StoreRecepcionTecnicaRequest extends FormRequest
     {
         $input = $this->all();
         $input = app(EquipoFormSchema::class)->normalize($input);
+
+        if (! array_key_exists('fecha_hora_ingreso', $input) && filled($input['fecha_recepcion'] ?? null)) {
+            $input['fecha_hora_ingreso'] = trim((string) $input['fecha_recepcion']).'T'.now()->format('H:i');
+        }
 
         $this->replace(array_merge($input, [
             'modo_equipo' => $this->input('modo_equipo', RecepcionTecnicaService::MODO_EQUIPO_NUEVO),
@@ -54,7 +59,7 @@ class StoreRecepcionTecnicaRequest extends FormRequest
                 RecepcionTecnicaService::MODO_EQUIPO_EXISTENTE,
                 RecepcionTecnicaService::MODO_EQUIPO_NUEVO,
             ])],
-            'fecha_recepcion' => ['required', 'date'],
+            'fecha_hora_ingreso' => ['required', 'date'],
             'sector_receptor' => ['nullable', 'string', 'max:120'],
             'equipo_id' => ['nullable', 'integer', 'exists:equipos,id'],
             'referencia_equipo' => ['nullable', 'string', 'max:255'],
@@ -121,8 +126,8 @@ class StoreRecepcionTecnicaRequest extends FormRequest
             [
                 'modo_equipo.required' => 'Debe indicar si trabajara con un equipo existente o con un equipo nuevo.',
                 'modo_equipo.in' => 'La opcion seleccionada para el equipo no es valida.',
-                'fecha_recepcion.required' => 'Debe indicar la fecha del ingreso tecnico.',
-                'fecha_recepcion.date' => 'La fecha del ingreso tecnico debe tener un formato valido.',
+                'fecha_hora_ingreso.required' => 'Debe indicar la fecha y hora del ingreso tecnico.',
+                'fecha_hora_ingreso.date' => 'La fecha y hora del ingreso tecnico deben tener un formato valido.',
                 'equipo_id.exists' => 'El equipo seleccionado ya no esta disponible.',
                 'persona_nombre.required' => 'Debe indicar quien entrega el equipo.',
                 'falla_motivo.required' => 'Debe indicar el motivo principal del ingreso tecnico.',
@@ -144,6 +149,23 @@ class StoreRecepcionTecnicaRequest extends FormRequest
 
             if ($mode === RecepcionTecnicaService::MODO_EQUIPO_EXISTENTE && ! $this->filled('equipo_id')) {
                 $validator->errors()->add('equipo_id', 'Debe seleccionar un equipo existente para continuar.');
+            }
+
+            if ($mode === RecepcionTecnicaService::MODO_EQUIPO_EXISTENTE && $this->filled('equipo_id')) {
+                $equipo = Equipo::query()->find((int) $this->input('equipo_id'));
+
+                if ($equipo instanceof Equipo && $equipo->isBaja()) {
+                    $validator->errors()->add('equipo_id', 'Este equipo esta en baja y no admite nuevos ingresos tecnicos.');
+                }
+
+                $hasOpenReception = RecepcionTecnica::query()
+                    ->open()
+                    ->where('equipo_id', (int) $this->input('equipo_id'))
+                    ->exists();
+
+                if ($hasOpenReception) {
+                    $validator->errors()->add('equipo_id', 'Este equipo ya tiene un ingreso tecnico abierto.');
+                }
             }
 
             if ($mode === RecepcionTecnicaService::MODO_EQUIPO_EXISTENTE && $this->boolean('incorporar_equipo')) {

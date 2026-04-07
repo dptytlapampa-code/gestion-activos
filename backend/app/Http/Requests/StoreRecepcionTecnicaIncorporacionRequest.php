@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Equipo;
+use App\Models\RecepcionTecnica;
 use App\Services\RecepcionTecnicaService;
 use App\Support\Equipos\EquipoFormSchema;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -85,6 +87,29 @@ class StoreRecepcionTecnicaIncorporacionRequest extends FormRequest
                 && ! $this->filled('equipo_id')
             ) {
                 $validator->errors()->add('equipo_id', 'Debe seleccionar un equipo existente para vincularlo.');
+            }
+
+            if (
+                $this->input('modo_incorporacion') === RecepcionTecnicaService::MODO_INCORPORACION_EXISTENTE
+                && $this->filled('equipo_id')
+            ) {
+                $equipo = Equipo::query()->find((int) $this->input('equipo_id'));
+                /** @var RecepcionTecnica|null $recepcionTecnica */
+                $recepcionTecnica = $this->route('recepcionTecnica');
+
+                if ($equipo instanceof Equipo && $equipo->isBaja()) {
+                    $validator->errors()->add('equipo_id', 'Este equipo esta en baja y no admite nuevos ingresos tecnicos.');
+                }
+
+                $hasOpenReception = RecepcionTecnica::query()
+                    ->open()
+                    ->where('equipo_id', (int) $this->input('equipo_id'))
+                    ->when($recepcionTecnica instanceof RecepcionTecnica, fn ($query) => $query->where('id', '!=', $recepcionTecnica->id))
+                    ->exists();
+
+                if ($hasOpenReception) {
+                    $validator->errors()->add('equipo_id', 'Este equipo ya tiene un ingreso tecnico abierto.');
+                }
             }
 
             if ($this->input('modo_incorporacion') === RecepcionTecnicaService::MODO_INCORPORACION_NUEVO) {

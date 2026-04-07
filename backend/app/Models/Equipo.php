@@ -116,6 +116,18 @@ class Equipo extends Model
         return $this->hasMany(Mantenimiento::class)->orderByDesc('fecha')->orderByDesc('id');
     }
 
+    public function recepcionesTecnicas(): HasMany
+    {
+        return $this->hasMany(RecepcionTecnica::class)->orderByDesc('ingresado_at')->orderByDesc('id');
+    }
+
+    public function recepcionTecnicaAbierta(): HasOne
+    {
+        return $this->hasOne(RecepcionTecnica::class)
+            ->whereIn('estado', RecepcionTecnica::ESTADOS_ABIERTOS)
+            ->latestOfMany('ingresado_at');
+    }
+
     public function mantenimientoExternoAbierto(): HasOne
     {
         return $this->hasOne(Mantenimiento::class)

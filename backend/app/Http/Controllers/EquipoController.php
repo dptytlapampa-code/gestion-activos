@@ -92,6 +92,8 @@ class EquipoController extends Controller
             'oficina.service.institution',
             'tipoEquipo',
             'equipoStatus',
+            'recepcionTecnicaAbierta.recibidoPor',
+            'recepcionTecnicaAbierta.institution',
             'mantenimientoExternoAbierto.creador',
             'movimientos.user',
             'movimientos.documents',
@@ -102,6 +104,8 @@ class EquipoController extends Controller
         $mantenimientos = $equipo->mantenimientos()
             ->with([
                 'creador:id,name',
+                'tecnicoResponsable:id,name',
+                'recepcionTecnica:id,codigo',
                 'estadoResultante:id,name,color',
                 'mantenimientoExterno:id,fecha,fecha_ingreso_st,fecha_egreso_st,proveedor,titulo',
                 'documents.uploadedBy:id,name',
@@ -140,6 +144,7 @@ class EquipoController extends Controller
             'equipo' => $equipo,
             'mantenimientos' => $mantenimientos,
             'mantenimientoExternoAbierto' => $mantenimientoExternoAbierto,
+            'recepcionTecnicaAbierta' => $equipo->recepcionTecnicaAbierta,
             'tiposMantenimientoDisponibles' => $tiposMantenimientoDisponibles,
             'hayInconsistenciaMantenimiento' => $hayInconsistenciaMantenimiento,
             'offices' => $offices,

@@ -77,4 +77,13 @@ class RecepcionTecnicaAuthorizationService
             ? Response::deny('No tiene permisos para imprimir este ingreso tecnico.')
             : Response::allow();
     }
+
+    public function close(User $user, RecepcionTecnica $recepcionTecnica): Response
+    {
+        $response = $this->view($user, $recepcionTecnica);
+
+        return $response->denied()
+            ? Response::deny('No tiene permisos para cerrar este ingreso tecnico.')
+            : Response::allow();
+    }
 }

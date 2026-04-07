@@ -2,23 +2,19 @@
 
 namespace Tests\Feature;
 
-use App\Models\Acta;
 use App\Models\Equipo;
 use App\Models\Institution;
-use App\Models\Movimiento;
 use App\Models\Office;
+use App\Models\RecepcionTecnica;
 use App\Models\Service;
 use App\Models\TipoEquipo;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class MesaTecnicaModuleTest extends TestCase
 {
     use RefreshDatabase;
-
-    private const CSRF_TOKEN = 'mesa-tecnica-test-token';
 
     public function test_tecnico_puede_acceder_a_mesa_tecnica_y_viewer_no(): void
     {
@@ -45,129 +41,58 @@ class MesaTecnicaModuleTest extends TestCase
         $this->actingAs($tecnico)
             ->get(route('mesa-tecnica.index'))
             ->assertOk()
-            ->assertSee('Mesa tecnica')
-            ->assertSee('Recibir')
-            ->assertSee('Ingreso tecnico');
-
-        $this->actingAs($tecnico)
-            ->get(route('mesa-tecnica.index'))
-            ->assertSee('data-desktop-sidebar-lock="collapsed"', false);
-
-        $this->actingAs($tecnico)
-            ->get(route('dashboard'))
-            ->assertDontSee('data-desktop-sidebar-lock="collapsed"', false);
+            ->assertSee('Recibir para reparacion')
+            ->assertSee('Ingreso tecnico temporal')
+            ->assertSee('Actas y movimientos');
 
         $this->actingAs($viewer)
             ->get(route('mesa-tecnica.index'))
             ->assertForbidden();
     }
 
-    public function test_mesa_tecnica_recepciona_equipo_prestado_generando_acta_de_devolucion(): void
+    public function test_dashboard_muestra_tickets_recientes_y_aclara_separacion_patrimonial(): void
     {
-        Storage::fake();
+        [$admin, $institution, $service, $office] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($office, 'DASH');
 
-        [$admin, , , $office] = $this->crearEscenarioBase();
-        $equipo = $this->crearEquipo($office, Equipo::ESTADO_PRESTADO, 'REC');
-
-        $this->actingAs($admin)
-            ->withSession(['_token' => self::CSRF_TOKEN])
-            ->post(route('mesa-tecnica.recepciones.store'), [
-                '_token' => self::CSRF_TOKEN,
-                'mesa_modal' => 'recepcion',
-                'fecha' => now()->toDateString(),
-                'equipo_id' => $equipo->id,
-                'motivo' => 'Devolucion operativa',
-                'observaciones' => 'Regresa a inventario tecnico',
-            ])
-            ->assertRedirect(route('mesa-tecnica.index'))
-            ->assertSessionHas('status');
-
-        $equipo->refresh();
-        $acta = Acta::query()->firstOrFail();
-
-        $this->assertSame(Acta::TIPO_DEVOLUCION, $acta->tipo);
-        $this->assertSame(Equipo::ESTADO_OPERATIVO, $equipo->estado);
-        $this->assertStringContainsString('Motivo de recepcion: Devolucion operativa', (string) $acta->observaciones);
-
-        $this->assertDatabaseHas('movimientos', [
+        RecepcionTecnica::query()->create([
+            'institution_id' => $institution->id,
+            'created_by' => $admin->id,
+            'recibido_por' => $admin->id,
             'equipo_id' => $equipo->id,
-            'acta_id' => $acta->id,
-            'tipo_movimiento' => Movimiento::TIPO_DEVOLUCION,
+            'fecha_recepcion' => now()->toDateString(),
+            'ingresado_at' => now(),
+            'estado' => RecepcionTecnica::ESTADO_EN_REPARACION,
+            'status_changed_at' => now(),
+            'sector_receptor' => 'Mesa Tecnica / Nivel Central',
+            'referencia_equipo' => $equipo->reference(),
+            'tipo_equipo_texto' => $equipo->tipo,
+            'marca' => $equipo->marca,
+            'modelo' => $equipo->modelo,
+            'numero_serie' => $equipo->numero_serie,
+            'bien_patrimonial' => $equipo->bien_patrimonial,
+            'codigo_interno_equipo' => $equipo->codigo_interno,
+            'procedencia_institution_id' => $institution->id,
+            'procedencia_service_id' => $service->id,
+            'procedencia_office_id' => $office->id,
+            'persona_nombre' => 'Chofer Hospital',
+            'falla_motivo' => 'No enciende',
         ]);
-    }
-
-    public function test_mesa_tecnica_rechaza_recepcion_de_equipo_no_prestado(): void
-    {
-        Storage::fake();
-
-        [$admin, , , $office] = $this->crearEscenarioBase();
-        $equipo = $this->crearEquipo($office, Equipo::ESTADO_OPERATIVO, 'RECERR');
 
         $this->actingAs($admin)
-            ->from(route('mesa-tecnica.index'))
-            ->withSession(['_token' => self::CSRF_TOKEN])
-            ->post(route('mesa-tecnica.recepciones.store'), [
-                '_token' => self::CSRF_TOKEN,
-                'mesa_modal' => 'recepcion',
-                'fecha' => now()->toDateString(),
-                'equipo_id' => $equipo->id,
-            ])
-            ->assertRedirect(route('mesa-tecnica.index'))
-            ->assertSessionHasErrors('equipo_id');
-
-        $this->assertDatabaseCount('actas', 0);
-        $this->assertDatabaseCount('movimientos', 0);
-    }
-
-    public function test_mesa_tecnica_entrega_equipo_reutilizando_acta_y_movimiento_existentes(): void
-    {
-        Storage::fake();
-
-        [$admin, $instA, , $officeA] = $this->crearEscenarioBase('A');
-        [, $instB, , , $serviceB, $officeB] = $this->crearEscenarioBase('B');
-
-        $admin->permittedInstitutions()->sync([$instB->id]);
-        $equipo = $this->crearEquipo($officeA, Equipo::ESTADO_OPERATIVO, 'ENT');
-
-        $this->actingAs($admin)
-            ->withSession(['_token' => self::CSRF_TOKEN])
-            ->post(route('mesa-tecnica.entregas.store'), [
-                '_token' => self::CSRF_TOKEN,
-                'mesa_modal' => 'entrega',
-                'fecha' => now()->toDateString(),
-                'equipo_id' => $equipo->id,
-                'institution_destino_id' => $instB->id,
-                'service_destino_id' => $serviceB->id,
-                'office_destino_id' => $officeB->id,
-                'receptor_nombre' => 'Mesa Tecnica Destino',
-                'receptor_dni' => '12345678',
-                'receptor_cargo' => 'Tecnica',
-                'receptor_dependencia' => 'Ingenieria Clinica',
-                'observaciones' => 'Entrega desde mesa tecnica',
-            ])
-            ->assertRedirect(route('mesa-tecnica.index'))
-            ->assertSessionHas('status');
-
-        $equipo->refresh();
-        $acta = Acta::query()->firstOrFail();
-
-        $this->assertSame($officeB->id, $equipo->oficina_id);
-        $this->assertSame(Acta::TIPO_ENTREGA, $acta->tipo);
-
-        $this->assertDatabaseHas('movimientos', [
-            'equipo_id' => $equipo->id,
-            'acta_id' => $acta->id,
-            'tipo_movimiento' => Movimiento::TIPO_TRASLADO,
-            'institucion_origen_id' => $instA->id,
-            'institucion_destino_id' => $instB->id,
-            'oficina_destino_id' => $officeB->id,
-        ]);
+            ->get(route('mesa-tecnica.index'))
+            ->assertOk()
+            ->assertSee('No altera patrimonio')
+            ->assertSee('Chofer Hospital')
+            ->assertSee('Actas y movimientos')
+            ->assertSee('Ingreso tecnico')
+            ->assertDontSee('Acta inmediata');
     }
 
     public function test_mesa_tecnica_muestra_etiqueta_imprimible(): void
     {
         [$admin, , , $office] = $this->crearEscenarioBase();
-        $equipo = $this->crearEquipo($office, Equipo::ESTADO_OPERATIVO, 'LAB');
+        $equipo = $this->crearEquipo($office, 'LAB');
 
         $this->actingAs($admin)
             ->get(route('mesa-tecnica.label', $equipo))
@@ -180,10 +105,8 @@ class MesaTecnicaModuleTest extends TestCase
     private function crearEscenarioBase(string $suffix = 'A'): array
     {
         $institution = Institution::create(['nombre' => 'Hospital '.$suffix]);
-        $serviceA = Service::create(['nombre' => 'Servicio '.$suffix.'-1', 'institution_id' => $institution->id]);
-        $officeA = Office::create(['nombre' => 'Oficina '.$suffix.'-1', 'service_id' => $serviceA->id]);
-        $serviceB = Service::create(['nombre' => 'Servicio '.$suffix.'-2', 'institution_id' => $institution->id]);
-        $officeB = Office::create(['nombre' => 'Oficina '.$suffix.'-2', 'service_id' => $serviceB->id]);
+        $service = Service::create(['nombre' => 'Servicio '.$suffix, 'institution_id' => $institution->id]);
+        $office = Office::create(['nombre' => 'Oficina '.$suffix, 'service_id' => $service->id]);
 
         $admin = User::create([
             'name' => 'Admin '.$suffix,
@@ -194,10 +117,10 @@ class MesaTecnicaModuleTest extends TestCase
             'is_active' => true,
         ]);
 
-        return [$admin, $institution, $serviceA, $officeA, $serviceB, $officeB];
+        return [$admin, $institution, $service, $office];
     }
 
-    private function crearEquipo(Office $office, string $estado, string $suffix = 'A'): Equipo
+    private function crearEquipo(Office $office, string $suffix = 'A'): Equipo
     {
         $tipo = TipoEquipo::firstOrCreate(['nombre' => 'Notebook '.$suffix]);
 
@@ -208,7 +131,7 @@ class MesaTecnicaModuleTest extends TestCase
             'modelo' => 'Latitude',
             'numero_serie' => uniqid('ser-'.$suffix.'-'),
             'bien_patrimonial' => uniqid('bp-'.$suffix.'-'),
-            'estado' => $estado,
+            'estado' => Equipo::ESTADO_OPERATIVO,
             'fecha_ingreso' => now()->toDateString(),
             'oficina_id' => $office->id,
         ]);

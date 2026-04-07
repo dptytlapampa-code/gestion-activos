@@ -9,14 +9,14 @@
             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div class="space-y-2">
                     <div class="flex flex-wrap items-center gap-2">
-                        <span class="app-badge bg-indigo-50 px-3 text-indigo-700">Ingreso tecnico</span>
+                        <span class="app-badge bg-indigo-50 px-3 text-indigo-700">Ingreso tecnico temporal</span>
                         <span class="app-badge bg-slate-100 px-3 text-slate-700">{{ $recepcionesTecnicas->total() }} ticket(s)</span>
                     </div>
 
                     <div>
                         <h3 class="text-xl font-semibold tracking-tight text-slate-950">Seguimiento tecnico</h3>
                         <p class="mt-1 text-sm text-slate-600">
-                            Busque, imprima y controle tickets de ingreso sin salir de Mesa Tecnica.
+                            Busque, imprima, siga y cierre tickets tecnicos sin alterar el patrimonio del equipo.
                         </p>
                     </div>
                 </div>
@@ -28,7 +28,7 @@
                     </a>
                     <a href="{{ route('mesa-tecnica.recepciones-tecnicas.create') }}" class="btn btn-indigo w-full sm:w-auto">
                         <x-icon name="plus" class="h-4 w-4" />
-                        Nuevo ingreso
+                        Recibir para reparacion
                     </a>
                 </div>
             </div>
@@ -133,7 +133,7 @@
                                 </div>
                             </div>
 
-                            <p class="text-sm font-medium text-slate-500">{{ $recepcion->fecha_recepcion?->format('d/m/Y') ?: '-' }}</p>
+                            <p class="text-sm font-medium text-slate-500">{{ $recepcion->ingresado_at?->format('d/m/Y H:i') ?: '-' }}</p>
                         </div>
 
                         <div class="grid gap-3 sm:grid-cols-2">
@@ -186,7 +186,7 @@
 
                         <tr>
                             <td class="app-cell-nowrap font-semibold text-slate-900">{{ $recepcion->codigo }}</td>
-                            <td class="app-cell-nowrap">{{ $recepcion->fecha_recepcion?->format('d/m/Y') ?: '-' }}</td>
+                            <td class="app-cell-nowrap">{{ $recepcion->ingresado_at?->format('d/m/Y H:i') ?: '-' }}</td>
                             <td class="app-cell-nowrap">
                                 @include('mesa-tecnica.partials.recepcion-status-badge', ['status' => $recepcion->estado, 'label' => $recepcion->statusLabel()])
                             </td>

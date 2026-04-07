@@ -18,6 +18,8 @@ class Mantenimiento extends Model
     public const TIPO_ALTA = 'alta';
     public const TIPO_BAJA = 'baja';
     public const TIPO_OTRO = 'otro';
+    public const TIPO_MESA_TECNICA = 'mesa_tecnica';
+
     public const TIPOS_CIERRE_EXTERNO = [
         self::TIPO_ALTA,
         self::TIPO_BAJA,
@@ -29,21 +31,38 @@ class Mantenimiento extends Model
         self::TIPO_ALTA,
         self::TIPO_BAJA,
         self::TIPO_OTRO,
+        self::TIPO_MESA_TECNICA,
+    ];
+
+    public const TIPOS_MANUALES = [
+        self::TIPO_INTERNO,
+        self::TIPO_EXTERNO,
+        self::TIPO_ALTA,
+        self::TIPO_BAJA,
+        self::TIPO_OTRO,
     ];
 
     protected $fillable = [
         'equipo_id',
         'institution_id',
         'created_by',
+        'tecnico_responsable_id',
         'fecha',
         'tipo',
         'titulo',
         'detalle',
+        'problema_reportado',
+        'diagnostico',
+        'solucion_aplicada',
+        'informe_tecnico',
         'proveedor',
         'fecha_ingreso_st',
         'fecha_egreso_st',
         'dias_en_servicio',
+        'duracion_minutos',
+        'condicion_egreso',
         'mantenimiento_externo_id',
+        'recepcion_tecnica_id',
         'estado_resultante_id',
     ];
 
@@ -71,6 +90,11 @@ class Mantenimiento extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function tecnicoResponsable(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'tecnico_responsable_id');
+    }
+
     public function mantenimientoExterno(): BelongsTo
     {
         return $this->belongsTo(self::class, 'mantenimiento_externo_id');
@@ -79,6 +103,11 @@ class Mantenimiento extends Model
     public function cierreExterno(): HasOne
     {
         return $this->hasOne(self::class, 'mantenimiento_externo_id');
+    }
+
+    public function recepcionTecnica(): BelongsTo
+    {
+        return $this->belongsTo(RecepcionTecnica::class, 'recepcion_tecnica_id');
     }
 
     public function estadoResultante(): BelongsTo
@@ -121,9 +150,15 @@ class Mantenimiento extends Model
         return $this->isExterno() && $this->fecha_egreso_st === null;
     }
 
+    public function isGeneratedFromRecepcionTecnica(): bool
+    {
+        return $this->recepcion_tecnica_id !== null;
+    }
+
     public function canBeManuallyChanged(): bool
     {
         return in_array($this->tipo, [self::TIPO_INTERNO, self::TIPO_OTRO], true)
-            && $this->mantenimiento_externo_id === null;
+            && $this->mantenimiento_externo_id === null
+            && ! $this->isGeneratedFromRecepcionTecnica();
     }
 }

@@ -40,4 +40,9 @@ class RecepcionTecnicaPolicy
     {
         return $this->authorizationService->print($user, $recepcionTecnica);
     }
+
+    public function close(User $user, RecepcionTecnica $recepcionTecnica): Response
+    {
+        return $this->authorizationService->close($user, $recepcionTecnica);
+    }
 }

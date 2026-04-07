@@ -12,6 +12,7 @@
                 <th>Equipo</th>
                 <th>Tipo</th>
                 <th>Titulo</th>
+                <th>Referencia</th>
             </tr>
         </thead>
         <tbody>
@@ -19,8 +20,12 @@
                 <tr>
                     <td>{{ $mantenimiento->fecha?->format('d/m/Y') }}</td>
                     <td>{{ $mantenimiento->equipo?->tipo }} ({{ $mantenimiento->equipo?->numero_serie }})</td>
-                    <td>{{ ucfirst($mantenimiento->tipo) }}</td>
+                    <td>{{ match ($mantenimiento->tipo) {
+                        \App\Models\Mantenimiento::TIPO_MESA_TECNICA => 'Mesa tecnica',
+                        default => ucfirst($mantenimiento->tipo),
+                    } }}</td>
                     <td>{{ $mantenimiento->titulo }}</td>
+                    <td>{{ $mantenimiento->recepcionTecnica?->codigo ?: '-' }}</td>
                 </tr>
             @endforeach
         </tbody>
