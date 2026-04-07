@@ -51,7 +51,20 @@ class EquipoListingService
     public function buildIndexQuery(?User $user, string $search, array $filters): Builder
     {
         return Equipo::query()
-            ->with(['oficina.service.institution', 'tipoEquipo', 'equipoStatus', 'recepcionTecnicaAbierta:id,equipo_id,codigo,estado'])
+            ->with([
+                'oficina.service.institution',
+                'tipoEquipo',
+                'equipoStatus',
+                'recepcionTecnicaAbierta' => function ($query): void {
+                    $query->select([
+                        'recepciones_tecnicas.id',
+                        'recepciones_tecnicas.equipo_id',
+                        'recepciones_tecnicas.codigo',
+                        'recepciones_tecnicas.estado',
+                        'recepciones_tecnicas.ingresado_at',
+                    ]);
+                },
+            ])
             ->visibleToUser($user)
             ->searchIndex($search)
             ->applyIndexFilters($filters)
