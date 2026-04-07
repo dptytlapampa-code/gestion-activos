@@ -55,7 +55,7 @@ class MesaTecnicaRecepcionController extends Controller
             'restoredSelectedEquipo' => app(MesaTecnicaService::class)->selectedEquipo(request()->user(), old('equipo_id')),
             'equipmentStates' => array_values(array_filter(
                 Equipo::ESTADOS,
-                fn (string $estado): bool => $estado !== Equipo::ESTADO_MANTENIMIENTO
+                fn (string $estado): bool => $estado !== Equipo::ESTADO_EN_MANTENIMIENTO
             )),
         ]);
     }
@@ -90,7 +90,7 @@ class MesaTecnicaRecepcionController extends Controller
                 [
                     'equipmentStates' => array_values(array_filter(
                         Equipo::ESTADOS,
-                        fn (string $estado): bool => $estado !== Equipo::ESTADO_MANTENIMIENTO
+                        fn (string $estado): bool => $estado !== Equipo::ESTADO_EN_MANTENIMIENTO
                     )),
                 ],
             )
@@ -125,7 +125,7 @@ class MesaTecnicaRecepcionController extends Controller
                     'restoredSelectedEquipo' => app(MesaTecnicaService::class)->selectedEquipo(request()->user(), old('equipo_id')),
                     'equipmentStates' => array_values(array_filter(
                         Equipo::ESTADOS,
-                        fn (string $estado): bool => $estado !== Equipo::ESTADO_MANTENIMIENTO
+                        fn (string $estado): bool => $estado !== Equipo::ESTADO_EN_MANTENIMIENTO
                     )),
                 ],
             )
