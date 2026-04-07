@@ -51,6 +51,12 @@ class RecepcionTecnica extends Model
         self::ESTADO_NO_REPARABLE,
     ];
 
+    public const ESTADOS_DE_HISTORIAL = [
+        self::ESTADO_ENTREGADO,
+        self::ESTADO_NO_REPARABLE,
+        self::ESTADO_CANCELADO,
+    ];
+
     public const ESTADOS_DE_SEGUIMIENTO = [
         self::ESTADO_RECIBIDO,
         self::ESTADO_EN_DIAGNOSTICO,
@@ -85,6 +91,18 @@ class RecepcionTecnica extends Model
         self::CONDICION_REPARADO => 'Reparado',
         self::CONDICION_DEVUELTO_SIN_REPARAR => 'Devuelto sin reparar',
         self::CONDICION_NO_REPARABLE => 'No reparable',
+    ];
+
+    public const VISTA_ACTIVOS = 'activos';
+    public const VISTA_LISTOS = 'listos';
+    public const VISTA_CERRADOS = 'cerrados';
+    public const VISTA_TODOS = 'todos';
+
+    public const VISTA_LABELS = [
+        self::VISTA_ACTIVOS => 'Activos',
+        self::VISTA_LISTOS => 'Listos para entregar',
+        self::VISTA_CERRADOS => 'Cerrados',
+        self::VISTA_TODOS => 'Todos',
     ];
 
     protected $fillable = [
@@ -313,6 +331,11 @@ class RecepcionTecnica extends Model
         return $this->estado === self::ESTADO_CANCELADO;
     }
 
+    public function isReadyForDelivery(): bool
+    {
+        return $this->estado === self::ESTADO_LISTO_PARA_ENTREGAR;
+    }
+
     public function canBeAnnulled(): bool
     {
         return ! $this->isClosed() && ! $this->isCancelled();
@@ -326,6 +349,43 @@ class RecepcionTecnica extends Model
     public function canBeIncorporated(): bool
     {
         return $this->resolvedEquipo() === null && ! $this->isCancelled();
+    }
+
+    public function nextActionLabel(): string
+    {
+        if ($this->canBeIncorporated()) {
+            return 'Vincular equipo';
+        }
+
+        return match ($this->estado) {
+            self::ESTADO_RECIBIDO => 'Registrar diagnostico',
+            self::ESTADO_EN_DIAGNOSTICO => 'Actualizar diagnostico',
+            self::ESTADO_EN_REPARACION => 'Registrar reparacion',
+            self::ESTADO_EN_ESPERA_REPUESTO => 'Actualizar seguimiento',
+            self::ESTADO_LISTO_PARA_ENTREGAR => 'Entregar y cerrar',
+            self::ESTADO_ENTREGADO, self::ESTADO_NO_REPARABLE => 'Ver historial tecnico',
+            self::ESTADO_CANCELADO => 'Revisar ticket cancelado',
+            default => 'Ver ticket',
+        };
+    }
+
+    public function nextActionDescription(): string
+    {
+        if ($this->canBeIncorporated()) {
+            return 'Necesita vincular o incorporar el equipo antes de poder cerrar el ticket.';
+        }
+
+        return match ($this->estado) {
+            self::ESTADO_RECIBIDO => 'Todavia falta dejar el diagnostico inicial y orientar el trabajo tecnico.',
+            self::ESTADO_EN_DIAGNOSTICO => 'El tecnico debe dejar avance claro para que el resto del equipo pueda continuar.',
+            self::ESTADO_EN_REPARACION => 'Conviene registrar la reparacion realizada y el resultado tecnico actual.',
+            self::ESTADO_EN_ESPERA_REPUESTO => 'Deje el motivo de espera y cualquier novedad operativa para evitar recovecos.',
+            self::ESTADO_LISTO_PARA_ENTREGAR => 'El trabajo ya termino: conviene completar el egreso y retirarlo de la cola activa.',
+            self::ESTADO_ENTREGADO => 'El ticket ya fue cerrado y consolido su historial tecnico final.',
+            self::ESTADO_NO_REPARABLE => 'El ticket ya fue cerrado como no reparable y quedo trazado en mantenimiento.',
+            self::ESTADO_CANCELADO => 'El ticket fue cancelado. El motivo queda registrado en la trazabilidad.',
+            default => 'Revise el ticket para continuar con la operacion.',
+        };
     }
 
     public function scopeVisibleToUser(Builder $query, ?User $user): Builder
@@ -346,6 +406,62 @@ class RecepcionTecnica extends Model
     public function scopeOpen(Builder $query): Builder
     {
         return $query->whereIn('estado', self::ESTADOS_ABIERTOS);
+    }
+
+    public function scopeHistory(Builder $query): Builder
+    {
+        return $query->whereIn('estado', self::ESTADOS_DE_HISTORIAL);
+    }
+
+    public function scopeForResolvedEquipment(Builder $query, int $equipoId): Builder
+    {
+        return $query->where(function (Builder $builder) use ($equipoId): void {
+            $builder
+                ->where('equipo_id', $equipoId)
+                ->orWhere('equipo_creado_id', $equipoId);
+        });
+    }
+
+    public function scopeApplyQuickView(Builder $query, string $view): Builder
+    {
+        return match (self::normalizeQuickView($view)) {
+            self::VISTA_LISTOS => $query->where('estado', self::ESTADO_LISTO_PARA_ENTREGAR),
+            self::VISTA_CERRADOS => $query->history(),
+            self::VISTA_TODOS => $query,
+            default => $query->open(),
+        };
+    }
+
+    public function scopeOperationalOrder(Builder $query): Builder
+    {
+        return $query
+            ->orderByRaw(
+                'case estado
+                    when ? then 0
+                    when ? then 1
+                    when ? then 2
+                    when ? then 3
+                    when ? then 4
+                    when ? then 5
+                    when ? then 6
+                    when ? then 7
+                    else 99
+                end',
+                [
+                    self::ESTADO_LISTO_PARA_ENTREGAR,
+                    self::ESTADO_RECIBIDO,
+                    self::ESTADO_EN_DIAGNOSTICO,
+                    self::ESTADO_EN_REPARACION,
+                    self::ESTADO_EN_ESPERA_REPUESTO,
+                    self::ESTADO_ENTREGADO,
+                    self::ESTADO_NO_REPARABLE,
+                    self::ESTADO_CANCELADO,
+                ]
+            )
+            ->orderByDesc('status_changed_at')
+            ->orderByDesc('entregada_at')
+            ->orderByDesc('ingresado_at')
+            ->latest('id');
     }
 
     /**
@@ -424,5 +540,12 @@ class RecepcionTecnica extends Model
     public static function formatCodigo(int $sequence): string
     {
         return sprintf('%s%0'.self::CODIGO_PAD_LENGTH.'d', self::CODIGO_PREFIX, $sequence);
+    }
+
+    public static function normalizeQuickView(mixed $view, string $default = self::VISTA_ACTIVOS): string
+    {
+        $normalized = trim((string) $view);
+
+        return array_key_exists($normalized, self::VISTA_LABELS) ? $normalized : $default;
     }
 }

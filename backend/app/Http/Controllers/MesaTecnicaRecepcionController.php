@@ -26,9 +26,10 @@ class MesaTecnicaRecepcionController extends Controller
 
         $listing = $this->recepcionTecnicaService->listingState($request);
         $filters = $this->recepcionTecnicaService->filtersFromRequest($request);
+        $quickView = $this->recepcionTecnicaService->quickViewFromRequest($request);
 
         $recepcionesTecnicas = $this->recepcionTecnicaService
-            ->buildIndexQuery($request->user(), $listing->search, $filters)
+            ->buildIndexQuery($request->user(), $listing->search, $filters, $quickView)
             ->paginate($listing->perPage)
             ->withQueryString();
 
@@ -36,6 +37,9 @@ class MesaTecnicaRecepcionController extends Controller
             'recepcionesTecnicas' => $recepcionesTecnicas,
             'listing' => $listing,
             'filters' => $filters,
+            'quickView' => $quickView,
+            'quickViewCounts' => $this->recepcionTecnicaService->quickViewCounts($request->user(), $listing->search, $filters),
+            'quickViewLabels' => RecepcionTecnica::VISTA_LABELS,
             'statusOptions' => $this->recepcionTecnicaService->statusOptions(),
             'hasActiveFilters' => $this->recepcionTecnicaService->hasActiveFilters($listing->search, $filters),
         ]);
@@ -75,14 +79,14 @@ class MesaTecnicaRecepcionController extends Controller
             ->with('status', $status);
     }
 
-    public function show(RecepcionTecnica $recepcionTecnica): View
+    public function show(Request $request, RecepcionTecnica $recepcionTecnica): View
     {
         $this->authorize('view', $recepcionTecnica);
 
         return view(
             'mesa-tecnica.recepciones-tecnicas.show',
             array_merge(
-                $this->recepcionTecnicaService->detailData($recepcionTecnica),
+                $this->recepcionTecnicaService->detailData($recepcionTecnica, $request->query('return_to')),
                 [
                     'equipmentStates' => array_values(array_filter(
                         Equipo::ESTADOS,
@@ -116,7 +120,7 @@ class MesaTecnicaRecepcionController extends Controller
         return view(
             'mesa-tecnica.recepciones-tecnicas.incorporate',
             array_merge(
-                $this->recepcionTecnicaService->detailData($recepcionTecnica),
+                $this->recepcionTecnicaService->detailData($recepcionTecnica, request()->query('return_to')),
                 [
                     'restoredSelectedEquipo' => app(MesaTecnicaService::class)->selectedEquipo(request()->user(), old('equipo_id')),
                     'equipmentStates' => array_values(array_filter(
@@ -173,9 +177,11 @@ class MesaTecnicaRecepcionController extends Controller
             return $this->friendlyErrorRedirect($exception, false);
         }
 
-        return redirect()
-            ->route('mesa-tecnica.recepciones-tecnicas.show', $recepcionTecnica)
-            ->with('status', 'Seguimiento del ingreso tecnico actualizado correctamente.');
+        return $this->redirectToShow(
+            $recepcionTecnica,
+            'Seguimiento del ingreso tecnico actualizado correctamente.',
+            $request->input('return_to')
+        );
     }
 
     public function close(
@@ -196,8 +202,27 @@ class MesaTecnicaRecepcionController extends Controller
             return $this->friendlyErrorRedirect($exception, false);
         }
 
+        return $this->redirectToShow(
+            $recepcionTecnica,
+            'Ingreso tecnico cerrado correctamente y agregado al historial de mantenimiento.',
+            $request->input('return_to')
+        );
+    }
+
+    private function redirectToShow(
+        RecepcionTecnica $recepcionTecnica,
+        string $statusMessage,
+        ?string $returnTo = null
+    ): RedirectResponse {
+        $parameters = ['recepcionTecnica' => $recepcionTecnica];
+        $sanitizedReturnTo = $this->recepcionTecnicaService->sanitizeReturnUrl($returnTo);
+
+        if ($sanitizedReturnTo !== null) {
+            $parameters['return_to'] = $sanitizedReturnTo;
+        }
+
         return redirect()
-            ->route('mesa-tecnica.recepciones-tecnicas.show', $recepcionTecnica)
-            ->with('status', 'Ingreso tecnico cerrado correctamente y agregado al historial de mantenimiento.');
+            ->route('mesa-tecnica.recepciones-tecnicas.show', $parameters)
+            ->with('status', $statusMessage);
     }
 }

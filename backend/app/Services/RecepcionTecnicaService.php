@@ -56,10 +56,41 @@ class RecepcionTecnicaService
         ];
     }
 
+    public function quickViewFromRequest(Request $request, string $default = RecepcionTecnica::VISTA_ACTIVOS): string
+    {
+        return RecepcionTecnica::normalizeQuickView($request->query('vista'), $default);
+    }
+
     /**
      * @param  array<string, mixed>  $filters
      */
-    public function buildIndexQuery(?User $user, string $search, array $filters): Builder
+    public function buildIndexQuery(?User $user, string $search, array $filters, string $quickView): Builder
+    {
+        return $this->baseIndexQuery($user, $search, $filters)
+            ->applyQuickView($quickView)
+            ->operationalOrder();
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<string, int>
+     */
+    public function quickViewCounts(?User $user, string $search, array $filters): array
+    {
+        $filtersWithoutExactStatus = array_merge($filters, ['estado' => '']);
+        $query = $this->baseIndexQuery($user, $search, $filtersWithoutExactStatus);
+
+        return collect(RecepcionTecnica::VISTA_LABELS)
+            ->mapWithKeys(function (string $label, string $view) use ($query): array {
+                return [$view => (clone $query)->applyQuickView($view)->count()];
+            })
+            ->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    private function baseIndexQuery(?User $user, string $search, array $filters): Builder
     {
         return RecepcionTecnica::query()
             ->with([
@@ -74,9 +105,7 @@ class RecepcionTecnicaService
             ])
             ->visibleToUser($user)
             ->searchIndex($search)
-            ->applyIndexFilters($filters)
-            ->orderByDesc('ingresado_at')
-            ->latest('id');
+            ->applyIndexFilters($filters);
     }
 
     /**
@@ -464,12 +493,17 @@ class RecepcionTecnicaService
      *     publicUrl: string,
      *     trackingStatusOptions: array<string, string>,
      *     closureStatusOptions: array<string, string>,
-     *     egressConditionOptions: array<string, string>
+     *     egressConditionOptions: array<string, string>,
+     *     returnTo: string|null,
+     *     backToListUrl: string,
+     *     backToListLabel: string
      * }
      */
-    public function detailData(RecepcionTecnica $recepcionTecnica): array
+    public function detailData(RecepcionTecnica $recepcionTecnica, ?string $returnTo = null): array
     {
         $recepcionTecnica = $this->loadFull($recepcionTecnica);
+        $sanitizedReturnTo = $this->sanitizeReturnUrl($returnTo);
+        $backQuickView = $this->quickViewFromReturnUrl($sanitizedReturnTo);
 
         return [
             'recepcionTecnica' => $recepcionTecnica,
@@ -477,6 +511,11 @@ class RecepcionTecnicaService
             'trackingStatusOptions' => $this->trackingStatusOptions(),
             'closureStatusOptions' => $this->closureStatusOptions(),
             'egressConditionOptions' => $this->egressConditionOptions(),
+            'returnTo' => $sanitizedReturnTo,
+            'backToListUrl' => $sanitizedReturnTo ?? route('mesa-tecnica.recepciones-tecnicas.index'),
+            'backToListLabel' => $backQuickView !== null
+                ? 'Volver a '.RecepcionTecnica::VISTA_LABELS[$backQuickView]
+                : 'Volver a tickets',
         ];
     }
 
@@ -541,6 +580,24 @@ class RecepcionTecnicaService
             'qrSvg' => $qrSvg,
             'generatedAt' => now()->format('d/m/Y H:i'),
         ];
+    }
+
+    public function sanitizeReturnUrl(?string $returnTo): ?string
+    {
+        $normalized = trim((string) $returnTo);
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        $relativeBase = route('mesa-tecnica.recepciones-tecnicas.index', [], false);
+        $absoluteBase = route('mesa-tecnica.recepciones-tecnicas.index');
+
+        if (str_starts_with($normalized, $relativeBase) || str_starts_with($normalized, $absoluteBase)) {
+            return $normalized;
+        }
+
+        return null;
     }
 
     /**
@@ -668,7 +725,7 @@ class RecepcionTecnicaService
     {
         $openReception = RecepcionTecnica::query()
             ->open()
-            ->where('equipo_id', $equipoId)
+            ->forResolvedEquipment($equipoId)
             ->when($exceptReceptionId !== null, fn (Builder $query) => $query->where('id', '!=', $exceptReceptionId))
             ->exists();
 
@@ -864,6 +921,25 @@ class RecepcionTecnicaService
             'equipoCreado.oficina.service.institution',
             'maintenanceRecord:id,recepcion_tecnica_id,equipo_id,fecha,tipo,titulo,condicion_egreso',
         ]);
+    }
+
+    private function quickViewFromReturnUrl(?string $returnTo): ?string
+    {
+        $sanitized = $this->sanitizeReturnUrl($returnTo);
+
+        if ($sanitized === null) {
+            return null;
+        }
+
+        $query = parse_url($sanitized, PHP_URL_QUERY);
+
+        if (! is_string($query) || $query === '') {
+            return RecepcionTecnica::VISTA_ACTIVOS;
+        }
+
+        parse_str($query, $parameters);
+
+        return RecepcionTecnica::normalizeQuickView($parameters['vista'] ?? null, RecepcionTecnica::VISTA_ACTIVOS);
     }
 
     private function nullableInt(mixed $value): ?int

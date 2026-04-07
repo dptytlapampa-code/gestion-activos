@@ -20,42 +20,61 @@ class MesaTecnicaService
      * @return array{
      *     accessibleInstitutions: Collection<int, \App\Models\Institution>,
      *     activeInstitutionId: int|null,
-     *     openCount: int,
+     *     activeCount: int,
      *     readyCount: int,
-     *     recentIngresos: Collection<int, array<string, mixed>>
+     *     closedCount: int,
+     *     readyTickets: Collection<int, array<string, mixed>>,
+     *     activeTickets: Collection<int, array<string, mixed>>,
+     *     recentHistory: Collection<int, array<string, mixed>>
      * }
      */
     public function dashboard(User $user): array
     {
         $query = RecepcionTecnica::query()
-            ->with(['creator:id,name', 'equipo:id,codigo_interno', 'equipoCreado:id,codigo_interno'])
+            ->with([
+                'creator:id,name',
+                'procedenciaInstitution:id,nombre',
+                'equipo:id,codigo_interno',
+                'equipoCreado:id,codigo_interno',
+            ])
             ->visibleToUser($user);
 
-        $recentIngresos = (clone $query)
-            ->orderByDesc('ingresado_at')
-            ->latest('id')
+        $readyTickets = (clone $query)
+            ->where('estado', RecepcionTecnica::ESTADO_LISTO_PARA_ENTREGAR)
+            ->operationalOrder()
+            ->limit(4)
+            ->get()
+            ->map(fn (RecepcionTecnica $recepcion): array => $this->mapDashboardTicket($recepcion))
+            ->values();
+
+        $activeTickets = (clone $query)
+            ->open()
+            ->where('estado', '!=', RecepcionTecnica::ESTADO_LISTO_PARA_ENTREGAR)
+            ->operationalOrder()
             ->limit(6)
             ->get()
-            ->map(function (RecepcionTecnica $recepcion): array {
-                return [
-                    'id' => $recepcion->id,
-                    'codigo' => $recepcion->codigo,
-                    'estado' => $recepcion->estado,
-                    'estado_label' => $recepcion->statusLabel(),
-                    'equipo' => $recepcion->equipmentReference(),
-                    'fecha' => $recepcion->ingresado_at?->format('d/m/Y H:i') ?? '-',
-                    'persona_entrega' => $recepcion->persona_nombre,
-                    'creator' => $recepcion->creator?->name ?? 'Sin usuario',
-                ];
-            })
+            ->map(fn (RecepcionTecnica $recepcion): array => $this->mapDashboardTicket($recepcion))
+            ->values();
+
+        $recentHistory = (clone $query)
+            ->history()
+            ->orderByDesc('entregada_at')
+            ->orderByDesc('status_changed_at')
+            ->latest('id')
+            ->limit(4)
+            ->get()
+            ->map(fn (RecepcionTecnica $recepcion): array => $this->mapDashboardTicket($recepcion))
             ->values();
 
         return [
             'accessibleInstitutions' => $this->activeInstitutionContext->accessibleInstitutions($user),
             'activeInstitutionId' => $this->activeInstitutionContext->currentId($user),
-            'openCount' => (clone $query)->open()->count(),
+            'activeCount' => (clone $query)->open()->count(),
             'readyCount' => (clone $query)->where('estado', RecepcionTecnica::ESTADO_LISTO_PARA_ENTREGAR)->count(),
-            'recentIngresos' => $recentIngresos,
+            'closedCount' => (clone $query)->history()->count(),
+            'readyTickets' => $readyTickets,
+            'activeTickets' => $activeTickets,
+            'recentHistory' => $recentHistory,
         ];
     }
 
@@ -165,6 +184,26 @@ class MesaTecnicaService
                 $equipo->oficina?->nombre,
             ])->filter()->implode(' / '),
             'ingreso_tecnico_abierto' => $equipo->recepcionTecnicaAbierta?->codigo,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function mapDashboardTicket(RecepcionTecnica $recepcion): array
+    {
+        return [
+            'id' => $recepcion->id,
+            'codigo' => $recepcion->codigo,
+            'estado' => $recepcion->estado,
+            'estado_label' => $recepcion->statusLabel(),
+            'equipo' => $recepcion->equipmentReference(),
+            'fecha' => $recepcion->ingresado_at?->format('d/m/Y H:i') ?? '-',
+            'persona_entrega' => $recepcion->persona_nombre,
+            'procedencia' => $recepcion->procedenciaResumen(),
+            'creator' => $recepcion->creator?->name ?? 'Sin usuario',
+            'next_action' => $recepcion->nextActionLabel(),
+            'is_ready' => $recepcion->isReadyForDelivery(),
         ];
     }
 

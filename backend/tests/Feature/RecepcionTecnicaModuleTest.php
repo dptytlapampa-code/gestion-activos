@@ -308,6 +308,158 @@ class RecepcionTecnicaModuleTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_listado_operativo_oculta_cerrados_por_defecto_y_mantiene_activos_visibles(): void
+    {
+        [$admin, $institution, $service, $office] = $this->crearEscenarioBase();
+        $equipoActivo = $this->crearEquipo($office, 'ACT');
+        $equipoCerrado = $this->crearEquipo($office, 'CER');
+
+        $activo = $this->crearRecepcionManual($admin, $institution, $service, $office, $equipoActivo, RecepcionTecnica::ESTADO_EN_REPARACION);
+        $cerrado = $this->crearRecepcionManual($admin, $institution, $service, $office, $equipoCerrado, RecepcionTecnica::ESTADO_ENTREGADO);
+
+        $this->actingAs($admin)
+            ->get(route('mesa-tecnica.recepciones-tecnicas.index'))
+            ->assertOk()
+            ->assertSee('Filtro rapido')
+            ->assertSee('Cola operativa diaria')
+            ->assertSee($activo->codigo)
+            ->assertDontSee($cerrado->codigo);
+    }
+
+    public function test_filtro_rapido_por_estado_funciona(): void
+    {
+        [$admin, $institution, $service, $office] = $this->crearEscenarioBase();
+        $equipoActivo = $this->crearEquipo($office, 'ACT2');
+        $equipoListo = $this->crearEquipo($office, 'LIS2');
+        $equipoCerrado = $this->crearEquipo($office, 'CER2');
+
+        $activo = $this->crearRecepcionManual($admin, $institution, $service, $office, $equipoActivo, RecepcionTecnica::ESTADO_EN_DIAGNOSTICO);
+        $listo = $this->crearRecepcionManual($admin, $institution, $service, $office, $equipoListo, RecepcionTecnica::ESTADO_LISTO_PARA_ENTREGAR);
+        $cerrado = $this->crearRecepcionManual($admin, $institution, $service, $office, $equipoCerrado, RecepcionTecnica::ESTADO_ENTREGADO);
+
+        $this->actingAs($admin)
+            ->get(route('mesa-tecnica.recepciones-tecnicas.index', ['vista' => RecepcionTecnica::VISTA_LISTOS]))
+            ->assertOk()
+            ->assertSee($listo->codigo)
+            ->assertDontSee($activo->codigo)
+            ->assertDontSee($cerrado->codigo);
+
+        $this->actingAs($admin)
+            ->get(route('mesa-tecnica.recepciones-tecnicas.index', ['vista' => RecepcionTecnica::VISTA_CERRADOS]))
+            ->assertOk()
+            ->assertSee($cerrado->codigo)
+            ->assertDontSee($activo->codigo)
+            ->assertDontSee($listo->codigo);
+    }
+
+    public function test_detalle_muestra_panel_operativo_antes_de_los_datos_del_ticket_y_acciones_clave(): void
+    {
+        [$admin, $institution, $service, $office] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($office, 'DET');
+        $recepcion = $this->crearRecepcionManual($admin, $institution, $service, $office, $equipo, RecepcionTecnica::ESTADO_EN_DIAGNOSTICO);
+
+        $this->actingAs($admin)
+            ->get(route('mesa-tecnica.recepciones-tecnicas.show', [
+                'recepcionTecnica' => $recepcion,
+                'return_to' => route('mesa-tecnica.recepciones-tecnicas.index', ['vista' => RecepcionTecnica::VISTA_ACTIVOS]),
+            ]))
+            ->assertOk()
+            ->assertSeeInOrder([
+                'Panel operativo',
+                'Registrar diagnostico y seguimiento',
+                'Recepcion reportada',
+            ])
+            ->assertSee('Entregar y cerrar ticket')
+            ->assertSee('Volver a Activos')
+            ->assertSee('name="diagnostico"', false)
+            ->assertSee('name="accion_realizada"', false)
+            ->assertSee('name="informe_tecnico"', false);
+    }
+
+    public function test_impresion_de_ticket_tecnico_sigue_disponible(): void
+    {
+        [$admin, $institution, $service, $office] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($office, 'PRT');
+        $recepcion = $this->crearRecepcionManual($admin, $institution, $service, $office, $equipo, RecepcionTecnica::ESTADO_RECIBIDO);
+
+        $this->actingAs($admin)
+            ->get(route('mesa-tecnica.recepciones-tecnicas.print', $recepcion))
+            ->assertOk()
+            ->assertSee('Comprobante de ingreso tecnico')
+            ->assertSee($recepcion->codigo);
+
+        $recepcion->refresh();
+
+        $this->assertSame(1, (int) $recepcion->print_count);
+        $this->assertDatabaseHas('audit_logs', [
+            'entity_type' => 'recepcion_tecnica',
+            'entity_id' => $recepcion->id,
+            'action' => 'ingreso_tecnico_impreso',
+            'module' => 'mesa_tecnica',
+        ]);
+    }
+
+    public function test_seguimiento_actualiza_campos_tecnicos_y_conserva_trazabilidad(): void
+    {
+        [$admin, $institution, $service, $office] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($office, 'SEG');
+        $recepcion = $this->crearRecepcionManual($admin, $institution, $service, $office, $equipo, RecepcionTecnica::ESTADO_RECIBIDO);
+
+        $this->actingAs($admin)
+            ->from(route('mesa-tecnica.recepciones-tecnicas.show', $recepcion))
+            ->patch(route('mesa-tecnica.recepciones-tecnicas.status.update', $recepcion), [
+                'estado' => RecepcionTecnica::ESTADO_EN_DIAGNOSTICO,
+                'diagnostico' => 'Fuente de poder con tension inestable.',
+                'accion_realizada' => 'Se realizaron pruebas de arranque y medicion.',
+                'solucion_aplicada' => 'Se deja pendiente reemplazo de fuente.',
+                'informe_tecnico' => 'Equipo utilizable solo luego del cambio de fuente.',
+                'observaciones_internas' => 'Esperando autorizacion.',
+            ])
+            ->assertRedirect(route('mesa-tecnica.recepciones-tecnicas.show', $recepcion));
+
+        $recepcion->refresh();
+
+        $this->assertSame(RecepcionTecnica::ESTADO_EN_DIAGNOSTICO, $recepcion->estado);
+        $this->assertSame('Fuente de poder con tension inestable.', $recepcion->diagnostico);
+        $this->assertSame('Se realizaron pruebas de arranque y medicion.', $recepcion->accion_realizada);
+        $this->assertSame('Se deja pendiente reemplazo de fuente.', $recepcion->solucion_aplicada);
+        $this->assertSame('Equipo utilizable solo luego del cambio de fuente.', $recepcion->informe_tecnico);
+        $this->assertDatabaseHas('audit_logs', [
+            'entity_type' => 'recepcion_tecnica',
+            'entity_id' => $recepcion->id,
+            'action' => 'ingreso_tecnico_seguimiento_actualizado',
+            'module' => 'mesa_tecnica',
+        ]);
+    }
+
+    public function test_impide_nuevo_ingreso_para_equipo_con_ticket_abierto_creado_desde_mesa_tecnica(): void
+    {
+        [$admin, $institution, $service, $office] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($office, 'INC');
+
+        $this->crearRecepcionManual(
+            $admin,
+            $institution,
+            $service,
+            $office,
+            $equipo,
+            RecepcionTecnica::ESTADO_EN_REPARACION,
+            [
+                'equipo_id' => null,
+                'equipo_creado_id' => $equipo->id,
+                'codigo_interno_equipo' => $equipo->codigo_interno,
+            ]
+        );
+
+        $this->actingAs($admin)
+            ->from(route('mesa-tecnica.recepciones-tecnicas.create'))
+            ->post(route('mesa-tecnica.recepciones-tecnicas.store'), $this->payloadIngresoTecnico($equipo, $institution, $service, $office))
+            ->assertRedirect(route('mesa-tecnica.recepciones-tecnicas.create'))
+            ->assertSessionHasErrors([
+                'equipo_id' => 'Este equipo ya tiene un ingreso tecnico abierto.',
+            ]);
+    }
+
     private function registrarIngresoTecnico(
         User $user,
         Equipo $equipo,
@@ -325,6 +477,44 @@ class RecepcionTecnicaModuleTest extends TestCase
             ->assertRedirect();
 
         return RecepcionTecnica::query()->latest('id')->firstOrFail();
+    }
+
+    private function crearRecepcionManual(
+        User $user,
+        Institution $institution,
+        Service $service,
+        Office $office,
+        Equipo $equipo,
+        string $estado,
+        array $overrides = []
+    ): RecepcionTecnica {
+        return RecepcionTecnica::query()->create(array_merge([
+            'institution_id' => $institution->id,
+            'created_by' => $user->id,
+            'recibido_por' => $user->id,
+            'cerrado_por' => in_array($estado, RecepcionTecnica::ESTADOS_DE_CIERRE, true) ? $user->id : null,
+            'equipo_id' => $equipo->id,
+            'fecha_recepcion' => now()->toDateString(),
+            'ingresado_at' => now()->subHours(4),
+            'estado' => $estado,
+            'status_changed_at' => now()->subHour(),
+            'entregada_at' => in_array($estado, RecepcionTecnica::ESTADOS_DE_CIERRE, true) ? now() : null,
+            'sector_receptor' => 'Mesa Tecnica / Nivel Central',
+            'referencia_equipo' => $equipo->reference(),
+            'tipo_equipo_texto' => $equipo->tipo,
+            'marca' => $equipo->marca,
+            'modelo' => $equipo->modelo,
+            'numero_serie' => $equipo->numero_serie,
+            'bien_patrimonial' => $equipo->bien_patrimonial,
+            'codigo_interno_equipo' => $equipo->codigo_interno,
+            'procedencia_institution_id' => $institution->id,
+            'procedencia_service_id' => $service->id,
+            'procedencia_office_id' => $office->id,
+            'persona_nombre' => 'Chofer Hospital',
+            'persona_documento' => '20111222',
+            'persona_relacion_equipo' => 'Chofer',
+            'falla_motivo' => 'No enciende',
+        ], $overrides));
     }
 
     private function payloadIngresoTecnico(

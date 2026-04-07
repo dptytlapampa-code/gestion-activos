@@ -42,7 +42,8 @@ class MesaTecnicaModuleTest extends TestCase
             ->get(route('mesa-tecnica.index'))
             ->assertOk()
             ->assertSee('Recibir para reparacion')
-            ->assertSee('Ingreso tecnico temporal')
+            ->assertSee('Operacion diaria')
+            ->assertSee('No altera patrimonio')
             ->assertSee('Actas y movimientos');
 
         $this->actingAs($viewer)
@@ -50,20 +51,63 @@ class MesaTecnicaModuleTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_dashboard_muestra_tickets_recientes_y_aclara_separacion_patrimonial(): void
+    public function test_dashboard_prioriza_operacion_activa_y_separa_historial_reciente(): void
     {
         [$admin, $institution, $service, $office] = $this->crearEscenarioBase();
-        $equipo = $this->crearEquipo($office, 'DASH');
+        $equipoActivo = $this->crearEquipo($office, 'ACT');
+        $equipoListo = $this->crearEquipo($office, 'LIS');
+        $equipoCerrado = $this->crearEquipo($office, 'CER');
 
-        RecepcionTecnica::query()->create([
+        $activo = $this->crearRecepcionTecnica($admin, $institution, $service, $office, $equipoActivo, RecepcionTecnica::ESTADO_EN_REPARACION);
+        $listo = $this->crearRecepcionTecnica($admin, $institution, $service, $office, $equipoListo, RecepcionTecnica::ESTADO_LISTO_PARA_ENTREGAR);
+        $cerrado = $this->crearRecepcionTecnica($admin, $institution, $service, $office, $equipoCerrado, RecepcionTecnica::ESTADO_ENTREGADO);
+
+        $this->actingAs($admin)
+            ->get(route('mesa-tecnica.index'))
+            ->assertOk()
+            ->assertSee('No altera patrimonio')
+            ->assertSeeInOrder([
+                'Listos para entregar',
+                $listo->codigo,
+                'Tickets activos',
+                $activo->codigo,
+                'Historial reciente',
+                $cerrado->codigo,
+            ]);
+    }
+
+    public function test_mesa_tecnica_muestra_etiqueta_imprimible(): void
+    {
+        [$admin, , , $office] = $this->crearEscenarioBase();
+        $equipo = $this->crearEquipo($office, 'LAB');
+
+        $this->actingAs($admin)
+            ->get(route('mesa-tecnica.label', $equipo))
+            ->assertOk()
+            ->assertSee($equipo->codigo_interno)
+            ->assertSee('Uso institucional')
+            ->assertSee('<svg', false);
+    }
+
+    private function crearRecepcionTecnica(
+        User $user,
+        Institution $institution,
+        Service $service,
+        Office $office,
+        Equipo $equipo,
+        string $estado
+    ): RecepcionTecnica {
+        return RecepcionTecnica::query()->create([
             'institution_id' => $institution->id,
-            'created_by' => $admin->id,
-            'recibido_por' => $admin->id,
+            'created_by' => $user->id,
+            'recibido_por' => $user->id,
+            'cerrado_por' => in_array($estado, RecepcionTecnica::ESTADOS_DE_CIERRE, true) ? $user->id : null,
             'equipo_id' => $equipo->id,
             'fecha_recepcion' => now()->toDateString(),
-            'ingresado_at' => now(),
-            'estado' => RecepcionTecnica::ESTADO_EN_REPARACION,
-            'status_changed_at' => now(),
+            'ingresado_at' => now()->subHours(3),
+            'estado' => $estado,
+            'status_changed_at' => now()->subHour(),
+            'entregada_at' => in_array($estado, RecepcionTecnica::ESTADOS_DE_CIERRE, true) ? now() : null,
             'sector_receptor' => 'Mesa Tecnica / Nivel Central',
             'referencia_equipo' => $equipo->reference(),
             'tipo_equipo_texto' => $equipo->tipo,
@@ -78,28 +122,6 @@ class MesaTecnicaModuleTest extends TestCase
             'persona_nombre' => 'Chofer Hospital',
             'falla_motivo' => 'No enciende',
         ]);
-
-        $this->actingAs($admin)
-            ->get(route('mesa-tecnica.index'))
-            ->assertOk()
-            ->assertSee('No altera patrimonio')
-            ->assertSee('Chofer Hospital')
-            ->assertSee('Actas y movimientos')
-            ->assertSee('Ingreso tecnico')
-            ->assertDontSee('Acta inmediata');
-    }
-
-    public function test_mesa_tecnica_muestra_etiqueta_imprimible(): void
-    {
-        [$admin, , , $office] = $this->crearEscenarioBase();
-        $equipo = $this->crearEquipo($office, 'LAB');
-
-        $this->actingAs($admin)
-            ->get(route('mesa-tecnica.label', $equipo))
-            ->assertOk()
-            ->assertSee($equipo->codigo_interno)
-            ->assertSee('Uso institucional')
-            ->assertSee('<svg', false);
     }
 
     private function crearEscenarioBase(string $suffix = 'A'): array
