@@ -62,6 +62,7 @@
             ['icon' => 'printer', 'label' => 'Impresiones', 'value' => (string) ((int) $recepcionTecnica->print_count)],
             ['icon' => 'printer', 'label' => 'Ultima impresion', 'value' => $recepcionTecnica->last_printed_at?->format('d/m/Y H:i') ?: '-'],
         ];
+        $showInitialFailureOpen = $isOperational;
     @endphp
 
     <div class="space-y-5 lg:space-y-6">
@@ -488,18 +489,16 @@
 
         <section class="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(21rem,0.95fr)]">
             <div class="space-y-6">
-                <section class="app-panel mt-panel rounded-[2rem] px-5 py-5 sm:px-6">
-                    <div class="flex items-start gap-3 border-b border-slate-200 pb-4">
-                        <span class="mt-icon-chip text-slate-700">
-                            <x-icon name="file-text" class="h-5 w-5" />
-                        </span>
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Resumen del ticket</p>
-                            <h3 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Contexto operativo</h3>
-                        </div>
-                    </div>
-
-                    <div class="mt-4 grid gap-4 md:grid-cols-2">
+                <x-collapsible-panel
+                    title="Contexto operativo"
+                    eyebrow="Resumen del ticket"
+                    icon="file-text"
+                    summary="Procedencia, entrega y seguimiento publico."
+                    :default-open="false"
+                    :persist-key="'mesa-tecnica-ticket-'.$recepcionTecnica->id.'.contexto'"
+                    class="mt-panel"
+                >
+                    <div class="grid gap-4 md:grid-cols-2">
                         <div class="app-subcard mt-card-lift p-4">
                             <p class="mt-inline-meta text-xs uppercase tracking-wide text-slate-500">
                                 <x-icon name="external-link" class="h-3.5 w-3.5" />
@@ -523,20 +522,18 @@
                             </div>
                         @endforeach
                     </div>
-                </section>
+                </x-collapsible-panel>
 
-                <section class="app-panel mt-panel rounded-[2rem] px-5 py-5 sm:px-6">
-                    <div class="flex items-start gap-3 border-b border-slate-200 pb-4">
-                        <span class="mt-icon-chip text-slate-700">
-                            <x-icon name="monitor" class="h-5 w-5" />
-                        </span>
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Equipo y procedencia</p>
-                            <h3 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Identificacion</h3>
-                        </div>
-                    </div>
-
-                    <div class="mt-4 grid gap-4 md:grid-cols-2">
+                <x-collapsible-panel
+                    title="Identificacion"
+                    eyebrow="Equipo y procedencia"
+                    icon="monitor"
+                    summary="Referencia, inventario, tipo, serie y patrimonial."
+                    :default-open="false"
+                    :persist-key="'mesa-tecnica-ticket-'.$recepcionTecnica->id.'.identificacion'"
+                    class="mt-panel"
+                >
+                    <div class="grid gap-4 md:grid-cols-2">
                         @foreach ($equipmentCards as $card)
                             <div class="app-subcard mt-card-lift p-4">
                                 <p class="mt-inline-meta text-xs uppercase tracking-wide text-slate-500">
@@ -547,20 +544,19 @@
                             </div>
                         @endforeach
                     </div>
-                </section>
+                </x-collapsible-panel>
 
-                <section class="app-panel mt-panel rounded-[2rem] px-5 py-5 sm:px-6">
-                    <div class="flex items-start gap-3 border-b border-slate-200 pb-4">
-                        <span class="mt-icon-chip text-amber-700">
-                            <x-icon name="alert-circle" class="h-5 w-5" />
-                        </span>
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Recepcion reportada</p>
-                            <h3 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Falla inicial</h3>
-                        </div>
-                    </div>
-
-                    <div class="mt-4 space-y-4">
+                <x-collapsible-panel
+                    title="Falla inicial"
+                    eyebrow="Recepcion reportada"
+                    icon="alert-circle"
+                    summary="Motivo, descripcion, accesorios y estado fisico inicial."
+                    :default-open="$showInitialFailureOpen"
+                    :persist-key="'mesa-tecnica-ticket-'.$recepcionTecnica->id.'.falla-inicial'"
+                    class="mt-panel"
+                    icon-class="text-amber-700"
+                >
+                    <div class="space-y-4">
                         <div class="app-subcard p-4">
                             <p class="mt-inline-meta text-xs font-semibold uppercase tracking-wide text-slate-500">
                                 <x-icon name="alert-circle" class="h-3.5 w-3.5" />
@@ -599,23 +595,22 @@
                             <p class="mt-2 whitespace-pre-line text-sm text-slate-700">{{ $recepcionTecnica->observaciones_recepcion ?: '-' }}</p>
                         </div>
                     </div>
-                </section>
+                </x-collapsible-panel>
             </div>
 
             <aside class="space-y-6">
                 @if ($equipo)
-                    <section class="app-panel mt-panel rounded-[2rem] px-5 py-5 sm:px-6">
-                        <div class="flex items-start gap-3 border-b border-slate-200 pb-4">
-                            <span class="mt-icon-chip text-amber-700">
-                                <x-icon name="shield-check" class="h-5 w-5" />
-                            </span>
-                            <div>
-                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Patrimonio</p>
-                                <h3 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Ubicacion real del equipo</h3>
-                            </div>
-                        </div>
-
-                        <div class="mt-4 space-y-4">
+                    <x-collapsible-panel
+                        title="Ubicacion real del equipo"
+                        eyebrow="Patrimonio"
+                        icon="shield-check"
+                        summary="La custodia temporal no altera el destino patrimonial."
+                        :default-open="false"
+                        :persist-key="'mesa-tecnica-ticket-'.$recepcionTecnica->id.'.patrimonio'"
+                        class="mt-panel"
+                        icon-class="text-amber-700"
+                    >
+                        <div class="space-y-4">
                             <div class="mt-note-block mt-panel-warm text-amber-950">
                                 <p class="mt-inline-meta text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">
                                     <x-icon name="map-pin" class="h-3.5 w-3.5" />
@@ -642,44 +637,49 @@
                                 </a>
                             </div>
                         </div>
-                    </section>
+                    </x-collapsible-panel>
                 @endif
 
                 @if ($recepcionTecnica->maintenanceRecord)
-                    <section class="app-panel mt-panel mt-panel-ready rounded-[2rem] px-5 py-5 sm:px-6">
-                        <div class="flex items-start gap-3">
-                            <span class="mt-icon-chip text-emerald-700">
-                                <x-icon name="wrench" class="h-5 w-5" />
-                            </span>
-                            <div>
-                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Historial tecnico</p>
-                                <h3 class="mt-2 text-lg font-semibold text-emerald-950">Mantenimiento generado</h3>
-                                <p class="mt-2 text-sm text-emerald-900">
-                                    El cierre de este ticket genero automaticamente el registro <strong>{{ $recepcionTecnica->maintenanceRecord->titulo }}</strong>.
-                                </p>
-                            </div>
+                    <x-collapsible-panel
+                        title="Mantenimiento generado"
+                        eyebrow="Historial tecnico"
+                        icon="wrench"
+                        summary="El cierre del ticket creo un registro tecnico asociado."
+                        :default-open="false"
+                        :persist-key="'mesa-tecnica-ticket-'.$recepcionTecnica->id.'.mantenimiento-generado'"
+                        class="mt-panel mt-panel-ready"
+                        icon-class="text-emerald-700"
+                        eyebrow-class="text-emerald-700"
+                        title-class="text-emerald-950"
+                        description-class="text-emerald-900"
+                        summary-class="text-emerald-900"
+                    >
+                        <div class="space-y-4">
+                            <p class="text-sm text-emerald-900">
+                                El cierre de este ticket genero automaticamente el registro <strong>{{ $recepcionTecnica->maintenanceRecord->titulo }}</strong>.
+                            </p>
+
+                            @if ($equipo)
+                                <a href="{{ route('equipos.show', $equipo) }}#mantenimiento-{{ $recepcionTecnica->maintenanceRecord->id }}" class="btn btn-emerald gap-2">
+                                    <x-icon name="wrench" class="h-4 w-4" />
+                                    Ver en mantenimiento
+                                </a>
+                            @endif
                         </div>
-                        @if ($equipo)
-                            <a href="{{ route('equipos.show', $equipo) }}#mantenimiento-{{ $recepcionTecnica->maintenanceRecord->id }}" class="btn btn-emerald mt-4 gap-2">
-                                <x-icon name="wrench" class="h-4 w-4" />
-                                Ver en mantenimiento
-                            </a>
-                        @endif
-                    </section>
+                    </x-collapsible-panel>
                 @endif
 
-                <section class="app-panel mt-panel rounded-[2rem] px-5 py-5 sm:px-6">
-                    <div class="flex items-start gap-3 border-b border-slate-200 pb-4">
-                        <span class="mt-icon-chip text-slate-700">
-                            <x-icon name="file-text" class="h-5 w-5" />
-                        </span>
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Trazabilidad</p>
-                            <h3 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Historial del ticket</h3>
-                        </div>
-                    </div>
-
-                    <div class="mt-4 space-y-3 text-sm">
+                <x-collapsible-panel
+                    title="Historial del ticket"
+                    eyebrow="Trazabilidad"
+                    icon="file-text"
+                    summary="Fechas clave, impresiones y responsables del circuito."
+                    :default-open="false"
+                    :persist-key="'mesa-tecnica-ticket-'.$recepcionTecnica->id.'.trazabilidad'"
+                    class="mt-panel"
+                >
+                    <div class="space-y-3 text-sm">
                         @foreach ($traceItems as $item)
                             <div class="mt-trace-item">
                                 <span class="mt-inline-meta text-slate-500">
@@ -690,7 +690,7 @@
                             </div>
                         @endforeach
                     </div>
-                </section>
+                </x-collapsible-panel>
             </aside>
         </section>
     </div>

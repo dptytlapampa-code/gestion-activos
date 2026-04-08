@@ -6,6 +6,49 @@
 @section('content')
     @php
         $operatesGlobally = (bool) (($authInstitutionContext['operatesGlobally'] ?? false));
+        $existingEquipmentErrors = $errors->has('equipo_id');
+        $newEquipmentErrors = collect([
+            'referencia_equipo',
+            'tipo_equipo_texto',
+            'marca',
+            'modelo',
+            'numero_serie',
+            'bien_patrimonial',
+        ])->contains(fn (string $field): bool => $errors->has($field));
+        $inventoryErrors = collect([
+            'institution_id',
+            'service_id',
+            'office_id',
+            'oficina_id',
+            'tipo_equipo_id',
+            'estado',
+            'fecha_ingreso',
+            'incorporar_equipo',
+        ])->contains(fn (string $field): bool => $errors->has($field));
+        $baseTicketErrors = collect(['fecha_hora_ingreso', 'sector_receptor'])->contains(fn (string $field): bool => $errors->has($field));
+        $deliveryErrors = collect([
+            'persona_nombre',
+            'persona_documento',
+            'persona_telefono',
+            'persona_relacion_equipo',
+            'persona_area',
+            'persona_institucion',
+        ])->contains(fn (string $field): bool => $errors->has($field));
+        $sourceErrors = collect([
+            'procedencia_institution_id',
+            'procedencia_service_id',
+            'procedencia_office_id',
+            'procedencia_hospital',
+            'procedencia_libre',
+        ])->contains(fn (string $field): bool => $errors->has($field));
+        $failureErrors = collect([
+            'falla_motivo',
+            'descripcion_falla',
+            'accesorios_entregados',
+            'estado_fisico_inicial',
+            'observaciones_recepcion',
+            'observaciones_internas',
+        ])->contains(fn (string $field): bool => $errors->has($field));
     @endphp
 
     <div
@@ -99,13 +142,18 @@
                 </div>
             </section>
 
-            <section x-show="mode === 'existente'" x-cloak class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
-                <div class="border-b border-slate-200 pb-4">
-                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Busqueda</p>
-                    <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Equipo existente</h2>
-                </div>
-
-                <div class="mt-4 space-y-4">
+            <x-collapsible-panel
+                x-show="mode === 'existente'"
+                x-cloak
+                title="Equipo existente"
+                eyebrow="Busqueda"
+                icon="search"
+                summary="Busque por codigo, serie, patrimonial o QR."
+                :default-open="true"
+                :force-open="$existingEquipmentErrors"
+                persist-key="mesa-tecnica-create.equipo-existente"
+            >
+                <div class="space-y-4">
                     <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
                         <div>
                             <label for="equipo-search" class="text-sm font-medium text-slate-700">Identificador</label>
@@ -174,15 +222,20 @@
                         <p class="form-error">{{ $message }}</p>
                     @enderror
                 </div>
-            </section>
+            </x-collapsible-panel>
 
-            <section x-show="mode === 'nuevo'" x-cloak class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
-                <div class="border-b border-slate-200 pb-4">
-                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Equipo</p>
-                    <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Datos rapidos</h2>
-                </div>
-
-                <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <x-collapsible-panel
+                x-show="mode === 'nuevo'"
+                x-cloak
+                title="Datos rapidos"
+                eyebrow="Equipo"
+                icon="monitor"
+                summary="Referencia visible e identificadores basicos para recibir el equipo."
+                :default-open="true"
+                :force-open="$newEquipmentErrors"
+                persist-key="mesa-tecnica-create.datos-rapidos"
+            >
+                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     <div class="xl:col-span-3">
                         <label for="referencia_equipo" class="mb-2 block text-sm font-medium text-slate-700">Referencia</label>
                         <input id="referencia_equipo" name="referencia_equipo" type="text" value="{{ old('referencia_equipo') }}" class="app-input" placeholder="Ej.: notebook blanca de admision, monitor de terapia">
@@ -245,124 +298,140 @@
                     @enderror
                 </div>
 
-                <div x-show="incorporate" x-cloak class="mt-5 space-y-5 rounded-[1.75rem] border border-indigo-200 bg-indigo-50/70 px-4 py-4">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-700">Inventario</p>
-                        <h3 class="mt-1 text-lg font-semibold text-indigo-950">Alta en sistema</h3>
-                    </div>
-
-                    <div
-                        @autocomplete-selected.window="if ($event.detail.name === 'institution_id') { handleDestinoInstitutionSelected($event.detail.value); }"
-                        @autocomplete-cleared.window="if ($event.detail.name === 'institution_id') { handleDestinoInstitutionSelected(''); }"
-                    >
-                        <label for="institution_id" class="mb-2 block text-sm font-medium text-slate-700">Institucion</label>
-                        <x-autocomplete
-                            name="institution_id"
-                            endpoint="/api/search/institutions"
-                            placeholder="Buscar institucion"
-                            :value="old('institution_id')"
-                            :label="old('institution_id_label')"
-                        />
-                        <input type="hidden" name="institution_id" x-model="destino.institutionId">
-                        @error('institution_id')
-                            <p class="form-error mt-2">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div class="grid gap-4 md:grid-cols-2">
+                <x-collapsible-panel
+                    x-show="incorporate"
+                    x-cloak
+                    title="Alta en sistema"
+                    eyebrow="Inventario"
+                    icon="shield-check"
+                    summary="Datos patrimoniales y ubicacion necesarios solo si incorpora el equipo al inventario."
+                    :default-open="(bool) old('incorporar_equipo', false) || $inventoryErrors"
+                    :force-open="$inventoryErrors"
+                    persist-key="mesa-tecnica-create.alta-inventario"
+                    class="mt-5 border-indigo-200 bg-indigo-50/70"
+                    icon-class="text-indigo-700"
+                    eyebrow-class="text-indigo-700"
+                    title-class="text-indigo-950"
+                    description-class="text-indigo-900"
+                    summary-class="text-indigo-900"
+                >
+                    <div class="space-y-5">
                         <div
-                            @autocomplete-selected.window="if ($event.detail.name === 'service_id') { handleDestinoServiceSelected($event.detail.value); }"
-                            @autocomplete-cleared.window="if ($event.detail.name === 'service_id') { handleDestinoServiceSelected(''); }"
+                            @autocomplete-selected.window="if ($event.detail.name === 'institution_id') { handleDestinoInstitutionSelected($event.detail.value); }"
+                            @autocomplete-cleared.window="if ($event.detail.name === 'institution_id') { handleDestinoInstitutionSelected(''); }"
                         >
-                            <label for="service_id" class="mb-2 block text-sm font-medium text-slate-700">Servicio</label>
+                            <label for="institution_id" class="mb-2 block text-sm font-medium text-slate-700">Institucion</label>
                             <x-autocomplete
-                                name="service_id"
-                                endpoint="/api/search/services"
-                                placeholder="Buscar servicio"
-                                :value="old('service_id')"
-                                :label="old('service_id_label')"
-                                :params="['institution_id' => old('institution_id')]"
+                                name="institution_id"
+                                endpoint="/api/search/institutions"
+                                placeholder="Buscar institucion"
+                                :value="old('institution_id')"
+                                :label="old('institution_id_label')"
                             />
-                            <input type="hidden" name="service_id" x-model="destino.serviceId">
-                            @error('service_id')
+                            <input type="hidden" name="institution_id" x-model="destino.institutionId">
+                            @error('institution_id')
                                 <p class="form-error mt-2">{{ $message }}</p>
                             @enderror
+                        </div>
+
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <div
+                                @autocomplete-selected.window="if ($event.detail.name === 'service_id') { handleDestinoServiceSelected($event.detail.value); }"
+                                @autocomplete-cleared.window="if ($event.detail.name === 'service_id') { handleDestinoServiceSelected(''); }"
+                            >
+                                <label for="service_id" class="mb-2 block text-sm font-medium text-slate-700">Servicio</label>
+                                <x-autocomplete
+                                    name="service_id"
+                                    endpoint="/api/search/services"
+                                    placeholder="Buscar servicio"
+                                    :value="old('service_id')"
+                                    :label="old('service_id_label')"
+                                    :params="['institution_id' => old('institution_id')]"
+                                />
+                                <input type="hidden" name="service_id" x-model="destino.serviceId">
+                                @error('service_id')
+                                    <p class="form-error mt-2">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div
+                                @autocomplete-selected.window="if ($event.detail.name === 'oficina_id') { destino.officeId = String($event.detail.value); }"
+                                @autocomplete-cleared.window="if ($event.detail.name === 'oficina_id') { destino.officeId = ''; }"
+                            >
+                                <label for="oficina_id" class="mb-2 block text-sm font-medium text-slate-700">Oficina</label>
+                                <x-autocomplete
+                                    name="oficina_id"
+                                    endpoint="/api/search/offices"
+                                    placeholder="Buscar oficina"
+                                    :value="old('office_id', old('oficina_id'))"
+                                    :label="old('office_id_label', old('oficina_id_label'))"
+                                    :params="['service_id' => old('service_id'), 'institution_id' => old('institution_id')]"
+                                />
+                                <input type="hidden" name="office_id" x-model="destino.officeId">
+                                @if ($errors->has('office_id'))
+                                    <p class="form-error mt-2">{{ $errors->first('office_id') }}</p>
+                                @elseif ($errors->has('oficina_id'))
+                                    <p class="form-error mt-2">{{ $errors->first('oficina_id') }}</p>
+                                @endif
+                            </div>
                         </div>
 
                         <div
-                            @autocomplete-selected.window="if ($event.detail.name === 'oficina_id') { destino.officeId = String($event.detail.value); }"
-                            @autocomplete-cleared.window="if ($event.detail.name === 'oficina_id') { destino.officeId = ''; }"
+                            @autocomplete-selected.window="if ($event.detail.name === 'tipo_equipo_id') { destino.tipoEquipoId = String($event.detail.value); }"
+                            @autocomplete-cleared.window="if ($event.detail.name === 'tipo_equipo_id') { destino.tipoEquipoId = ''; }"
                         >
-                            <label for="oficina_id" class="mb-2 block text-sm font-medium text-slate-700">Oficina</label>
+                            <label for="tipo_equipo_id" class="mb-2 block text-sm font-medium text-slate-700">Tipo en inventario</label>
                             <x-autocomplete
-                                name="oficina_id"
-                                endpoint="/api/search/offices"
-                                placeholder="Buscar oficina"
-                                :value="old('office_id', old('oficina_id'))"
-                                :label="old('office_id_label', old('oficina_id_label'))"
-                                :params="['service_id' => old('service_id'), 'institution_id' => old('institution_id')]"
+                                name="tipo_equipo_id"
+                                endpoint="/api/search/tipos-equipos"
+                                placeholder="Buscar tipo"
+                                :value="old('tipo_equipo_id')"
+                                :label="old('tipo_equipo_id_label')"
                             />
-                            <input type="hidden" name="office_id" x-model="destino.officeId">
-                            @if ($errors->has('office_id'))
-                                <p class="form-error mt-2">{{ $errors->first('office_id') }}</p>
-                            @elseif ($errors->has('oficina_id'))
-                                <p class="form-error mt-2">{{ $errors->first('oficina_id') }}</p>
-                            @endif
-                        </div>
-                    </div>
-
-                    <div
-                        @autocomplete-selected.window="if ($event.detail.name === 'tipo_equipo_id') { destino.tipoEquipoId = String($event.detail.value); }"
-                        @autocomplete-cleared.window="if ($event.detail.name === 'tipo_equipo_id') { destino.tipoEquipoId = ''; }"
-                    >
-                        <label for="tipo_equipo_id" class="mb-2 block text-sm font-medium text-slate-700">Tipo en inventario</label>
-                        <x-autocomplete
-                            name="tipo_equipo_id"
-                            endpoint="/api/search/tipos-equipos"
-                            placeholder="Buscar tipo"
-                            :value="old('tipo_equipo_id')"
-                            :label="old('tipo_equipo_id_label')"
-                        />
-                        <input type="hidden" name="tipo_equipo_id" x-model="destino.tipoEquipoId">
-                        @error('tipo_equipo_id')
-                            <p class="form-error mt-2">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div class="grid gap-4 md:grid-cols-2">
-                        <div>
-                            <label for="estado" class="mb-2 block text-sm font-medium text-slate-700">Estado</label>
-                            <select id="estado" name="estado" class="app-input">
-                                <option value="">Seleccione un estado</option>
-                                @foreach ($equipmentStates as $state)
-                                    <option value="{{ $state }}" @selected(old('estado') === $state)>{{ strtoupper(str_replace('_', ' ', $state)) }}</option>
-                                @endforeach
-                            </select>
-                            @error('estado')
+                            <input type="hidden" name="tipo_equipo_id" x-model="destino.tipoEquipoId">
+                            @error('tipo_equipo_id')
                                 <p class="form-error mt-2">{{ $message }}</p>
                             @enderror
                         </div>
 
-                        <div>
-                            <label for="fecha_ingreso" class="mb-2 block text-sm font-medium text-slate-700">Fecha alta</label>
-                            <input id="fecha_ingreso" name="fecha_ingreso" type="date" value="{{ old('fecha_ingreso', now()->toDateString()) }}" class="app-input">
-                            @error('fecha_ingreso')
-                                <p class="form-error mt-2">{{ $message }}</p>
-                            @enderror
+                        <div class="grid gap-4 md:grid-cols-2">
+                            <div>
+                                <label for="estado" class="mb-2 block text-sm font-medium text-slate-700">Estado</label>
+                                <select id="estado" name="estado" class="app-input">
+                                    <option value="">Seleccione un estado</option>
+                                    @foreach ($equipmentStates as $state)
+                                        <option value="{{ $state }}" @selected(old('estado') === $state)>{{ strtoupper(str_replace('_', ' ', $state)) }}</option>
+                                    @endforeach
+                                </select>
+                                @error('estado')
+                                    <p class="form-error mt-2">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="fecha_ingreso" class="mb-2 block text-sm font-medium text-slate-700">Fecha alta</label>
+                                <input id="fecha_ingreso" name="fecha_ingreso" type="date" value="{{ old('fecha_ingreso', now()->toDateString()) }}" class="app-input">
+                                @error('fecha_ingreso')
+                                    <p class="form-error mt-2">{{ $message }}</p>
+                                @enderror
+                            </div>
                         </div>
                     </div>
-                </div>
-            </section>
+                </x-collapsible-panel>
+            </x-collapsible-panel>
 
             <section class="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
                 <div class="space-y-6">
-                    <section class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
-                        <div class="border-b border-slate-200 pb-4">
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Ticket</p>
-                            <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Datos base</h2>
-                        </div>
-
-                        <div class="mt-4 grid gap-4 md:grid-cols-2">
+                    <x-collapsible-panel
+                        title="Datos base"
+                        eyebrow="Ticket"
+                        icon="file-text"
+                        summary="Fecha real de ingreso y sector receptor."
+                        :default-open="true"
+                        :force-open="$baseTicketErrors"
+                        persist-key="mesa-tecnica-create.datos-base"
+                    >
+                        <div class="grid gap-4 md:grid-cols-2">
                             <div>
                                 <label for="fecha_hora_ingreso" class="mb-2 block text-sm font-medium text-slate-700">Fecha y hora</label>
                                 <input id="fecha_hora_ingreso" name="fecha_hora_ingreso" type="datetime-local" value="{{ old('fecha_hora_ingreso', $defaultReceptionTimestamp) }}" class="app-input">
@@ -379,15 +448,18 @@
                                 @enderror
                             </div>
                         </div>
-                    </section>
+                    </x-collapsible-panel>
 
-                    <section class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
-                        <div class="border-b border-slate-200 pb-4">
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Entrega</p>
-                            <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Quien lo trae</h2>
-                        </div>
-
-                        <div class="mt-4 grid gap-4 md:grid-cols-2">
+                    <x-collapsible-panel
+                        title="Quien lo trae"
+                        eyebrow="Entrega"
+                        icon="users"
+                        summary="Datos de contacto y relacion de quien entrega el equipo."
+                        :default-open="true"
+                        :force-open="$deliveryErrors"
+                        persist-key="mesa-tecnica-create.entrega"
+                    >
+                        <div class="grid gap-4 md:grid-cols-2">
                             <div>
                                 <label for="persona_nombre" class="mb-2 block text-sm font-medium text-slate-700">Nombre</label>
                                 <input id="persona_nombre" name="persona_nombre" type="text" value="{{ old('persona_nombre') }}" class="app-input" placeholder="Nombre completo">
@@ -431,17 +503,20 @@
                                 @enderror
                             </div>
                         </div>
-                    </section>
+                    </x-collapsible-panel>
                 </div>
 
                 <div class="space-y-6">
-                    <section class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
-                        <div class="border-b border-slate-200 pb-4">
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Origen</p>
-                            <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">De donde viene</h2>
-                        </div>
-
-                        <div class="mt-4 space-y-4">
+                    <x-collapsible-panel
+                        title="De donde viene"
+                        eyebrow="Origen"
+                        icon="building-2"
+                        summary="Contexto de procedencia, util para trazabilidad pero secundario para la carga inicial."
+                        :default-open="$sourceErrors"
+                        :force-open="$sourceErrors"
+                        persist-key="mesa-tecnica-create.procedencia"
+                    >
+                        <div class="space-y-4">
                             <div
                                 @autocomplete-selected.window="if ($event.detail.name === 'procedencia_institution_id') { handleProcedenciaInstitutionSelected($event.detail.value); }"
                                 @autocomplete-cleared.window="if ($event.detail.name === 'procedencia_institution_id') { handleProcedenciaInstitutionSelected(''); }"
@@ -516,15 +591,19 @@
                                 @enderror
                             </div>
                         </div>
-                    </section>
+                    </x-collapsible-panel>
 
-                    <section class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
-                        <div class="border-b border-slate-200 pb-4">
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Falla</p>
-                            <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Descripcion</h2>
-                        </div>
-
-                        <div class="mt-4 space-y-4">
+                    <x-collapsible-panel
+                        title="Descripcion"
+                        eyebrow="Falla"
+                        icon="alert-circle"
+                        summary="Motivo, detalle tecnico, accesorios y observaciones visibles."
+                        :default-open="true"
+                        :force-open="$failureErrors"
+                        persist-key="mesa-tecnica-create.falla"
+                        icon-class="text-amber-700"
+                    >
+                        <div class="space-y-4">
                             <div>
                                 <label for="falla_motivo" class="mb-2 block text-sm font-medium text-slate-700">Motivo</label>
                                 <input id="falla_motivo" name="falla_motivo" type="text" value="{{ old('falla_motivo') }}" class="app-input" placeholder="Motivo principal">
@@ -568,7 +647,7 @@
                                 @enderror
                             </div>
                         </div>
-                    </section>
+                    </x-collapsible-panel>
                 </div>
             </section>
 

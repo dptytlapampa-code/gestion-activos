@@ -44,6 +44,7 @@
             ? Mantenimiento::TIPO_ALTA
             : ($tiposMantenimientoDisponibles[0] ?? Mantenimiento::TIPO_INTERNO)
     );
+    $maintenanceHistoryPersistKey = 'equipo-'.$equipo->id.'.mantenimiento.historial';
 @endphp
 
 <div
@@ -54,6 +55,7 @@
         showMantenimientoForm: @js($erroresMantenimiento || $mantenimientoExternoAbierto !== null),
         showDocumentoForm: @js($erroresDocumentos && ! str_starts_with($documentContext, 'movimiento:') && ! str_starts_with($documentContext, 'mantenimiento:')),
         activeMaintenanceDocumentModal: @js($maintenanceDocumentModalInicial),
+        maintenanceHistoryPersistKey: @js($maintenanceHistoryPersistKey),
         openMaintenanceDocumentModal(id) {
             this.activeMaintenanceDocumentModal = id;
             this.$nextTick(() => {
@@ -65,9 +67,25 @@
         closeMaintenanceDocumentModal() {
             this.activeMaintenanceDocumentModal = null;
         },
+        syncHashState() {
+            const hash = window.location.hash || '';
+
+            if (hash.startsWith('#mantenimiento-')) {
+                this.activeTab = 'mantenimiento';
+                window.dispatchEvent(new CustomEvent('app:collapsible-open', {
+                    detail: { persistKey: this.maintenanceHistoryPersistKey },
+                }));
+                return;
+            }
+
+            if (hash.startsWith('#movimiento-')) {
+                this.activeTab = 'movimientos';
+            }
+        },
     }"
-    x-init="if (activeMaintenanceDocumentModal !== null) { openMaintenanceDocumentModal(activeMaintenanceDocumentModal) }"
+    x-init="syncHashState(); if (activeMaintenanceDocumentModal !== null) { openMaintenanceDocumentModal(activeMaintenanceDocumentModal) }"
     @keydown.escape.window="if (activeMaintenanceDocumentModal !== null) closeMaintenanceDocumentModal()"
+    @hashchange.window="syncHashState()"
 >
     <div class="card">
         <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -160,49 +178,70 @@
 
         <div class="pt-6">
             <section x-show="activeTab === 'informacion'" x-cloak class="space-y-4">
-                <dl class="grid gap-4 md:grid-cols-2">
-                    <div class="app-subcard p-4">
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Codigo interno</dt>
-                        <dd class="mt-1 font-mono text-sm font-semibold text-slate-900">{{ $equipo->codigo_interno }}</dd>
-                    </div>
-                    <div class="app-subcard p-4">
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tipo</dt>
-                        <dd class="mt-1 text-base font-semibold text-slate-900">
-                            <div class="flex items-center gap-3">
-                                <x-tipo-equipo-image :tipo-equipo="$equipo->tipoEquipo" size="sm" class="rounded-lg" />
-                                <span>{{ $equipo->tipo }}</span>
-                            </div>
-                        </dd>
-                    </div>
-                    <div class="app-subcard p-4">
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Marca</dt>
-                        <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->marca }}</dd>
-                    </div>
-                    <div class="app-subcard p-4">
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Modelo</dt>
-                        <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->modelo }}</dd>
-                    </div>
-                    <div class="app-subcard p-4">
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Numero de serie</dt>
-                        <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->numero_serie ?: '-' }}</dd>
-                    </div>
-                    <div class="app-subcard p-4">
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Bien patrimonial</dt>
-                        <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->bien_patrimonial ?: '-' }}</dd>
-                    </div>
-                    <div class="app-subcard p-4">
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Estado actual</dt>
-                        <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->equipoStatus?->name ?? ucfirst($equipo->estado) }}</dd>
-                    </div>
-                    <div class="app-subcard p-4">
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Fecha ingreso</dt>
-                        <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->fecha_ingreso?->format('d/m/Y') }}</dd>
-                    </div>
-                    <div class="app-subcard p-4">
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Ubicacion</dt>
-                        <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->oficina?->service?->institution?->nombre }} / {{ $equipo->oficina?->service?->nombre }} / {{ $equipo->oficina?->nombre }}</dd>
-                    </div>
-                </dl>
+                <x-collapsible-panel
+                    title="Identificacion"
+                    eyebrow="Ficha del equipo"
+                    icon="monitor"
+                    summary="Codigo interno, tipo, marca, modelo y serie."
+                    :default-open="true"
+                    :persist-key="'equipo-'.$equipo->id.'.informacion.identificacion'"
+                >
+                    <dl class="grid gap-4 md:grid-cols-2">
+                        <div class="app-subcard p-4">
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Codigo interno</dt>
+                            <dd class="mt-1 font-mono text-sm font-semibold text-slate-900">{{ $equipo->codigo_interno }}</dd>
+                        </div>
+                        <div class="app-subcard p-4">
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tipo</dt>
+                            <dd class="mt-1 text-base font-semibold text-slate-900">
+                                <div class="flex items-center gap-3">
+                                    <x-tipo-equipo-image :tipo-equipo="$equipo->tipoEquipo" size="sm" class="rounded-lg" />
+                                    <span>{{ $equipo->tipo }}</span>
+                                </div>
+                            </dd>
+                        </div>
+                        <div class="app-subcard p-4">
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Marca</dt>
+                            <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->marca }}</dd>
+                        </div>
+                        <div class="app-subcard p-4">
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Modelo</dt>
+                            <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->modelo }}</dd>
+                        </div>
+                        <div class="app-subcard p-4">
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Numero de serie</dt>
+                            <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->numero_serie ?: '-' }}</dd>
+                        </div>
+                    </dl>
+                </x-collapsible-panel>
+
+                <x-collapsible-panel
+                    title="Patrimonio y ubicacion"
+                    eyebrow="Datos secundarios"
+                    icon="shield-check"
+                    summary="Patrimonial, estado actual, fecha de ingreso y destino operativo."
+                    :default-open="false"
+                    :persist-key="'equipo-'.$equipo->id.'.informacion.patrimonio'"
+                >
+                    <dl class="grid gap-4 md:grid-cols-2">
+                        <div class="app-subcard p-4">
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Bien patrimonial</dt>
+                            <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->bien_patrimonial ?: '-' }}</dd>
+                        </div>
+                        <div class="app-subcard p-4">
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Estado actual</dt>
+                            <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->equipoStatus?->name ?? ucfirst($equipo->estado) }}</dd>
+                        </div>
+                        <div class="app-subcard p-4">
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Fecha ingreso</dt>
+                            <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->fecha_ingreso?->format('d/m/Y') }}</dd>
+                        </div>
+                        <div class="app-subcard p-4">
+                            <dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Ubicacion</dt>
+                            <dd class="mt-1 text-base font-semibold text-slate-900">{{ $equipo->oficina?->service?->institution?->nombre }} / {{ $equipo->oficina?->service?->nombre }} / {{ $equipo->oficina?->nombre }}</dd>
+                        </div>
+                    </dl>
+                </x-collapsible-panel>
             </section>
 
             <section x-show="activeTab === 'mantenimiento'" x-cloak class="space-y-5">
@@ -374,147 +413,158 @@
                     @endif
                 @endcan
 
-                <div class="app-table-panel overflow-x-auto rounded-lg">
-                    <table class="app-table text-sm">
-                        <thead class="bg-slate-50 text-left text-xs uppercase text-slate-600">
-                            <tr>
-                                <th class="px-4 py-3">Fecha</th>
-                                <th class="px-4 py-3">Tipo</th>
-                                <th class="px-4 py-3">Detalle tecnico</th>
-                                <th class="px-4 py-3">Seguimiento</th>
-                                <th class="px-4 py-3">Estado resultante</th>
-                                <th class="px-4 py-3">Duracion</th>
-                                <th class="px-4 py-3">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        @forelse($mantenimientos as $mantenimiento)
-                            @php
-                                $tipoClase = match ($mantenimiento->tipo) {
-                                    Mantenimiento::TIPO_EXTERNO => 'bg-amber-100 text-amber-800',
-                                    Mantenimiento::TIPO_ALTA => 'bg-emerald-100 text-emerald-800',
-                                    Mantenimiento::TIPO_BAJA => 'bg-rose-100 text-rose-800',
-                                    Mantenimiento::TIPO_MESA_TECNICA => 'bg-indigo-100 text-indigo-800',
-                                    Mantenimiento::TIPO_INTERNO => 'bg-sky-100 text-sky-800',
-                                    default => 'bg-slate-100 text-slate-700',
-                                };
-                                $tipoLabel = match ($mantenimiento->tipo) {
-                                    Mantenimiento::TIPO_EXTERNO => 'Externo',
-                                    Mantenimiento::TIPO_ALTA => 'Alta',
-                                    Mantenimiento::TIPO_BAJA => 'Baja',
-                                    Mantenimiento::TIPO_MESA_TECNICA => 'Mesa tecnica',
-                                    Mantenimiento::TIPO_INTERNO => 'Interno',
-                                    default => ucfirst($mantenimiento->tipo),
-                                };
-                            @endphp
-                            <tr id="mantenimiento-{{ $mantenimiento->id }}">
-                                <td class="px-4 py-4 text-slate-700">{{ $mantenimiento->fecha?->format('d/m/Y') }}</td>
-                                <td class="px-4 py-4 text-slate-700">
-                                    <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $tipoClase }}">
-                                        {{ $tipoLabel }}
-                                    </span>
-                                </td>
-                                <td class="px-4 py-4">
-                                    <p class="font-medium text-slate-900">{{ $mantenimiento->titulo }}</p>
-                                    <p class="mt-1 text-slate-700">{{ $mantenimiento->detalle }}</p>
-                                    @if ($mantenimiento->recepcionTecnica)
-                                        <p class="mt-2 text-xs font-semibold text-indigo-700">
-                                            Vinculado al ticket {{ $mantenimiento->recepcionTecnica->codigo }}
-                                        </p>
-                                    @endif
-                                    <p class="mt-2 text-xs text-slate-500">
-                                        Proveedor: {{ $mantenimiento->proveedor ?: $mantenimiento->mantenimientoExterno?->proveedor ?: 'No informado' }}
-                                    </p>
-                                    @php
-                                        $maintenanceDocumentCount = $mantenimiento->documents->count();
-                                        $maintenanceDocumentSummary = $maintenanceDocumentCount === 0
-                                            ? 'Sin adjuntos'
-                                            : $maintenanceDocumentCount.' '.($maintenanceDocumentCount === 1 ? 'documento adjunto' : 'documentos adjuntos');
-                                    @endphp
-                                    <div class="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                                        <span
-                                            @class([
-                                                'inline-flex items-center rounded-full px-2.5 py-1 font-semibold',
-                                                'bg-slate-100 text-slate-500' => $maintenanceDocumentCount === 0,
-                                                'bg-indigo-50 text-indigo-700' => $maintenanceDocumentCount > 0,
-                                            ])
-                                        >
-                                            {{ $maintenanceDocumentSummary }}
+                <x-collapsible-panel
+                    title="Historial tecnico"
+                    eyebrow="Trazabilidad"
+                    icon="wrench"
+                    summary="Eventos, adjuntos y resultados del mantenimiento del equipo."
+                    :default-open="false"
+                    :persist-key="$maintenanceHistoryPersistKey"
+                    class="overflow-hidden px-0 py-0"
+                    content-class="px-0 pb-0"
+                >
+                    <div class="app-table-panel overflow-x-auto rounded-lg border-0 shadow-none">
+                        <table class="app-table text-sm">
+                            <thead class="bg-slate-50 text-left text-xs uppercase text-slate-600">
+                                <tr>
+                                    <th class="px-4 py-3">Fecha</th>
+                                    <th class="px-4 py-3">Tipo</th>
+                                    <th class="px-4 py-3">Detalle tecnico</th>
+                                    <th class="px-4 py-3">Seguimiento</th>
+                                    <th class="px-4 py-3">Estado resultante</th>
+                                    <th class="px-4 py-3">Duracion</th>
+                                    <th class="px-4 py-3">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @forelse($mantenimientos as $mantenimiento)
+                                @php
+                                    $tipoClase = match ($mantenimiento->tipo) {
+                                        Mantenimiento::TIPO_EXTERNO => 'bg-amber-100 text-amber-800',
+                                        Mantenimiento::TIPO_ALTA => 'bg-emerald-100 text-emerald-800',
+                                        Mantenimiento::TIPO_BAJA => 'bg-rose-100 text-rose-800',
+                                        Mantenimiento::TIPO_MESA_TECNICA => 'bg-indigo-100 text-indigo-800',
+                                        Mantenimiento::TIPO_INTERNO => 'bg-sky-100 text-sky-800',
+                                        default => 'bg-slate-100 text-slate-700',
+                                    };
+                                    $tipoLabel = match ($mantenimiento->tipo) {
+                                        Mantenimiento::TIPO_EXTERNO => 'Externo',
+                                        Mantenimiento::TIPO_ALTA => 'Alta',
+                                        Mantenimiento::TIPO_BAJA => 'Baja',
+                                        Mantenimiento::TIPO_MESA_TECNICA => 'Mesa tecnica',
+                                        Mantenimiento::TIPO_INTERNO => 'Interno',
+                                        default => ucfirst($mantenimiento->tipo),
+                                    };
+                                @endphp
+                                <tr id="mantenimiento-{{ $mantenimiento->id }}">
+                                    <td class="px-4 py-4 text-slate-700">{{ $mantenimiento->fecha?->format('d/m/Y') }}</td>
+                                    <td class="px-4 py-4 text-slate-700">
+                                        <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $tipoClase }}">
+                                            {{ $tipoLabel }}
                                         </span>
-                                        @if ($maintenanceDocumentCount > 0)
-                                            <button type="button" @click="openMaintenanceDocumentModal({{ $mantenimiento->id }})" class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
-                                                <x-icon name="file-text" class="h-3.5 w-3.5" />
-                                                Ver documentos
-                                            </button>
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        <p class="font-medium text-slate-900">{{ $mantenimiento->titulo }}</p>
+                                        <p class="mt-1 text-slate-700">{{ $mantenimiento->detalle }}</p>
+                                        @if ($mantenimiento->recepcionTecnica)
+                                            <p class="mt-2 text-xs font-semibold text-indigo-700">
+                                                Vinculado al ticket {{ $mantenimiento->recepcionTecnica->codigo }}
+                                            </p>
                                         @endif
-                                        @if($canManageMaintenanceDocuments)
-                                            <button type="button" @click="openMaintenanceDocumentModal({{ $mantenimiento->id }})" class="inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50/70 px-2.5 py-1.5 font-semibold text-indigo-700 transition hover:bg-indigo-100">
-                                                <x-icon name="paperclip" class="h-3.5 w-3.5" />
-                                                Adjuntar documento
-                                            </button>
-                                        @endif
-                                    </div>
-                                </td>
-                                <td class="px-4 py-4 text-slate-700">
-                                    @if ($mantenimiento->tipo === Mantenimiento::TIPO_EXTERNO)
-                                        <p>Ingreso: {{ ($mantenimiento->fecha_ingreso_st ?? $mantenimiento->fecha)?->format('d/m/Y') }}</p>
-                                        <p class="mt-1">
-                                            Egreso:
-                                            {{ $mantenimiento->fecha_egreso_st?->format('d/m/Y') ?: 'Abierto' }}
+                                        <p class="mt-2 text-xs text-slate-500">
+                                            Proveedor: {{ $mantenimiento->proveedor ?: $mantenimiento->mantenimientoExterno?->proveedor ?: 'No informado' }}
                                         </p>
-                                    @elseif ($mantenimiento->mantenimientoExterno)
-                                        <p>Relacionado con externo iniciado el {{ ($mantenimiento->mantenimientoExterno->fecha_ingreso_st ?? $mantenimiento->mantenimientoExterno->fecha)?->format('d/m/Y') }}</p>
-                                        <p class="mt-1">Egreso registrado: {{ $mantenimiento->fecha_egreso_st?->format('d/m/Y') ?: '-' }}</p>
-                                    @elseif ($mantenimiento->recepcionTecnica)
-                                        <p>Ingreso tecnico: {{ $mantenimiento->fecha_ingreso_st?->format('d/m/Y') ?: '-' }}</p>
-                                        <p class="mt-1">Cierre tecnico: {{ $mantenimiento->fecha_egreso_st?->format('d/m/Y') ?: '-' }}</p>
-                                    @else
-                                        <p>Nota tecnica sin ciclo externo asociado.</p>
-                                    @endif
-                                </td>
-                                <td class="px-4 py-4 text-slate-700">{{ $mantenimiento->estadoResultante?->name ?: '-' }}</td>
-                                <td class="px-4 py-4 text-slate-700">
-                                    @if ($mantenimiento->dias_en_servicio !== null)
-                                        {{ $mantenimiento->dias_en_servicio }} dias
-                                    @elseif ($mantenimiento->isExternoAbierto())
-                                        {{ ($mantenimiento->fecha_ingreso_st ?? $mantenimiento->fecha)?->diffInDays(now()) }} dias abiertos
-                                    @else
-                                        -
-                                    @endif
-                                </td>
-                                <td class="px-4 py-4">
-                                    @if ($mantenimiento->canBeManuallyChanged())
-                                        <div class="flex items-center gap-2">
-                                            @can('update', $mantenimiento)
-                                                <a href="{{ route('mantenimientos.edit', $mantenimiento) }}" class="inline-flex items-center rounded p-1 text-amber-600 hover:bg-amber-50" title="Editar">
-                                                    <x-icon name="pencil" class="h-4 w-4" />
-                                                    <span class="sr-only">Editar</span>
-                                                </a>
-                                            @endcan
-                                            @can('delete', $mantenimiento)
-                                                <form method="POST" action="{{ route('mantenimientos.destroy', $mantenimiento) }}" class="inline" onsubmit="return confirm('Eliminar nota tecnica?')">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button class="inline-flex items-center rounded p-1 text-rose-600 hover:bg-rose-50" title="Eliminar">
-                                                        <x-icon name="trash-2" class="h-4 w-4" />
-                                                        <span class="sr-only">Eliminar</span>
-                                                    </button>
-                                                </form>
-                                            @endcan
+                                        @php
+                                            $maintenanceDocumentCount = $mantenimiento->documents->count();
+                                            $maintenanceDocumentSummary = $maintenanceDocumentCount === 0
+                                                ? 'Sin adjuntos'
+                                                : $maintenanceDocumentCount.' '.($maintenanceDocumentCount === 1 ? 'documento adjunto' : 'documentos adjuntos');
+                                        @endphp
+                                        <div class="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                                            <span
+                                                @class([
+                                                    'inline-flex items-center rounded-full px-2.5 py-1 font-semibold',
+                                                    'bg-slate-100 text-slate-500' => $maintenanceDocumentCount === 0,
+                                                    'bg-indigo-50 text-indigo-700' => $maintenanceDocumentCount > 0,
+                                                ])
+                                            >
+                                                {{ $maintenanceDocumentSummary }}
+                                            </span>
+                                            @if ($maintenanceDocumentCount > 0)
+                                                <button type="button" @click="openMaintenanceDocumentModal({{ $mantenimiento->id }})" class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900">
+                                                    <x-icon name="file-text" class="h-3.5 w-3.5" />
+                                                    Ver documentos
+                                                </button>
+                                            @endif
+                                            @if($canManageMaintenanceDocuments)
+                                                <button type="button" @click="openMaintenanceDocumentModal({{ $mantenimiento->id }})" class="inline-flex items-center gap-1 rounded-md border border-indigo-200 bg-indigo-50/70 px-2.5 py-1.5 font-semibold text-indigo-700 transition hover:bg-indigo-100">
+                                                    <x-icon name="paperclip" class="h-3.5 w-3.5" />
+                                                    Adjuntar documento
+                                                </button>
+                                            @endif
                                         </div>
-                                    @else
-                                        <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">Bloqueado por trazabilidad</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="px-4 py-6 text-center text-slate-500">Sin mantenimientos registrados.</td>
-                            </tr>
-                        @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                                    </td>
+                                    <td class="px-4 py-4 text-slate-700">
+                                        @if ($mantenimiento->tipo === Mantenimiento::TIPO_EXTERNO)
+                                            <p>Ingreso: {{ ($mantenimiento->fecha_ingreso_st ?? $mantenimiento->fecha)?->format('d/m/Y') }}</p>
+                                            <p class="mt-1">
+                                                Egreso:
+                                                {{ $mantenimiento->fecha_egreso_st?->format('d/m/Y') ?: 'Abierto' }}
+                                            </p>
+                                        @elseif ($mantenimiento->mantenimientoExterno)
+                                            <p>Relacionado con externo iniciado el {{ ($mantenimiento->mantenimientoExterno->fecha_ingreso_st ?? $mantenimiento->mantenimientoExterno->fecha)?->format('d/m/Y') }}</p>
+                                            <p class="mt-1">Egreso registrado: {{ $mantenimiento->fecha_egreso_st?->format('d/m/Y') ?: '-' }}</p>
+                                        @elseif ($mantenimiento->recepcionTecnica)
+                                            <p>Ingreso tecnico: {{ $mantenimiento->fecha_ingreso_st?->format('d/m/Y') ?: '-' }}</p>
+                                            <p class="mt-1">Cierre tecnico: {{ $mantenimiento->fecha_egreso_st?->format('d/m/Y') ?: '-' }}</p>
+                                        @else
+                                            <p>Nota tecnica sin ciclo externo asociado.</p>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-4 text-slate-700">{{ $mantenimiento->estadoResultante?->name ?: '-' }}</td>
+                                    <td class="px-4 py-4 text-slate-700">
+                                        @if ($mantenimiento->dias_en_servicio !== null)
+                                            {{ $mantenimiento->dias_en_servicio }} dias
+                                        @elseif ($mantenimiento->isExternoAbierto())
+                                            {{ ($mantenimiento->fecha_ingreso_st ?? $mantenimiento->fecha)?->diffInDays(now()) }} dias abiertos
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-4">
+                                        @if ($mantenimiento->canBeManuallyChanged())
+                                            <div class="flex items-center gap-2">
+                                                @can('update', $mantenimiento)
+                                                    <a href="{{ route('mantenimientos.edit', $mantenimiento) }}" class="inline-flex items-center rounded p-1 text-amber-600 hover:bg-amber-50" title="Editar">
+                                                        <x-icon name="pencil" class="h-4 w-4" />
+                                                        <span class="sr-only">Editar</span>
+                                                    </a>
+                                                @endcan
+                                                @can('delete', $mantenimiento)
+                                                    <form method="POST" action="{{ route('mantenimientos.destroy', $mantenimiento) }}" class="inline" onsubmit="return confirm('Eliminar nota tecnica?')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button class="inline-flex items-center rounded p-1 text-rose-600 hover:bg-rose-50" title="Eliminar">
+                                                            <x-icon name="trash-2" class="h-4 w-4" />
+                                                            <span class="sr-only">Eliminar</span>
+                                                        </button>
+                                                    </form>
+                                                @endcan
+                                            </div>
+                                        @else
+                                            <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">Bloqueado por trazabilidad</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="px-4 py-6 text-center text-slate-500">Sin mantenimientos registrados.</td>
+                                </tr>
+                            @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </x-collapsible-panel>
             </section>
 
             <section x-show="activeTab === 'movimientos'" x-cloak class="space-y-5">

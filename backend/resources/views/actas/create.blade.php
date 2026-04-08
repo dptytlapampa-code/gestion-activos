@@ -34,19 +34,40 @@
     )"
     class="space-y-6"
 >
+    @php
+        $configurationErrors = collect(['tipo', 'fecha'])->contains(fn (string $field): bool => $errors->has($field));
+        $complementaryErrors = collect([
+            'institution_destino_id',
+            'service_destino_id',
+            'office_destino_id',
+            'receptor_nombre',
+            'receptor_dni',
+            'receptor_cargo',
+            'receptor_dependencia',
+            'motivo_baja',
+            'observaciones',
+        ])->contains(fn (string $field): bool => $errors->has($field));
+        $selectionErrors = $errors->has('equipos')
+            || collect($errors->keys())->contains(fn (string $key): bool => str_starts_with($key, 'equipos.'));
+    @endphp
+
     <form method="POST" action="{{ route('actas.store') }}" class="space-y-6">
         @csrf
 
-        <section class="card space-y-5">
+        <x-collapsible-panel
+            title="Configure el acta y agregue los equipos"
+            eyebrow="Trazabilidad de equipos"
+            icon="clipboard-list"
+            summary="Tipo de acta, fecha y contexto inicial del documento."
+            :default-open="true"
+            :force-open="$configurationErrors"
+            persist-key="actas-create.configuracion"
+        >
             <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div class="space-y-2">
-                    <span class="inline-flex rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary-700">Trazabilidad de equipos</span>
-                    <div>
-                        <h2 class="text-xl font-semibold text-slate-900">Configure el acta y agregue los equipos</h2>
-                        <p class="mt-1 max-w-3xl text-sm text-slate-600">
-                            Primero elija el tipo de acta. Despues busque equipos por codigo interno, serie, patrimonial, UUID, MAC, marca, modelo o ubicacion y agreguelos al listado.
-                        </p>
-                    </div>
+                <div class="max-w-3xl">
+                    <p class="text-sm text-slate-600">
+                        Primero elija el tipo de acta. Despues busque equipos por codigo interno, serie, patrimonial, UUID, MAC, marca, modelo o ubicacion y agreguelos al listado.
+                    </p>
                 </div>
 
                 <div class="grid gap-3 sm:grid-cols-2 lg:w-[340px]">
@@ -83,16 +104,20 @@
                 <input type="hidden" name="tipo" :value="tipo">
                 @error('tipo') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
-        </section>
+        </x-collapsible-panel>
 
         <section class="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(340px,0.9fr)]">
             <div class="space-y-6">
-                <section class="card space-y-5">
+                <x-collapsible-panel
+                    title="Buscar equipos"
+                    eyebrow="Seleccion"
+                    icon="search"
+                    summary="Use el buscador principal y, si hace falta, refine con filtros avanzados."
+                    :default-open="true"
+                    persist-key="actas-create.busqueda"
+                >
                     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div class="space-y-1">
-                            <h3 class="text-lg font-semibold text-slate-900">Buscar equipos</h3>
-                            <p class="text-sm text-slate-600">Escriba y agregue. No se cargan listados masivos hasta que exista un criterio de busqueda.</p>
-                        </div>
+                        <p class="max-w-2xl text-sm text-slate-600">Escriba y agregue. No se cargan listados masivos hasta que exista un criterio de busqueda.</p>
 
                         <div class="flex flex-wrap gap-2">
                             <button
@@ -322,14 +347,22 @@
                             </button>
                         </div>
                     </div>
-                </section>
+                </x-collapsible-panel>
             </div>
 
             <aside class="space-y-6">
-                <section class="card space-y-4 xl:sticky xl:top-6">
+                <x-collapsible-panel
+                    title="Equipos seleccionados"
+                    eyebrow="Resumen del acta"
+                    icon="layers"
+                    summary="Revise lo agregado sin perder el contexto de busqueda."
+                    :default-open="true"
+                    :force-open="$selectionErrors"
+                    persist-key="actas-create.seleccionados"
+                    class="xl:sticky xl:top-6"
+                >
                     <div class="flex items-start justify-between gap-3">
                         <div>
-                            <h3 class="text-lg font-semibold text-slate-900">Equipos seleccionados</h3>
                             <p class="text-sm text-slate-600">Revise lo agregado sin perder el contexto de busqueda.</p>
                         </div>
                         <span class="inline-flex h-10 min-w-10 items-center justify-center rounded-2xl bg-primary-50 px-3 text-sm font-bold text-primary-700" x-text="selected.length"></span>
@@ -421,15 +454,20 @@
                     @error('equipos') <p class="text-sm font-medium text-red-600">{{ $message }}</p> @enderror
                     @error('equipos.*.equipo_id') <p class="text-sm font-medium text-red-600">{{ $message }}</p> @enderror
                     @error('equipos.*.cantidad') <p class="text-sm font-medium text-red-600">{{ $message }}</p> @enderror
-                </section>
+                </x-collapsible-panel>
             </aside>
         </section>
 
-        <section class="card space-y-5">
-            <div>
-                <h3 class="text-lg font-semibold text-slate-900">Datos complementarios del acta</h3>
-                <p class="mt-1 text-sm text-slate-600">Complete solo los datos que correspondan al tipo de acta seleccionado.</p>
-            </div>
+        <x-collapsible-panel
+            title="Datos complementarios del acta"
+            eyebrow="Contexto secundario"
+            icon="file-text"
+            summary="Destino, receptor, motivo de baja y observaciones segun el tipo de acta."
+            :default-open="$complementaryErrors"
+            :force-open="$complementaryErrors"
+            persist-key="actas-create.complementarios"
+        >
+            <p class="text-sm text-slate-600">Complete solo los datos que correspondan al tipo de acta seleccionado.</p>
 
             <div x-show="tipo === 'entrega' || tipo === 'traslado'" x-cloak class="space-y-4">
                 <div class="flex items-center justify-between gap-3">
@@ -534,7 +572,7 @@
                 <textarea name="observaciones" x-model="observaciones" rows="4" class="mt-1 w-full rounded-2xl border-slate-300" placeholder="Informacion adicional para el acta"></textarea>
                 @error('observaciones') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
             </div>
-        </section>
+        </x-collapsible-panel>
 
         <template x-for="(item, index) in selected" :key="`hidden-selected-${item.id}`">
             <div>

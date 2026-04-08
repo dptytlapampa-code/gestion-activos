@@ -52,43 +52,64 @@
         </div>
     @endif
 
-    <div class="card grid gap-4 md:grid-cols-2">
-        <div><span class="text-xs text-slate-500">Codigo</span><p class="font-medium">{{ $acta->codigo }}</p></div>
-        <div><span class="text-xs text-slate-500">Tipo</span><p class="font-medium">{{ $tipoLabels[$acta->tipo] ?? strtoupper($acta->tipo) }}</p></div>
-        <div><span class="text-xs text-slate-500">Estado</span><p class="font-medium">{{ $isAnulada ? 'Anulada' : 'Activa' }}</p></div>
-        <div><span class="text-xs text-slate-500">Fecha</span><p class="font-medium">{{ $acta->fecha?->format('d/m/Y') }}</p></div>
-        <div><span class="text-xs text-slate-500">Generado por</span><p class="font-medium">{{ $acta->creator?->name }}</p></div>
-        <div>
-            <span class="text-xs text-slate-500">Institucion origen</span>
-            <p class="font-medium">
-                @if ($origenMultiple)
-                    Multiples instituciones ({{ $origenInstituciones->count() }})
-                @else
-                    {{ $acta->institution?->nombre ?: '-' }}
-                @endif
-            </p>
-        </div>
-        <div><span class="text-xs text-slate-500">Institucion destino</span><p class="font-medium">{{ $acta->institucionDestino?->nombre ?: ($isPrestamo ? 'No aplica (prestamo a persona)' : '-') }}</p></div>
-        <div><span class="text-xs text-slate-500">Servicio origen</span><p class="font-medium">{{ $origenMultiple ? 'Multiples (ver detalle)' : ($acta->servicioOrigen?->nombre ?: '-') }}</p></div>
-        <div><span class="text-xs text-slate-500">Oficina origen</span><p class="font-medium">{{ $origenMultiple ? 'Multiples (ver detalle)' : ($acta->oficinaOrigen?->nombre ?: '-') }}</p></div>
-        <div><span class="text-xs text-slate-500">Servicio destino</span><p class="font-medium">{{ $acta->servicioDestino?->nombre ?: ($isPrestamo ? 'No aplica (prestamo a persona)' : '-') }}</p></div>
-        <div><span class="text-xs text-slate-500">Oficina destino</span><p class="font-medium">{{ $acta->oficinaDestino?->nombre ?: ($isPrestamo ? 'No aplica (prestamo a persona)' : '-') }}</p></div>
-        <div><span class="text-xs text-slate-500">Receptor</span><p class="font-medium">{{ $acta->receptor_nombre ?: '-' }}</p></div>
-        <div><span class="text-xs text-slate-500">DNI / Cargo</span><p class="font-medium">{{ $acta->receptor_dni ?: '-' }} {{ $acta->receptor_cargo ? '| '.$acta->receptor_cargo : '' }}</p></div>
-        <div><span class="text-xs text-slate-500">Dependencia receptor</span><p class="font-medium">{{ $acta->receptor_dependencia ?: '-' }}</p></div>
-        <div><span class="text-xs text-slate-500">Motivo de baja</span><p class="font-medium">{{ $acta->motivo_baja ?: '-' }}</p></div>
-        <div class="md:col-span-2"><span class="text-xs text-slate-500">Observaciones</span><p class="font-medium">{{ $acta->observaciones ?: '-' }}</p></div>
+    <x-collapsible-panel
+        title="Resumen del acta"
+        eyebrow="Documento"
+        icon="file-text"
+        summary="Datos administrativos, origen, destino y observaciones principales."
+        :default-open="true"
+        :persist-key="'acta-'.$acta->id.'.resumen'"
+    >
+        <div class="grid gap-4 md:grid-cols-2">
+            <div><span class="text-xs text-slate-500">Codigo</span><p class="font-medium">{{ $acta->codigo }}</p></div>
+            <div><span class="text-xs text-slate-500">Tipo</span><p class="font-medium">{{ $tipoLabels[$acta->tipo] ?? strtoupper($acta->tipo) }}</p></div>
+            <div><span class="text-xs text-slate-500">Estado</span><p class="font-medium">{{ $isAnulada ? 'Anulada' : 'Activa' }}</p></div>
+            <div><span class="text-xs text-slate-500">Fecha</span><p class="font-medium">{{ $acta->fecha?->format('d/m/Y') }}</p></div>
+            <div><span class="text-xs text-slate-500">Generado por</span><p class="font-medium">{{ $acta->creator?->name }}</p></div>
+            <div>
+                <span class="text-xs text-slate-500">Institucion origen</span>
+                <p class="font-medium">
+                    @if ($origenMultiple)
+                        Multiples instituciones ({{ $origenInstituciones->count() }})
+                    @else
+                        {{ $acta->institution?->nombre ?: '-' }}
+                    @endif
+                </p>
+            </div>
+            <div><span class="text-xs text-slate-500">Institucion destino</span><p class="font-medium">{{ $acta->institucionDestino?->nombre ?: ($isPrestamo ? 'No aplica (prestamo a persona)' : '-') }}</p></div>
+            <div><span class="text-xs text-slate-500">Servicio origen</span><p class="font-medium">{{ $origenMultiple ? 'Multiples (ver detalle)' : ($acta->servicioOrigen?->nombre ?: '-') }}</p></div>
+            <div><span class="text-xs text-slate-500">Oficina origen</span><p class="font-medium">{{ $origenMultiple ? 'Multiples (ver detalle)' : ($acta->oficinaOrigen?->nombre ?: '-') }}</p></div>
+            <div><span class="text-xs text-slate-500">Servicio destino</span><p class="font-medium">{{ $acta->servicioDestino?->nombre ?: ($isPrestamo ? 'No aplica (prestamo a persona)' : '-') }}</p></div>
+            <div><span class="text-xs text-slate-500">Oficina destino</span><p class="font-medium">{{ $acta->oficinaDestino?->nombre ?: ($isPrestamo ? 'No aplica (prestamo a persona)' : '-') }}</p></div>
+            <div><span class="text-xs text-slate-500">Receptor</span><p class="font-medium">{{ $acta->receptor_nombre ?: '-' }}</p></div>
+            <div><span class="text-xs text-slate-500">DNI / Cargo</span><p class="font-medium">{{ $acta->receptor_dni ?: '-' }} {{ $acta->receptor_cargo ? '| '.$acta->receptor_cargo : '' }}</p></div>
+            <div><span class="text-xs text-slate-500">Dependencia receptor</span><p class="font-medium">{{ $acta->receptor_dependencia ?: '-' }}</p></div>
+            <div><span class="text-xs text-slate-500">Motivo de baja</span><p class="font-medium">{{ $acta->motivo_baja ?: '-' }}</p></div>
+            <div class="md:col-span-2"><span class="text-xs text-slate-500">Observaciones</span><p class="font-medium">{{ $acta->observaciones ?: '-' }}</p></div>
 
-        @if ($isAnulada)
-            <div><span class="text-xs text-slate-500">Anulada por</span><p class="font-medium">{{ $acta->annulledBy?->name ?: '-' }}</p></div>
-            <div><span class="text-xs text-slate-500">Fecha anulacion</span><p class="font-medium">{{ $acta->anulada_at?->format('d/m/Y H:i') ?: '-' }}</p></div>
-            <div class="md:col-span-2"><span class="text-xs text-slate-500">Motivo de anulacion</span><p class="font-medium">{{ $acta->motivo_anulacion ?: '-' }}</p></div>
-        @endif
-    </div>
+            @if ($isAnulada)
+                <div><span class="text-xs text-slate-500">Anulada por</span><p class="font-medium">{{ $acta->annulledBy?->name ?: '-' }}</p></div>
+                <div><span class="text-xs text-slate-500">Fecha anulacion</span><p class="font-medium">{{ $acta->anulada_at?->format('d/m/Y H:i') ?: '-' }}</p></div>
+                <div class="md:col-span-2"><span class="text-xs text-slate-500">Motivo de anulacion</span><p class="font-medium">{{ $acta->motivo_anulacion ?: '-' }}</p></div>
+            @endif
+        </div>
+    </x-collapsible-panel>
 
     @if ($isPrestamo)
-        <div class="card border-2 border-blue-200 bg-blue-50">
-            <h3 class="mb-3 text-base font-semibold text-blue-900">Destinatario del prestamo</h3>
+        <x-collapsible-panel
+            title="Destinatario del prestamo"
+            eyebrow="Contexto secundario"
+            icon="users"
+            summary="Datos personales y referencia institucional complementaria."
+            :default-open="false"
+            :persist-key="'acta-'.$acta->id.'.prestamo'"
+            class="border-blue-200 bg-blue-50"
+            icon-class="text-blue-700"
+            eyebrow-class="text-blue-700"
+            title-class="text-blue-900"
+            description-class="text-blue-800"
+            summary-class="text-blue-800"
+        >
             <div class="grid gap-4 md:grid-cols-2">
                 <div>
                     <span class="text-xs font-semibold uppercase tracking-wide text-blue-700">Nombre y apellido</span>
@@ -114,13 +135,19 @@
                     <p class="mt-1">{{ $destinoInstitucionalTexto }}</p>
                 </div>
             @endif
-        </div>
+        </x-collapsible-panel>
     @endif
 
-    <div class="app-table-panel">
-        <div class="border-b border-slate-200 px-5 py-4">
-            <h3 class="text-base font-semibold text-slate-900">Equipos del acta</h3>
-        </div>
+    <x-collapsible-panel
+        title="Equipos del acta"
+        eyebrow="Detalle principal"
+        icon="layers"
+        summary="Inventario, origen, destino y accesorios incluidos en el documento."
+        :default-open="true"
+        :persist-key="'acta-'.$acta->id.'.equipos'"
+        class="overflow-hidden px-0 py-0"
+        content-class="px-0 pb-0"
+    >
         <div class="overflow-x-auto">
             <table class="app-table min-w-[78rem] text-sm">
                 <thead>
@@ -176,12 +203,18 @@
                 </tbody>
             </table>
         </div>
-    </div>
+    </x-collapsible-panel>
 
-    <div class="app-table-panel">
-        <div class="border-b border-slate-200 px-5 py-4">
-            <h3 class="text-base font-semibold text-slate-900">Historial generado</h3>
-        </div>
+    <x-collapsible-panel
+        title="Historial generado"
+        eyebrow="Trazabilidad"
+        icon="clipboard-list"
+        summary="Cambios de estado y ubicacion generados por el acta."
+        :default-open="false"
+        :persist-key="'acta-'.$acta->id.'.historial'"
+        class="overflow-hidden px-0 py-0"
+        content-class="px-0 pb-0"
+    >
         <div class="overflow-x-auto">
             <table class="app-table min-w-[72rem] text-sm">
                 <thead>
@@ -210,7 +243,7 @@
                 </tbody>
             </table>
         </div>
-    </div>
+    </x-collapsible-panel>
 
     <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-end">
         @can('anular', $acta)

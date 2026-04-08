@@ -4,7 +4,23 @@
 @section('header', 'Incorporar equipo')
 
 @section('content')
-    @php($equipo = $recepcionTecnica->resolvedEquipo())
+    @php
+        $equipo = $recepcionTecnica->resolvedEquipo();
+        $existingEquipmentErrors = $errors->has('equipo_id');
+        $newEquipmentErrors = collect([
+            'marca',
+            'modelo',
+            'numero_serie',
+            'bien_patrimonial',
+            'institution_id',
+            'service_id',
+            'office_id',
+            'oficina_id',
+            'tipo_equipo_id',
+            'estado',
+            'fecha_ingreso',
+        ])->contains(fn (string $field): bool => $errors->has($field));
+    @endphp
 
     <div
         x-data="recepcionTecnicaIncorporate({
@@ -52,13 +68,15 @@
         @endif
 
         <div class="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-            <section class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
-                <div class="border-b border-slate-200 pb-4">
-                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Ticket</p>
-                    <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">{{ $recepcionTecnica->equipmentReference() }}</h2>
-                </div>
-
-                <div class="mt-4 grid gap-4 md:grid-cols-2">
+            <x-collapsible-panel
+                title="{{ $recepcionTecnica->equipmentReference() }}"
+                eyebrow="Ticket"
+                icon="file-text"
+                summary="Referencia, tipo, serie y patrimonial reportados en el ingreso."
+                :default-open="false"
+                :persist-key="'mesa-tecnica-incorporate-'.$recepcionTecnica->id.'.ticket'"
+            >
+                <div class="grid gap-4 md:grid-cols-2">
                     <div class="app-subcard p-4">
                         <p class="text-xs uppercase tracking-wide text-slate-500">Referencia</p>
                         <p class="mt-1 text-sm font-semibold text-slate-900">{{ $recepcionTecnica->referencia_equipo ?: '-' }}</p>
@@ -76,7 +94,7 @@
                         <p class="mt-1 text-sm font-semibold text-slate-900">{{ $recepcionTecnica->bien_patrimonial ?: '-' }}</p>
                     </div>
                 </div>
-            </section>
+            </x-collapsible-panel>
 
             <form method="POST" action="{{ route('mesa-tecnica.recepciones-tecnicas.incorporate.store', $recepcionTecnica) }}" class="space-y-6">
                 @csrf
@@ -112,13 +130,18 @@
                     <input type="hidden" name="modo_incorporacion" :value="mode">
                 </section>
 
-                <section x-show="mode === 'existente'" x-cloak class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
-                    <div class="border-b border-slate-200 pb-4">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Busqueda</p>
-                        <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Equipo existente</h2>
-                    </div>
-
-                    <div class="mt-4 space-y-4">
+                <x-collapsible-panel
+                    x-show="mode === 'existente'"
+                    x-cloak
+                    title="Equipo existente"
+                    eyebrow="Busqueda"
+                    icon="search"
+                    summary="Busque y vincule un equipo ya cargado en el sistema."
+                    :default-open="true"
+                    :force-open="$existingEquipmentErrors"
+                    :persist-key="'mesa-tecnica-incorporate-'.$recepcionTecnica->id.'.existente'"
+                >
+                    <div class="space-y-4">
                         <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
                             <input type="text" x-model="search.query" @input.debounce.350ms="searchEquipos()" class="app-input" placeholder="Codigo, serie, patrimonial o QR">
                             <button type="button" class="btn btn-slate" @click="searchEquipos()">
@@ -154,15 +177,20 @@
                             <p class="form-error">{{ $message }}</p>
                         @enderror
                     </div>
-                </section>
+                </x-collapsible-panel>
 
-                <section x-show="mode === 'nuevo'" x-cloak class="app-panel rounded-[2rem] px-5 py-5 sm:px-6">
-                    <div class="border-b border-slate-200 pb-4">
-                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Alta</p>
-                        <h2 class="mt-1 text-xl font-semibold tracking-tight text-slate-950">Equipo nuevo</h2>
-                    </div>
-
-                    <div class="mt-4 grid gap-4 md:grid-cols-2">
+                <x-collapsible-panel
+                    x-show="mode === 'nuevo'"
+                    x-cloak
+                    title="Equipo nuevo"
+                    eyebrow="Alta"
+                    icon="plus"
+                    summary="Complete los datos necesarios para crear y vincular el equipo desde este ticket."
+                    :default-open="true"
+                    :force-open="$newEquipmentErrors"
+                    :persist-key="'mesa-tecnica-incorporate-'.$recepcionTecnica->id.'.nuevo'"
+                >
+                    <div class="grid gap-4 md:grid-cols-2">
                         <div>
                             <label for="marca" class="mb-2 block text-sm font-medium text-slate-700">Marca</label>
                             <input id="marca" name="marca" type="text" value="{{ old('marca', $recepcionTecnica->marca) }}" class="app-input">
@@ -267,7 +295,7 @@
                             </div>
                         </div>
                     </div>
-                </section>
+                </x-collapsible-panel>
 
                 <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                     <a href="{{ route('mesa-tecnica.recepciones-tecnicas.show', $recepcionTecnica) }}" class="btn btn-slate">Cancelar</a>

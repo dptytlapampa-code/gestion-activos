@@ -1,6 +1,7 @@
 import Alpine from 'alpinejs';
 
 const SIDEBAR_STORAGE_KEY = 'gestion-activos.sidebar.collapsed';
+const COLLAPSIBLE_STORAGE_KEY_PREFIX = 'gestion-activos.collapsible.';
 const desktopBreakpoint = window.matchMedia('(min-width: 1024px)');
 
 const readSidebarPreference = () => {
@@ -16,6 +17,40 @@ const persistSidebarPreference = (value) => {
         window.localStorage.setItem(SIDEBAR_STORAGE_KEY, value ? 'true' : 'false');
     } catch (error) {
         // Ignore persistence failures to keep navigation usable.
+    }
+};
+
+const readCollapsiblePreference = (key) => {
+    if (!key) {
+        return null;
+    }
+
+    try {
+        const rawValue = window.localStorage.getItem(`${COLLAPSIBLE_STORAGE_KEY_PREFIX}${key}`);
+
+        if (rawValue === 'true') {
+            return true;
+        }
+
+        if (rawValue === 'false') {
+            return false;
+        }
+    } catch (error) {
+        return null;
+    }
+
+    return null;
+};
+
+const persistCollapsiblePreference = (key, value) => {
+    if (!key) {
+        return;
+    }
+
+    try {
+        window.localStorage.setItem(`${COLLAPSIBLE_STORAGE_KEY_PREFIX}${key}`, value ? 'true' : 'false');
+    } catch (error) {
+        // Ignore persistence failures to keep forms and details usable.
     }
 };
 
@@ -109,6 +144,33 @@ document.addEventListener('alpine:init', () => {
     });
 
     Alpine.store('appShell').init();
+
+    Alpine.data('collapsiblePanel', (config = {}) => ({
+        open: Boolean(config.defaultOpen),
+        defaultOpen: Boolean(config.defaultOpen),
+        forceOpen: Boolean(config.forceOpen),
+        persistKey: config.persistKey ? String(config.persistKey) : null,
+
+        init() {
+            if (this.forceOpen) {
+                this.open = true;
+            } else {
+                const storedValue = readCollapsiblePreference(this.persistKey);
+
+                if (storedValue !== null) {
+                    this.open = storedValue;
+                }
+            }
+
+            this.$watch('open', (value) => {
+                persistCollapsiblePreference(this.persistKey, value);
+            });
+        },
+
+        toggle() {
+            this.open = !this.open;
+        },
+    }));
 
     Alpine.data('sidebarNavigation', (initialOpenGroups = {}) => ({
         openGroups: {
