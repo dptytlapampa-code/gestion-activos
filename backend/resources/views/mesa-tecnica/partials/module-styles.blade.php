@@ -38,12 +38,12 @@
         }
 
         .mt-card-lift {
-            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+            transition: none;
         }
 
         .mt-card-lift:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--app-panel-shadow-hover);
+            transform: none;
+            box-shadow: var(--app-panel-shadow);
         }
 
         .mt-card-lift:focus-visible,
@@ -62,12 +62,12 @@
             padding: 1.25rem;
             text-align: left;
             box-shadow: var(--app-subpanel-shadow);
-            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+            transition: none;
         }
 
         .mt-action-card:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--app-panel-shadow-hover);
+            transform: none;
+            box-shadow: var(--app-subpanel-shadow);
         }
 
         .mt-action-card-primary {
@@ -91,12 +91,12 @@
             padding: 1rem;
             background: linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 250, 252, 0.96) 100%);
             box-shadow: var(--app-subpanel-shadow);
-            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+            transition: none;
         }
 
         .mt-kpi-card:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--app-panel-shadow-hover);
+            transform: none;
+            box-shadow: var(--app-subpanel-shadow);
         }
 
         .mt-kpi-card-ready {
@@ -144,11 +144,11 @@
             color: #334155;
             background-color: rgba(255, 255, 255, 0.98);
             box-shadow: 0 12px 20px -24px rgba(15, 23, 42, 0.46);
-            transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background-color 0.16s ease, color 0.16s ease;
+            transition: none;
         }
 
         .mt-quick-filter:hover {
-            transform: translateY(-1px);
+            transform: none;
             border-color: rgba(148, 163, 184, 0.95);
             background-color: rgba(248, 250, 252, 0.98);
         }
@@ -237,13 +237,13 @@
 
         .mt-input,
         .mt-filter-shell .app-input {
-            transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+            transition: none;
         }
 
         .mt-input:hover,
         .mt-filter-shell .app-input:hover {
-            border-color: rgba(148, 163, 184, 0.95);
-            background-color: rgba(255, 255, 255, 1);
+            border-color: rgba(197, 210, 223, 0.95);
+            background-color: rgba(255, 255, 255, 0.98);
         }
 
         .mt-input:focus,
@@ -256,7 +256,7 @@
         }
 
         .mt-primary-action:hover {
-            box-shadow: 0 22px 34px -22px rgba(79, 70, 229, 0.68);
+            box-shadow: 0 18px 30px -22px rgba(79, 70, 229, 0.62);
         }
 
         .mt-operational-shell {
@@ -297,13 +297,13 @@
             padding: 1rem;
             text-align: left;
             background: rgba(255, 255, 255, 0.96);
-            transition: transform 0.16s ease, border-color 0.16s ease, background-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+            transition: none;
             box-shadow: var(--app-subpanel-shadow);
         }
 
         .mt-mode-card:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--app-panel-shadow-hover);
+            transform: none;
+            box-shadow: var(--app-subpanel-shadow);
         }
 
         .mt-mode-card-active {
@@ -435,12 +435,12 @@
             font-weight: 600;
             color: #334155;
             background: rgba(255, 255, 255, 0.98);
-            transition: border-color 0.16s ease, background-color 0.16s ease, color 0.16s ease;
+            transition: none;
         }
 
         .mt-toolbar-toggle:hover {
-            border-color: rgba(148, 163, 184, 0.95);
-            background: rgba(248, 250, 252, 0.98);
+            border-color: rgba(203, 213, 225, 0.96);
+            background: rgba(255, 255, 255, 0.98);
         }
 
         .mt-kpi-card-compact {

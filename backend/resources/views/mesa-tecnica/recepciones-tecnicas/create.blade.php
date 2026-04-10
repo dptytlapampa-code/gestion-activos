@@ -454,7 +454,7 @@
                                         :value="old('institution_id')"
                                         :label="old('institution_id_label')"
                                     />
-                                    <input type="hidden" name="institution_id" x-model="destino.institutionId">
+                                    <input type="hidden" :value="destino.institutionId" aria-hidden="true">
                                     @error('institution_id')
                                         <p class="form-error mt-2">{{ $message }}</p>
                                     @enderror
@@ -474,7 +474,7 @@
                                             :label="old('service_id_label')"
                                             :params="['institution_id' => old('institution_id')]"
                                         />
-                                        <input type="hidden" name="service_id" x-model="destino.serviceId">
+                                        <input type="hidden" :value="destino.serviceId" aria-hidden="true">
                                         @error('service_id')
                                             <p class="form-error mt-2">{{ $message }}</p>
                                         @enderror
@@ -493,7 +493,7 @@
                                             :label="old('office_id_label', old('oficina_id_label'))"
                                             :params="['service_id' => old('service_id'), 'institution_id' => old('institution_id')]"
                                         />
-                                        <input type="hidden" name="office_id" x-model="destino.officeId">
+                                        <input type="hidden" :value="destino.officeId" aria-hidden="true">
                                         @if ($errors->has('office_id'))
                                             <p class="form-error mt-2">{{ $errors->first('office_id') }}</p>
                                         @elseif ($errors->has('oficina_id'))
@@ -514,7 +514,7 @@
                                         :value="old('tipo_equipo_id')"
                                         :label="old('tipo_equipo_id_label')"
                                     />
-                                    <input type="hidden" name="tipo_equipo_id" x-model="destino.tipoEquipoId">
+                                    <input type="hidden" :value="destino.tipoEquipoId" aria-hidden="true">
                                     @error('tipo_equipo_id')
                                         <p class="form-error mt-2">{{ $message }}</p>
                                     @enderror
@@ -542,6 +542,166 @@
                                         @enderror
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </x-collapsible-panel>
+
+                <x-collapsible-panel
+                    title="Quien lo trae"
+                    eyebrow="Entrega"
+                    icon="users"
+                    summary="Nombre obligatorio. El resto es opcional para contacto y trazabilidad."
+                    :force-open="$deliveryErrors || $firstNecessarySection === 'quien-lo-trae'"
+                    persist-key="mesa-tecnica-create-v2.quien-lo-trae"
+                    class="mt-operational-panel rounded-[1.5rem]"
+                    :status-label="$deliveryStatus['label']"
+                    :status-class="$deliveryStatus['class']"
+                    :status-hint="$deliveryStatus['hint']"
+                >
+                    <div class="space-y-4">
+                        <div class="rounded-[1.2rem] border border-slate-200 bg-slate-50/90 px-4 py-3 text-sm text-slate-600">
+                            Complete al menos el nombre para registrar el ticket. Los demas datos solo ayudan a contacto y trazabilidad.
+                        </div>
+
+                        <div class="grid gap-3 md:grid-cols-2">
+                            <div class="md:col-span-2">
+                                <label for="persona_nombre" class="mb-2 block text-sm font-medium text-slate-700">Nombre</label>
+                                <input id="persona_nombre" name="persona_nombre" type="text" value="{{ old('persona_nombre') }}" class="app-input" placeholder="Nombre completo">
+                                @error('persona_nombre')
+                                    <p class="form-error mt-2">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="persona_documento" class="mb-2 block text-sm font-medium text-slate-700">Documento</label>
+                                <input id="persona_documento" name="persona_documento" type="text" value="{{ old('persona_documento') }}" class="app-input" placeholder="Documento">
+                                @error('persona_documento')
+                                    <p class="form-error mt-2">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="persona_telefono" class="mb-2 block text-sm font-medium text-slate-700">Telefono</label>
+                                <input id="persona_telefono" name="persona_telefono" type="text" value="{{ old('persona_telefono') }}" class="app-input" placeholder="Telefono de contacto">
+                                @error('persona_telefono')
+                                    <p class="form-error mt-2">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="persona_relacion_equipo" class="mb-2 block text-sm font-medium text-slate-700">Relacion con el equipo</label>
+                                <input id="persona_relacion_equipo" name="persona_relacion_equipo" type="text" value="{{ old('persona_relacion_equipo') }}" class="app-input" placeholder="Usuario, tecnico, mensajeria">
+                                @error('persona_relacion_equipo')
+                                    <p class="form-error mt-2">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="persona_area" class="mb-2 block text-sm font-medium text-slate-700">Area o servicio</label>
+                                <input id="persona_area" name="persona_area" type="text" value="{{ old('persona_area') }}" class="app-input" placeholder="Area o servicio">
+                                @error('persona_area')
+                                    <p class="form-error mt-2">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label for="persona_institucion" class="mb-2 block text-sm font-medium text-slate-700">Institucion</label>
+                                <input id="persona_institucion" name="persona_institucion" type="text" value="{{ old('persona_institucion') }}" class="app-input" placeholder="Hospital o institucion">
+                                @error('persona_institucion')
+                                    <p class="form-error mt-2">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+                </x-collapsible-panel>
+
+                <x-collapsible-panel
+                    title="Procedencia"
+                    eyebrow="Origen"
+                    icon="building-2"
+                    summary="Contexto de procedencia para trazabilidad cuando haga falta."
+                    :force-open="$sourceErrors"
+                    persist-key="mesa-tecnica-create-v2.procedencia"
+                    class="mt-operational-panel rounded-[1.5rem]"
+                    :status-label="$sourceStatus['label']"
+                    :status-class="$sourceStatus['class']"
+                    :status-hint="$sourceStatus['hint']"
+                >
+                    <div class="space-y-4">
+                        <div
+                            @autocomplete-selected.window="if ($event.detail.name === 'procedencia_institution_id') { handleProcedenciaInstitutionSelected($event.detail.value); }"
+                            @autocomplete-cleared.window="if ($event.detail.name === 'procedencia_institution_id') { handleProcedenciaInstitutionSelected(''); }"
+                        >
+                            <label for="procedencia_institution_id" class="mb-2 block text-sm font-medium text-slate-700">Institucion</label>
+                            <x-autocomplete
+                                name="procedencia_institution_id"
+                                endpoint="/api/search/institutions"
+                                placeholder="Buscar institucion"
+                                :value="old('procedencia_institution_id')"
+                                :label="old('procedencia_institution_id_label')"
+                            />
+                            <input type="hidden" :value="procedencia.institutionId" aria-hidden="true">
+                            @error('procedencia_institution_id')
+                                <p class="form-error mt-2">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div class="grid gap-3 md:grid-cols-2">
+                            <div
+                                @autocomplete-selected.window="if ($event.detail.name === 'procedencia_service_id') { handleProcedenciaServiceSelected($event.detail.value); }"
+                                @autocomplete-cleared.window="if ($event.detail.name === 'procedencia_service_id') { handleProcedenciaServiceSelected(''); }"
+                            >
+                                <label for="procedencia_service_id" class="mb-2 block text-sm font-medium text-slate-700">Servicio</label>
+                                <x-autocomplete
+                                    name="procedencia_service_id"
+                                    endpoint="/api/search/services"
+                                    placeholder="Buscar servicio"
+                                    :value="old('procedencia_service_id')"
+                                    :label="old('procedencia_service_id_label')"
+                                    :params="['institution_id' => old('procedencia_institution_id')]"
+                                />
+                                <input type="hidden" :value="procedencia.serviceId" aria-hidden="true">
+                                @error('procedencia_service_id')
+                                    <p class="form-error mt-2">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div
+                                @autocomplete-selected.window="if ($event.detail.name === 'procedencia_office_id') { procedencia.officeId = String($event.detail.value); }"
+                                @autocomplete-cleared.window="if ($event.detail.name === 'procedencia_office_id') { procedencia.officeId = ''; }"
+                            >
+                                <label for="procedencia_office_id" class="mb-2 block text-sm font-medium text-slate-700">Oficina</label>
+                                <x-autocomplete
+                                    name="procedencia_office_id"
+                                    endpoint="/api/search/offices"
+                                    placeholder="Buscar oficina"
+                                    :value="old('procedencia_office_id')"
+                                    :label="old('procedencia_office_id_label')"
+                                    :params="['service_id' => old('procedencia_service_id'), 'institution_id' => old('procedencia_institution_id')]"
+                                />
+                                <input type="hidden" :value="procedencia.officeId" aria-hidden="true">
+                                @error('procedencia_office_id')
+                                    <p class="form-error mt-2">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="grid gap-3 md:grid-cols-2">
+                            <div>
+                                <label for="procedencia_hospital" class="mb-2 block text-sm font-medium text-slate-700">Institucion libre</label>
+                                <input id="procedencia_hospital" name="procedencia_hospital" type="text" value="{{ old('procedencia_hospital') }}" class="app-input" placeholder="Use si no aplica la estructura institucional">
+                                @error('procedencia_hospital')
+                                    <p class="form-error mt-2">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <div>
+                                <label for="procedencia_libre" class="mb-2 block text-sm font-medium text-slate-700">Referencia libre</label>
+                                <input id="procedencia_libre" name="procedencia_libre" type="text" value="{{ old('procedencia_libre') }}" class="app-input" placeholder="Servicio, ambulancia, mensajeria u otra referencia">
+                                @error('procedencia_libre')
+                                    <p class="form-error mt-2">{{ $message }}</p>
+                                @enderror
                             </div>
                         </div>
                     </div>
@@ -834,157 +994,3 @@
         }
     </script>
 @endsection
-
-                <x-collapsible-panel
-                    title="Quien lo trae"
-                    eyebrow="Entrega"
-                    icon="users"
-                    summary="Nombre obligatorio. El resto es opcional para contacto y trazabilidad."
-                    :force-open="$deliveryErrors || $firstNecessarySection === 'quien-lo-trae'"
-                    persist-key="mesa-tecnica-create-v2.quien-lo-trae"
-                    class="mt-operational-panel rounded-[1.5rem]"
-                    :status-label="$deliveryStatus['label']"
-                    :status-class="$deliveryStatus['class']"
-                    :status-hint="$deliveryStatus['hint']"
-                >
-                    <div class="grid gap-3 md:grid-cols-2">
-                        <div class="md:col-span-2">
-                            <label for="persona_nombre" class="mb-2 block text-sm font-medium text-slate-700">Nombre</label>
-                            <input id="persona_nombre" name="persona_nombre" type="text" value="{{ old('persona_nombre') }}" class="app-input" placeholder="Nombre completo">
-                            @error('persona_nombre')
-                                <p class="form-error mt-2">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="persona_documento" class="mb-2 block text-sm font-medium text-slate-700">Documento</label>
-                            <input id="persona_documento" name="persona_documento" type="text" value="{{ old('persona_documento') }}" class="app-input" placeholder="Documento">
-                            @error('persona_documento')
-                                <p class="form-error mt-2">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="persona_telefono" class="mb-2 block text-sm font-medium text-slate-700">Telefono</label>
-                            <input id="persona_telefono" name="persona_telefono" type="text" value="{{ old('persona_telefono') }}" class="app-input" placeholder="Telefono de contacto">
-                            @error('persona_telefono')
-                                <p class="form-error mt-2">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="persona_relacion_equipo" class="mb-2 block text-sm font-medium text-slate-700">Relacion con el equipo</label>
-                            <input id="persona_relacion_equipo" name="persona_relacion_equipo" type="text" value="{{ old('persona_relacion_equipo') }}" class="app-input" placeholder="Usuario, tecnico, mensajeria">
-                            @error('persona_relacion_equipo')
-                                <p class="form-error mt-2">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div>
-                            <label for="persona_area" class="mb-2 block text-sm font-medium text-slate-700">Area o servicio</label>
-                            <input id="persona_area" name="persona_area" type="text" value="{{ old('persona_area') }}" class="app-input" placeholder="Area o servicio">
-                            @error('persona_area')
-                                <p class="form-error mt-2">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div class="md:col-span-2">
-                            <label for="persona_institucion" class="mb-2 block text-sm font-medium text-slate-700">Institucion</label>
-                            <input id="persona_institucion" name="persona_institucion" type="text" value="{{ old('persona_institucion') }}" class="app-input" placeholder="Hospital o institucion">
-                            @error('persona_institucion')
-                                <p class="form-error mt-2">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </div>
-                </x-collapsible-panel>
-
-                <x-collapsible-panel
-                    title="Procedencia"
-                    eyebrow="Origen"
-                    icon="building-2"
-                    summary="Contexto de procedencia para trazabilidad cuando haga falta."
-                    :force-open="$sourceErrors"
-                    persist-key="mesa-tecnica-create-v2.procedencia"
-                    class="mt-operational-panel rounded-[1.5rem]"
-                    :status-label="$sourceStatus['label']"
-                    :status-class="$sourceStatus['class']"
-                    :status-hint="$sourceStatus['hint']"
-                >
-                    <div class="space-y-4">
-                        <div
-                            @autocomplete-selected.window="if ($event.detail.name === 'procedencia_institution_id') { handleProcedenciaInstitutionSelected($event.detail.value); }"
-                            @autocomplete-cleared.window="if ($event.detail.name === 'procedencia_institution_id') { handleProcedenciaInstitutionSelected(''); }"
-                        >
-                            <label for="procedencia_institution_id" class="mb-2 block text-sm font-medium text-slate-700">Institucion</label>
-                            <x-autocomplete
-                                name="procedencia_institution_id"
-                                endpoint="/api/search/institutions"
-                                placeholder="Buscar institucion"
-                                :value="old('procedencia_institution_id')"
-                                :label="old('procedencia_institution_id_label')"
-                            />
-                            <input type="hidden" name="procedencia_institution_id" x-model="procedencia.institutionId">
-                            @error('procedencia_institution_id')
-                                <p class="form-error mt-2">{{ $message }}</p>
-                            @enderror
-                        </div>
-
-                        <div class="grid gap-3 md:grid-cols-2">
-                            <div
-                                @autocomplete-selected.window="if ($event.detail.name === 'procedencia_service_id') { handleProcedenciaServiceSelected($event.detail.value); }"
-                                @autocomplete-cleared.window="if ($event.detail.name === 'procedencia_service_id') { handleProcedenciaServiceSelected(''); }"
-                            >
-                                <label for="procedencia_service_id" class="mb-2 block text-sm font-medium text-slate-700">Servicio</label>
-                                <x-autocomplete
-                                    name="procedencia_service_id"
-                                    endpoint="/api/search/services"
-                                    placeholder="Buscar servicio"
-                                    :value="old('procedencia_service_id')"
-                                    :label="old('procedencia_service_id_label')"
-                                    :params="['institution_id' => old('procedencia_institution_id')]"
-                                />
-                                <input type="hidden" name="procedencia_service_id" x-model="procedencia.serviceId">
-                                @error('procedencia_service_id')
-                                    <p class="form-error mt-2">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div
-                                @autocomplete-selected.window="if ($event.detail.name === 'procedencia_office_id') { procedencia.officeId = String($event.detail.value); }"
-                                @autocomplete-cleared.window="if ($event.detail.name === 'procedencia_office_id') { procedencia.officeId = ''; }"
-                            >
-                                <label for="procedencia_office_id" class="mb-2 block text-sm font-medium text-slate-700">Oficina</label>
-                                <x-autocomplete
-                                    name="procedencia_office_id"
-                                    endpoint="/api/search/offices"
-                                    placeholder="Buscar oficina"
-                                    :value="old('procedencia_office_id')"
-                                    :label="old('procedencia_office_id_label')"
-                                    :params="['service_id' => old('procedencia_service_id'), 'institution_id' => old('procedencia_institution_id')]"
-                                />
-                                <input type="hidden" name="procedencia_office_id" x-model="procedencia.officeId">
-                                @error('procedencia_office_id')
-                                    <p class="form-error mt-2">{{ $message }}</p>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="grid gap-3 md:grid-cols-2">
-                            <div>
-                                <label for="procedencia_hospital" class="mb-2 block text-sm font-medium text-slate-700">Institucion libre</label>
-                                <input id="procedencia_hospital" name="procedencia_hospital" type="text" value="{{ old('procedencia_hospital') }}" class="app-input" placeholder="Use si no aplica la estructura institucional">
-                                @error('procedencia_hospital')
-                                    <p class="form-error mt-2">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label for="procedencia_libre" class="mb-2 block text-sm font-medium text-slate-700">Referencia libre</label>
-                                <input id="procedencia_libre" name="procedencia_libre" type="text" value="{{ old('procedencia_libre') }}" class="app-input" placeholder="Servicio, ambulancia, mensajeria u otra referencia">
-                                @error('procedencia_libre')
-                                    <p class="form-error mt-2">{{ $message }}</p>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-                </x-collapsible-panel>

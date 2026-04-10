@@ -206,10 +206,8 @@ document.addEventListener('alpine:init', () => {
                 window.clearTimeout(this.pendingOpenTimer);
             }
 
-            this.pendingOpenTimer = window.setTimeout(() => {
-                this.openGroups[group] = true;
-                this.pendingOpenTimer = null;
-            }, 160);
+            this.openGroups[group] = true;
+            this.pendingOpenTimer = null;
         },
 
         isOpen(group) {

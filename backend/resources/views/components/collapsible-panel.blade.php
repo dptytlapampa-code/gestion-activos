@@ -87,10 +87,10 @@
 
     <div
         :id="$id('collapsible-panel-content')"
+        x-cloak
+        x-show="open"
         class="app-collapsible-content"
-        :class="{ 'is-open': open }"
         :aria-hidden="(! open).toString()"
-        x-bind:inert="!open"
     >
         <div @class(['app-collapsible-content-inner', $contentClass])>
             {{ $slot }}

@@ -47,7 +47,7 @@
             aria-hidden="true"
         ></div>
 
-        <div class="flex min-h-screen gap-0 lg:gap-4 xl:gap-6">
+        <div class="flex min-h-screen items-start gap-0 lg:gap-4 xl:gap-6">
             @include('layouts.sidebar', ['siteName' => $siteName, 'logoInstitucionalUrl' => $logoInstitucionalUrl, 'systemLogoUrl' => $systemLogoUrl])
 
             <div class="flex min-w-0 flex-1 flex-col gap-4 lg:gap-6">
