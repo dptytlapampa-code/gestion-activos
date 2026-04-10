@@ -4,6 +4,9 @@
     'icon' => null,
     'description' => null,
     'summary' => null,
+    'statusLabel' => null,
+    'statusHint' => null,
+    'statusClass' => 'border-slate-200 bg-slate-100 text-slate-700',
     'defaultOpen' => false,
     'forceOpen' => false,
     'persistKey' => null,
@@ -55,6 +58,20 @@
 
                     @if ($summary)
                         <span x-show="!open" x-cloak class="app-collapsible-summary {{ $summaryClass }}">{{ $summary }}</span>
+                    @endif
+
+                    @if ($statusLabel || $statusHint)
+                        <span class="mt-2 flex flex-wrap items-center gap-2">
+                            @if ($statusLabel)
+                                <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] {{ $statusClass }}">
+                                    {{ $statusLabel }}
+                                </span>
+                            @endif
+
+                            @if ($statusHint)
+                                <span class="text-xs font-medium text-slate-500">{{ $statusHint }}</span>
+                            @endif
+                        </span>
                     @endif
                 </span>
             </span>
