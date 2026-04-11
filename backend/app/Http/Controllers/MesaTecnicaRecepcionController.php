@@ -26,10 +26,10 @@ class MesaTecnicaRecepcionController extends Controller
 
         $listing = $this->recepcionTecnicaService->listingState($request);
         $filters = $this->recepcionTecnicaService->filtersFromRequest($request);
-        $quickView = $this->recepcionTecnicaService->quickViewFromRequest($request);
+        $tray = $this->recepcionTecnicaService->operationalTrayFromRequest($request);
 
         $recepcionesTecnicas = $this->recepcionTecnicaService
-            ->buildIndexQuery($request->user(), $listing->search, $filters, $quickView)
+            ->buildOperationalTrayQuery($request->user(), $listing->search, $filters, $tray)
             ->paginate($listing->perPage)
             ->withQueryString();
 
@@ -37,9 +37,9 @@ class MesaTecnicaRecepcionController extends Controller
             'recepcionesTecnicas' => $recepcionesTecnicas,
             'listing' => $listing,
             'filters' => $filters,
-            'quickView' => $quickView,
-            'quickViewCounts' => $this->recepcionTecnicaService->quickViewCounts($request->user(), $listing->search, $filters),
-            'quickViewLabels' => RecepcionTecnica::VISTA_LABELS,
+            'tray' => $tray,
+            'trayCounts' => $this->recepcionTecnicaService->operationalTrayCounts($request->user(), $listing->search, $filters),
+            'trayLabels' => RecepcionTecnicaService::TRAY_LABELS,
             'statusOptions' => $this->recepcionTecnicaService->statusOptions(),
             'hasActiveFilters' => $this->recepcionTecnicaService->hasActiveFilters($listing->search, $filters),
         ]);

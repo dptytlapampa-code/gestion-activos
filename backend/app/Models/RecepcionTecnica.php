@@ -513,7 +513,7 @@ class RecepcionTecnica extends Model
 
         $like = "%{$search}%";
 
-        return $query->where(function (Builder $builder) use ($like): void {
+        return $query->where(function (Builder $builder) use ($like, $search): void {
             $builder
                 ->where('codigo', 'ilike', $like)
                 ->orWhere('estado', 'ilike', $like)
@@ -532,6 +532,20 @@ class RecepcionTecnica extends Model
                 ->orWhere('falla_motivo', 'ilike', $like)
                 ->orWhere('diagnostico', 'ilike', $like)
                 ->orWhere('persona_retiro_nombre', 'ilike', $like)
+                ->orWhereHas('equipo', function (Builder $equipmentQuery) use ($like): void {
+                    $equipmentQuery
+                        ->where('codigo_interno', 'ilike', $like)
+                        ->orWhere('numero_serie', 'ilike', $like)
+                        ->orWhere('bien_patrimonial', 'ilike', $like);
+                })
+                ->orWhereHas('equipoCreado', function (Builder $equipmentQuery) use ($like): void {
+                    $equipmentQuery
+                        ->where('codigo_interno', 'ilike', $like)
+                        ->orWhere('numero_serie', 'ilike', $like)
+                        ->orWhere('bien_patrimonial', 'ilike', $like);
+                })
+                ->orWhereHas('equipo.actas', fn (Builder $actaQuery) => $actaQuery->searchIndex($search))
+                ->orWhereHas('equipoCreado.actas', fn (Builder $actaQuery) => $actaQuery->searchIndex($search))
                 ->orWhereHas('creator', fn (Builder $creatorQuery) => $creatorQuery->where('name', 'ilike', $like))
                 ->orWhereHas('procedenciaInstitution', fn (Builder $institutionQuery) => $institutionQuery->where('nombre', 'ilike', $like));
         });

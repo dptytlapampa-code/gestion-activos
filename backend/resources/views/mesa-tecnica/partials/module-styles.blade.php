@@ -451,5 +451,244 @@
         .mt-kpi-card-compact p:last-child {
             line-height: 1.35rem;
         }
+
+        .mt-search-shell {
+            border: 1px solid rgba(217, 226, 236, 0.96);
+            border-radius: 1.75rem;
+            padding: 1rem;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 250, 252, 0.96) 100%);
+            box-shadow: var(--app-panel-shadow);
+        }
+
+        .mt-search-grid {
+            display: grid;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        @media (min-width: 1024px) {
+            .mt-search-grid {
+                grid-template-columns: minmax(0, 1fr) auto;
+            }
+        }
+
+        .mt-tray-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .mt-tray-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: 1px solid rgba(203, 213, 225, 0.96);
+            border-radius: 9999px;
+            padding: 0.6rem 0.95rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #475569;
+            background: rgba(255, 255, 255, 0.96);
+            white-space: nowrap;
+        }
+
+        .mt-tray-tab-active {
+            border-color: rgba(15, 23, 42, 0.14);
+            color: #0f172a;
+            background: rgba(241, 245, 249, 0.98);
+            box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.04);
+        }
+
+        .mt-tray-tab-count {
+            border-radius: 9999px;
+            padding: 0.125rem 0.45rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #475569;
+            background: rgba(226, 232, 240, 0.94);
+        }
+
+        .mt-tray-tab-active .mt-tray-tab-count {
+            color: #0f172a;
+            background: rgba(203, 213, 225, 0.9);
+        }
+
+        .mt-queue-board {
+            border: 1px solid rgba(217, 226, 236, 0.96);
+            border-radius: 1.5rem;
+            padding: 1rem;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(248, 250, 252, 0.96) 100%);
+            box-shadow: var(--app-panel-shadow);
+        }
+
+        .mt-queue-stack {
+            display: grid;
+            gap: 0.85rem;
+        }
+
+        .mt-queue-card {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            min-height: 11.25rem;
+            border: 1px solid rgba(226, 232, 240, 0.96);
+            border-radius: 1.25rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: var(--app-subpanel-shadow);
+        }
+
+        @media (min-width: 1024px) {
+            .mt-queue-card {
+                flex-direction: row;
+                align-items: stretch;
+                justify-content: space-between;
+                gap: 1.25rem;
+            }
+        }
+
+        .mt-queue-card-state-active {
+            border-color: rgba(217, 226, 236, 0.96);
+        }
+
+        .mt-queue-card-state-ready {
+            border-color: rgba(187, 247, 208, 0.92);
+            background: linear-gradient(180deg, rgba(252, 255, 253, 0.99) 0%, rgba(244, 251, 246, 0.96) 100%);
+        }
+
+        .mt-queue-card-state-pending {
+            border-color: rgba(253, 230, 138, 0.92);
+            background: linear-gradient(180deg, rgba(255, 253, 247, 0.99) 0%, rgba(255, 250, 235, 0.96) 100%);
+        }
+
+        .mt-queue-card-state-final {
+            border-color: rgba(203, 213, 225, 0.96);
+            background: linear-gradient(180deg, rgba(250, 251, 252, 0.99) 0%, rgba(244, 246, 248, 0.96) 100%);
+        }
+
+        .mt-queue-card-main {
+            display: flex;
+            min-width: 0;
+            flex: 1 1 auto;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .mt-queue-card-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .mt-queue-card-facts {
+            display: grid;
+            gap: 0.55rem;
+        }
+
+        @media (min-width: 768px) {
+            .mt-queue-card-facts {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        .mt-queue-fact {
+            display: flex;
+            min-width: 0;
+            align-items: flex-start;
+            gap: 0.45rem;
+            font-size: 0.875rem;
+            line-height: 1.35rem;
+            color: #475569;
+        }
+
+        .mt-queue-fact svg {
+            margin-top: 0.1rem;
+            flex-shrink: 0;
+            color: #94a3b8;
+        }
+
+        .mt-queue-card-actions {
+            display: flex;
+            width: 100%;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        @media (min-width: 1024px) {
+            .mt-queue-card-actions {
+                width: 14rem;
+                min-width: 14rem;
+                justify-content: center;
+            }
+        }
+
+        .mt-queue-card-actions .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .mt-queue-card-summary {
+            border: 1px solid rgba(226, 232, 240, 0.96);
+            border-radius: 1rem;
+            padding: 0.8rem 0.9rem;
+            background: rgba(248, 250, 252, 0.9);
+        }
+
+        .mt-queue-card-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.9rem;
+            padding: 0.55rem 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #475569;
+            background: transparent;
+            text-decoration: none;
+        }
+
+        .mt-queue-card-link:hover {
+            color: #0f172a;
+            background: rgba(241, 245, 249, 0.9);
+        }
+
+        .mt-secondary-grid {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        @media (min-width: 768px) {
+            .mt-secondary-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        .mt-secondary-link {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            border: 1px solid rgba(226, 232, 240, 0.96);
+            border-radius: 1rem;
+            padding: 0.95rem 1rem;
+            color: #0f172a;
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: var(--app-subpanel-shadow);
+        }
+
+        .mt-secondary-link:hover {
+            border-color: rgba(203, 213, 225, 0.96);
+            background: rgba(248, 250, 252, 0.98);
+        }
+
+        .mt-empty-state {
+            border: 1px dashed rgba(203, 213, 225, 0.96);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            text-align: center;
+            font-size: 0.95rem;
+            color: #64748b;
+            background: rgba(248, 250, 252, 0.75);
+        }
     </style>
 @endonce

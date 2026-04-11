@@ -21,6 +21,20 @@ use Throwable;
 
 class RecepcionTecnicaService
 {
+    public const TRAY_EN_MESA = 'en_mesa';
+    public const TRAY_LISTOS = 'listos';
+    public const TRAY_PENDIENTES = 'pendientes';
+    public const TRAY_FINALIZADOS = 'finalizados';
+    public const TRAY_TODOS = 'todos';
+
+    public const TRAY_LABELS = [
+        self::TRAY_EN_MESA => 'En mesa',
+        self::TRAY_LISTOS => 'Listos para entregar',
+        self::TRAY_PENDIENTES => 'Pendientes',
+        self::TRAY_FINALIZADOS => 'Finalizados',
+        self::TRAY_TODOS => 'Todos',
+    ];
+
     public const MODO_EQUIPO_EXISTENTE = 'existente';
     public const MODO_EQUIPO_NUEVO = 'nuevo';
 
@@ -61,6 +75,22 @@ class RecepcionTecnicaService
         return RecepcionTecnica::normalizeQuickView($request->query('vista'), $default);
     }
 
+    public function operationalTrayFromRequest(Request $request, string $default = self::TRAY_EN_MESA): string
+    {
+        $tray = trim((string) $request->query('bandeja', ''));
+
+        if (array_key_exists($tray, self::TRAY_LABELS)) {
+            return $tray;
+        }
+
+        return match ($this->quickViewFromRequest($request)) {
+            RecepcionTecnica::VISTA_LISTOS => self::TRAY_LISTOS,
+            RecepcionTecnica::VISTA_CERRADOS => self::TRAY_FINALIZADOS,
+            RecepcionTecnica::VISTA_TODOS => self::TRAY_TODOS,
+            default => $default,
+        };
+    }
+
     /**
      * @param  array<string, mixed>  $filters
      */
@@ -69,6 +99,17 @@ class RecepcionTecnicaService
         return $this->baseIndexQuery($user, $search, $filters)
             ->applyQuickView($quickView)
             ->operationalOrder();
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    public function buildOperationalTrayQuery(?User $user, string $search, array $filters, string $tray): Builder
+    {
+        return $this->applyOperationalTray(
+            $this->baseIndexQuery($user, $search, $filters),
+            $tray
+        )->operationalOrder();
     }
 
     /**
@@ -83,6 +124,25 @@ class RecepcionTecnicaService
         return collect(RecepcionTecnica::VISTA_LABELS)
             ->mapWithKeys(function (string $label, string $view) use ($query): array {
                 return [$view => (clone $query)->applyQuickView($view)->count()];
+            })
+            ->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<string, int>
+     */
+    public function operationalTrayCounts(?User $user, string $search, array $filters): array
+    {
+        $filtersWithoutExactStatus = array_merge($filters, ['estado' => '']);
+        $query = $this->baseIndexQuery($user, $search, $filtersWithoutExactStatus);
+
+        return collect(self::TRAY_LABELS)
+            ->mapWithKeys(function (string $label, string $tray) use ($query): array {
+                $builder = clone $query;
+                $this->applyOperationalTray($builder, $tray);
+
+                return [$tray => $builder->count()];
             })
             ->all();
     }
@@ -154,6 +214,21 @@ class RecepcionTecnicaService
     public function egressConditionOptions(): array
     {
         return RecepcionTecnica::CONDICION_LABELS;
+    }
+
+    private function applyOperationalTray(Builder $query, string $tray): Builder
+    {
+        return match ($tray) {
+            self::TRAY_LISTOS => $query->where('estado', RecepcionTecnica::ESTADO_LISTO_PARA_ENTREGAR),
+            self::TRAY_PENDIENTES => $query->where('estado', RecepcionTecnica::ESTADO_EN_ESPERA_REPUESTO),
+            self::TRAY_FINALIZADOS => $query->history(),
+            self::TRAY_TODOS => $query,
+            default => $query->whereIn('estado', [
+                RecepcionTecnica::ESTADO_RECIBIDO,
+                RecepcionTecnica::ESTADO_EN_DIAGNOSTICO,
+                RecepcionTecnica::ESTADO_EN_REPARACION,
+            ]),
+        };
     }
 
     public function defaultReceptionTimestamp(): string

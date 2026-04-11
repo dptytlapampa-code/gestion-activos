@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Equipo;
 use App\Models\RecepcionTecnica;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -20,61 +21,63 @@ class MesaTecnicaService
      * @return array{
      *     accessibleInstitutions: Collection<int, \App\Models\Institution>,
      *     activeInstitutionId: int|null,
-     *     activeCount: int,
+     *     enMesaCount: int,
      *     readyCount: int,
-     *     closedCount: int,
-     *     readyTickets: Collection<int, array<string, mixed>>,
-     *     activeTickets: Collection<int, array<string, mixed>>,
-     *     recentHistory: Collection<int, array<string, mixed>>
+     *     pendingCount: int,
+     *     finalizedCount: int,
+     *     enMesaTickets: Collection<int, \App\Models\RecepcionTecnica>,
+     *     readyTickets: Collection<int, \App\Models\RecepcionTecnica>,
+     *     pendingTickets: Collection<int, \App\Models\RecepcionTecnica>,
+     *     finalizedTickets: Collection<int, \App\Models\RecepcionTecnica>
      * }
      */
     public function dashboard(User $user): array
     {
-        $query = RecepcionTecnica::query()
-            ->with([
-                'creator:id,name',
-                'procedenciaInstitution:id,nombre',
-                'equipo:id,codigo_interno',
-                'equipoCreado:id,codigo_interno',
-            ])
-            ->visibleToUser($user);
+        $query = $this->dashboardQuery($user);
+
+        $enMesaStatuses = [
+            RecepcionTecnica::ESTADO_RECIBIDO,
+            RecepcionTecnica::ESTADO_EN_DIAGNOSTICO,
+            RecepcionTecnica::ESTADO_EN_REPARACION,
+        ];
 
         $readyTickets = (clone $query)
             ->where('estado', RecepcionTecnica::ESTADO_LISTO_PARA_ENTREGAR)
             ->operationalOrder()
-            ->limit(4)
-            ->get()
-            ->map(fn (RecepcionTecnica $recepcion): array => $this->mapDashboardTicket($recepcion))
-            ->values();
+            ->limit(8)
+            ->get();
 
-        $activeTickets = (clone $query)
-            ->open()
-            ->where('estado', '!=', RecepcionTecnica::ESTADO_LISTO_PARA_ENTREGAR)
+        $enMesaTickets = (clone $query)
+            ->whereIn('estado', $enMesaStatuses)
             ->operationalOrder()
-            ->limit(6)
-            ->get()
-            ->map(fn (RecepcionTecnica $recepcion): array => $this->mapDashboardTicket($recepcion))
-            ->values();
+            ->limit(8)
+            ->get();
 
-        $recentHistory = (clone $query)
+        $pendingTickets = (clone $query)
+            ->where('estado', RecepcionTecnica::ESTADO_EN_ESPERA_REPUESTO)
+            ->operationalOrder()
+            ->limit(8)
+            ->get();
+
+        $finalizedTickets = (clone $query)
             ->history()
             ->orderByDesc('entregada_at')
             ->orderByDesc('status_changed_at')
             ->latest('id')
-            ->limit(4)
-            ->get()
-            ->map(fn (RecepcionTecnica $recepcion): array => $this->mapDashboardTicket($recepcion))
-            ->values();
+            ->limit(8)
+            ->get();
 
         return [
             'accessibleInstitutions' => $this->activeInstitutionContext->accessibleInstitutions($user),
             'activeInstitutionId' => $this->activeInstitutionContext->currentId($user),
-            'activeCount' => (clone $query)->open()->count(),
+            'enMesaCount' => (clone $query)->whereIn('estado', $enMesaStatuses)->count(),
             'readyCount' => (clone $query)->where('estado', RecepcionTecnica::ESTADO_LISTO_PARA_ENTREGAR)->count(),
-            'closedCount' => (clone $query)->history()->count(),
+            'pendingCount' => (clone $query)->where('estado', RecepcionTecnica::ESTADO_EN_ESPERA_REPUESTO)->count(),
+            'finalizedCount' => (clone $query)->history()->count(),
+            'enMesaTickets' => $enMesaTickets,
             'readyTickets' => $readyTickets,
-            'activeTickets' => $activeTickets,
-            'recentHistory' => $recentHistory,
+            'pendingTickets' => $pendingTickets,
+            'finalizedTickets' => $finalizedTickets,
         ];
     }
 
@@ -187,24 +190,18 @@ class MesaTecnicaService
         ];
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    private function mapDashboardTicket(RecepcionTecnica $recepcion): array
+    private function dashboardQuery(User $user): Builder
     {
-        return [
-            'id' => $recepcion->id,
-            'codigo' => $recepcion->codigo,
-            'estado' => $recepcion->estado,
-            'estado_label' => $recepcion->statusLabel(),
-            'equipo' => $recepcion->equipmentReference(),
-            'fecha' => $recepcion->ingresado_at?->format('d/m/Y H:i') ?? '-',
-            'persona_entrega' => $recepcion->persona_nombre,
-            'procedencia' => $recepcion->procedenciaResumen(),
-            'creator' => $recepcion->creator?->name ?? 'Sin usuario',
-            'next_action' => $recepcion->nextActionLabel(),
-            'is_ready' => $recepcion->isReadyForDelivery(),
-        ];
+        return RecepcionTecnica::query()
+            ->with([
+                'creator:id,name',
+                'procedenciaInstitution:id,nombre',
+                'procedenciaService:id,nombre',
+                'procedenciaOffice:id,nombre',
+                'equipo:id,tipo,marca,modelo,numero_serie,bien_patrimonial,codigo_interno',
+                'equipoCreado:id,tipo,marca,modelo,numero_serie,bien_patrimonial,codigo_interno',
+            ])
+            ->visibleToUser($user);
     }
 
     private function nullableString(mixed $value): ?string
