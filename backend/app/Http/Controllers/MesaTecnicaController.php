@@ -19,7 +19,9 @@ class MesaTecnicaController extends Controller
         $user = $request->user();
         abort_unless($user instanceof User, 403);
 
-        return view('mesa-tecnica.index', $this->mesaTecnicaService->dashboard($user));
+        return view('mesa-tecnica.index', $this->mesaTecnicaService->dashboard($user, [
+            'selectedQueue' => $request->query('queue'),
+        ]));
     }
 
     public function label(Equipo $equipo): View
