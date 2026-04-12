@@ -8,7 +8,6 @@
     $sidebarHeaderDescription = $sidebarHeaderDescription ?? $systemConfig->sidebar_header_description ?? 'Sistema de Gestion de Activos';
     $sidebarHeaderSubtitle = $sidebarHeaderSubtitle ?? $systemConfig->sidebar_header_subtitle ?? 'Panel administrativo';
     $logoInstitucionalUrl = $logoInstitucionalUrl ?? $systemConfig->logo_url;
-    $systemLogoUrl = $systemLogoUrl ?? $systemConfig->system_logo_url;
     $user = auth()->user();
 
     $canInstitutions = $user->hasRole(User::ROLE_SUPERADMIN, User::ROLE_ADMIN);
@@ -77,12 +76,17 @@
                                 :class="$store.appShell.isDesktopSidebarCollapsed() ? 'max-h-10 max-w-[2.5rem]' : 'max-h-12 max-w-full'"
                             >
                         @else
-                            <img
-                                src="{{ $systemLogoUrl }}"
-                                alt="Logo del sistema"
-                                class="app-sidebar-logo"
-                                :class="$store.appShell.isDesktopSidebarCollapsed() ? 'max-h-10 max-w-[2.5rem]' : 'max-h-12 max-w-full'"
+                            <div
+                                class="flex h-full w-full items-center justify-center rounded-2xl border border-dashed border-white/25 bg-white/10 px-3 py-3 text-center text-white/80"
+                                :class="$store.appShell.isDesktopSidebarCollapsed() ? 'min-h-10' : 'min-h-16'"
                             >
+                                <div class="space-y-1">
+                                    <x-icon name="image" class="mx-auto h-5 w-5" />
+                                    <p x-cloak x-show="!$store.appShell.isDesktopSidebarCollapsed()" class="text-[11px] font-medium">
+                                        Sin logo institucional
+                                    </p>
+                                </div>
+                            </div>
                         @endif
                     </div>
                 </div>

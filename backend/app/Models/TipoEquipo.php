@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use App\Services\PublicMediaService;
 use App\Support\Auditing\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Storage;
 
 class TipoEquipo extends Model
 {
@@ -21,16 +21,13 @@ class TipoEquipo extends Model
         return $this->hasMany(Equipo::class);
     }
 
+    public function getImagePathAttribute(?string $value): ?string
+    {
+        return app(PublicMediaService::class)->normalizeStoredPath($value);
+    }
+
     public function getImageUrlAttribute(): ?string
     {
-        if ($this->image_path === null || $this->image_path === '') {
-            return null;
-        }
-
-        if (! Storage::disk('public')->exists($this->image_path)) {
-            return null;
-        }
-
-        return Storage::disk('public')->url($this->image_path);
+        return app(PublicMediaService::class)->url($this->getRawOriginal('image_path'));
     }
 }

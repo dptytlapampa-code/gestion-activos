@@ -28,7 +28,7 @@ class ActaPdfDataService
         $settings = system_config();
         $systemName = $this->nullableTrim($settings->nombre_sistema ?? $settings->site_name ?? config('app.name'))
             ?? config('app.name');
-        $headerMastheadPath = $settings->logo_pdf_file_path ?? $settings->logo_institucional_file_path ?? null;
+        $headerMastheadPath = $settings->logo_pdf_file_path ?? null;
         $issuerInstitutionName = $this->resolveIssuerInstitutionName($acta, $systemName);
 
         $actaPublicUrl = $this->resolveActaPublicUrl($acta);

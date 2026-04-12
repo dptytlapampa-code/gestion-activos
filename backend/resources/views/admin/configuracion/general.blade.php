@@ -21,7 +21,7 @@
         <div>
             <h3 class="text-lg font-semibold text-slate-800">General</h3>
             <p class="mt-1 text-sm text-slate-600">
-                Define la identidad visual institucional del sistema. Los logos se almacenan en <code>/storage/logos/</code> usando el filesystem publico de Laravel.
+                Define la identidad visual institucional del sistema. Los logos se almacenan en el disco publico de Laravel con rutas internas como <code>logos/institucional.png</code> y <code>logos/pdf.png</code>.
             </p>
         </div>
 
@@ -137,7 +137,7 @@
             </div>
 
             <div class="app-subcard p-4 text-xs text-slate-600">
-                Para exponer los archivos publicamente, ejecute <code>php artisan storage:link</code>. Las URLs quedaran bajo <code>/storage/logos/...</code>.
+                En Docker, los archivos publicos se sirven desde <code>/storage/...</code> mediante el volumen compartido del proyecto. En una instalacion local sin contenedores, utilice <code>php artisan storage:link</code>.
             </div>
 
             <div class="flex justify-end">

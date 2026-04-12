@@ -9,8 +9,6 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\ValidationException;
 use stdClass;
 
 class SystemSettingsService
@@ -22,11 +20,16 @@ class SystemSettingsService
         'logo_path' => null,
         'logo_institucional' => null,
         'logo_pdf' => null,
+        'sidebar_header_description' => 'Sistema de Gestion de Activos',
+        'sidebar_header_subtitle' => 'Panel administrativo',
     ];
 
     private ?stdClass $cachedSettings = null;
 
-    public function __construct(private readonly AuditLogService $auditLogService) {}
+    public function __construct(
+        private readonly AuditLogService $auditLogService,
+        private readonly PublicMediaService $publicMediaService,
+    ) {}
 
     public function getCurrentSettings(): stdClass
     {
@@ -35,28 +38,41 @@ class SystemSettingsService
         }
 
         $setting = $this->readSingletonForDisplay();
-        $logoInstitucionalPath = $setting?->logo_institucional ?: $setting?->logo_path;
-        $logoPdfPath = $setting?->logo_pdf;
+        $logoInstitucionalPath = $this->publicMediaService->normalizeStoredPath(
+            $setting?->logo_institucional ?: $setting?->logo_path
+        );
+        $logoPdfPath = $this->publicMediaService->normalizeStoredPath($setting?->logo_pdf);
+        $siteName = trim((string) ($setting?->site_name ?: self::DEFAULTS['site_name']));
 
-        $settings = [
-            'site_name' => $setting?->site_name ?: self::DEFAULTS['site_name'],
-            'primary_color' => $this->normalizeColor($setting?->primary_color ?: self::DEFAULTS['primary_color']),
-            'sidebar_color' => $this->normalizeColor($setting?->sidebar_color ?: self::DEFAULTS['sidebar_color']),
+        if ($siteName === '') {
+            $siteName = self::DEFAULTS['site_name'];
+        }
+        $primaryColor = $this->normalizeColor((string) ($setting?->primary_color ?: self::DEFAULTS['primary_color']), self::DEFAULTS['primary_color']);
+        $sidebarColor = $this->normalizeColor((string) ($setting?->sidebar_color ?: self::DEFAULTS['sidebar_color']), self::DEFAULTS['sidebar_color']);
+
+        return $this->cachedSettings = (object) [
+            'nombre_sistema' => $siteName,
+            'site_name' => $siteName,
+            'color_primario' => $primaryColor,
+            'primary_color' => $primaryColor,
+            'color_sidebar' => $sidebarColor,
+            'sidebar_color' => $sidebarColor,
+            'logo' => $logoInstitucionalPath,
             'logo_path' => $logoInstitucionalPath,
             'logo_institucional' => $logoInstitucionalPath,
             'logo_pdf' => $logoPdfPath,
+            'logo_url' => $this->publicMediaService->url($logoInstitucionalPath),
+            'logo_institucional_url' => $this->publicMediaService->url($logoInstitucionalPath),
+            'logo_pdf_url' => $this->publicMediaService->url($logoPdfPath),
+            'logo_institucional_file_path' => $this->publicMediaService->path($logoInstitucionalPath),
+            'logo_pdf_file_path' => $this->publicMediaService->path($logoPdfPath),
+            'system_logo_url' => asset('images/system/logo-sistema.png'),
+            'sidebar_header_title' => $siteName,
+            'sidebar_header_description' => self::DEFAULTS['sidebar_header_description'],
+            'sidebar_header_subtitle' => self::DEFAULTS['sidebar_header_subtitle'],
+            'primary_color_rgb' => $this->hexToRgbCsv($primaryColor),
+            'sidebar_color_rgb' => $this->hexToRgbCsv($sidebarColor),
         ];
-
-        $settings['logo_url'] = $this->resolveLogoUrl($logoInstitucionalPath);
-        $settings['logo_institucional_url'] = $settings['logo_url'];
-        $settings['logo_pdf_url'] = $this->resolveLogoUrl($logoPdfPath);
-        $settings['logo_institucional_file_path'] = $this->resolveLogoFilePath($logoInstitucionalPath);
-        $settings['logo_pdf_file_path'] = $this->resolveLogoFilePath($logoPdfPath);
-        $settings['system_logo_url'] = asset('images/system/logo-sistema.png');
-        $settings['primary_color_rgb'] = $this->hexToRgbCsv($settings['primary_color']);
-        $settings['sidebar_color_rgb'] = $this->hexToRgbCsv($settings['sidebar_color']);
-
-        return $this->cachedSettings = (object) $settings;
     }
 
     /**
@@ -70,27 +86,33 @@ class SystemSettingsService
 
             $payload = [
                 'site_name' => trim((string) $input['site_name']) ?: self::DEFAULTS['site_name'],
-                'primary_color' => $this->normalizeColor((string) $input['primary_color']),
-                'sidebar_color' => $this->normalizeColor((string) $input['sidebar_color']),
+                'primary_color' => $this->normalizeColor((string) $input['primary_color'], self::DEFAULTS['primary_color']),
+                'sidebar_color' => $this->normalizeColor((string) $input['sidebar_color'], self::DEFAULTS['sidebar_color']),
             ];
 
             if ($logoInstitucional !== null) {
-                $newPath = $this->storeFixedLogo($logoInstitucional, 'institucional.png', 'logo_institucional');
-                $oldPaths = array_filter([$setting->logo_path, $setting->logo_institucional]);
+                $newPath = $this->publicMediaService->storeUploadedFileAs(
+                    $logoInstitucional,
+                    'logos',
+                    'institucional.png',
+                    'logo_institucional',
+                );
 
                 $payload['logo_path'] = $newPath;
                 $payload['logo_institucional'] = $newPath;
-
-                $this->cleanupOldPaths($oldPaths, $newPath);
+                $this->cleanupOldPaths([$setting->logo_path, $setting->logo_institucional], $newPath);
             }
 
             if ($logoPdf !== null) {
-                $newPath = $this->storeFixedLogo($logoPdf, 'pdf.png', 'logo_pdf');
-                $oldPaths = array_filter([$setting->logo_pdf]);
+                $newPath = $this->publicMediaService->storeUploadedFileAs(
+                    $logoPdf,
+                    'logos',
+                    'pdf.png',
+                    'logo_pdf',
+                );
 
                 $payload['logo_pdf'] = $newPath;
-
-                $this->cleanupOldPaths($oldPaths, $newPath);
+                $this->cleanupOldPaths([$setting->logo_pdf], $newPath);
             }
 
             $setting->fill($payload)->save();
@@ -180,75 +202,34 @@ class SystemSettingsService
             );
     }
 
-    private function storeFixedLogo(UploadedFile $logo, string $filename, string $field): string
-    {
-        $newLogoPath = $logo->storeAs('logos', $filename, 'public');
-
-        if (! is_string($newLogoPath) || $newLogoPath === '') {
-            throw ValidationException::withMessages([
-                $field => 'No fue posible guardar el archivo seleccionado.',
-            ]);
-        }
-
-        return $newLogoPath;
-    }
-
     /**
-     * @param  array<int, string>  $oldPaths
+     * @param  array<int, mixed>  $oldPaths
      */
     private function cleanupOldPaths(array $oldPaths, string $newPath): void
     {
-        foreach (array_unique($oldPaths) as $oldPath) {
-            if ($oldPath === '' || $oldPath === $newPath) {
-                continue;
-            }
-
-            if (Storage::disk('public')->exists($oldPath)) {
-                Storage::disk('public')->delete($oldPath);
-            }
+        foreach ($oldPaths as $oldPath) {
+            $this->publicMediaService->delete($oldPath, $newPath);
         }
     }
 
-    private function resolveLogoUrl(?string $logoPath): ?string
-    {
-        if ($logoPath === null || $logoPath === '') {
-            return null;
-        }
-
-        if (! Storage::disk('public')->exists($logoPath)) {
-            return null;
-        }
-
-        return Storage::disk('public')->url($logoPath);
-    }
-
-    private function resolveLogoFilePath(?string $logoPath): ?string
-    {
-        if ($logoPath === null || $logoPath === '') {
-            return null;
-        }
-
-        if (! Storage::disk('public')->exists($logoPath)) {
-            return null;
-        }
-
-        return Storage::disk('public')->path($logoPath);
-    }
-
-    private function normalizeColor(string $value): string
+    private function normalizeColor(string $value, string $fallback): string
     {
         $hex = strtoupper(ltrim(trim($value), '#'));
 
-        if (strlen($hex) === 3) {
-            $hex = sprintf('%s%s%s%s%s%s', $hex[0], $hex[0], $hex[1], $hex[1], $hex[2], $hex[2]);
+        if (preg_match('/^[A-F0-9]{3}$/', $hex) === 1) {
+            return sprintf('#%1$s%1$s%2$s%2$s%3$s%3$s', $hex[0], $hex[1], $hex[2]);
         }
 
-        return '#'.$hex;
+        if (preg_match('/^[A-F0-9]{6}$/', $hex) === 1) {
+            return '#'.$hex;
+        }
+
+        return $fallback;
     }
 
     private function hexToRgbCsv(string $value): string
     {
-        $hex = ltrim($this->normalizeColor($value), '#');
+        $hex = ltrim($this->normalizeColor($value, self::DEFAULTS['primary_color']), '#');
 
         return sprintf(
             '%d, %d, %d',
@@ -263,12 +244,15 @@ class SystemSettingsService
      */
     private function settingsAuditSnapshot(?SystemSetting $setting): array
     {
+        $logoInstitucional = $this->publicMediaService->normalizeStoredPath($setting?->logo_institucional ?: $setting?->logo_path);
+        $logoPdf = $this->publicMediaService->normalizeStoredPath($setting?->logo_pdf);
+
         return [
             'site_name' => $setting?->site_name ?: self::DEFAULTS['site_name'],
-            'primary_color' => $this->normalizeColor((string) ($setting?->primary_color ?: self::DEFAULTS['primary_color'])),
-            'sidebar_color' => $this->normalizeColor((string) ($setting?->sidebar_color ?: self::DEFAULTS['sidebar_color'])),
-            'logo_institucional' => $setting?->logo_institucional ? 'Configurado' : 'No configurado',
-            'logo_pdf' => $setting?->logo_pdf ? 'Configurado' : 'No configurado',
+            'primary_color' => $this->normalizeColor((string) ($setting?->primary_color ?: self::DEFAULTS['primary_color']), self::DEFAULTS['primary_color']),
+            'sidebar_color' => $this->normalizeColor((string) ($setting?->sidebar_color ?: self::DEFAULTS['sidebar_color']), self::DEFAULTS['sidebar_color']),
+            'logo_institucional' => $logoInstitucional !== null ? 'Configurado' : 'No configurado',
+            'logo_pdf' => $logoPdf !== null ? 'Configurado' : 'No configurado',
         ];
     }
 }

@@ -211,6 +211,65 @@ class ActaPdfTemplateTest extends TestCase
         $this->assertStringNotContainsString('Cant.', $html);
     }
 
+    public function test_pdf_template_no_reutiliza_logo_institucional_cuando_no_hay_logo_pdf(): void
+    {
+        Storage::fake('public');
+
+        Storage::disk('public')->put('logos/institucional.png', 'institucional');
+
+        SystemSetting::query()->create([
+            'site_name' => 'Sistema Provincial de Activos',
+            'primary_color' => '#1F2937',
+            'sidebar_color' => '#1F2937',
+            'logo_path' => 'logos/institucional.png',
+            'logo_institucional' => 'logos/institucional.png',
+            'logo_pdf' => null,
+        ]);
+
+        Cache::forget(system_config_cache_key());
+
+        [$user, $institution, $service, $office] = $this->crearEscenarioBase('SinPdf');
+
+        $acta = Acta::query()->create([
+            'institution_id' => $institution->id,
+            'tipo' => Acta::TIPO_ENTREGA,
+            'fecha' => now()->toDateString(),
+            'status' => Acta::STATUS_ACTIVA,
+            'created_by' => $user->id,
+            'evento_payload' => [
+                'institution_id' => $institution->id,
+                'institution_name' => $institution->nombre,
+                'origenes_por_equipo' => [],
+            ],
+        ]);
+
+        $equipo = $this->crearEquipo($office, 'SINPDF');
+        $acta->equipos()->attach($equipo->id, [
+            'cantidad' => 1,
+            'institucion_origen_id' => $institution->id,
+            'institucion_origen_nombre' => $institution->nombre,
+            'servicio_origen_id' => $service->id,
+            'servicio_origen_nombre' => $service->nombre,
+            'oficina_origen_id' => $office->id,
+            'oficina_origen_nombre' => $office->nombre,
+        ]);
+
+        $pdfData = app(ActaPdfDataService::class)->build($acta->load([
+            'institution',
+            'creator',
+            'equipos.tipoEquipo',
+            'equipos.oficina.service.institution',
+        ]));
+
+        $this->assertNull($pdfData['pdfHeaderLogoPath']);
+        $this->assertNull($pdfData['pdfHeaderMastheadPath']);
+
+        $html = view('actas.pdf.entrega', array_merge(['acta' => $acta], $pdfData))->render();
+
+        $this->assertStringNotContainsString('class="masthead-image"', $html);
+        $this->assertStringContainsString('<div class="header-kicker">Gestion institucional de activos</div>', $html);
+    }
+
     public function test_pdf_template_centra_watermark_en_actas_anuladas(): void
     {
         Storage::fake('public');

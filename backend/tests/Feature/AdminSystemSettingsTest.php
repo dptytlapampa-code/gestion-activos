@@ -6,6 +6,7 @@ use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -103,6 +104,41 @@ class AdminSystemSettingsTest extends TestCase
 
         Storage::disk('public')->assertExists('logos/institucional.png');
         Storage::disk('public')->assertExists('logos/pdf.png');
+    }
+
+    public function test_system_config_normaliza_rutas_legacy_y_expone_urls_relativas_con_cache_busting(): void
+    {
+        Storage::fake('public');
+
+        Storage::disk('public')->put('logos/institucional.png', 'institucional');
+        Storage::disk('public')->put('logos/pdf.png', 'pdf');
+
+        SystemSetting::query()->create([
+            'site_name' => 'Hospital Regional Norte',
+            'primary_color' => '#112233',
+            'sidebar_color' => '#334455',
+            'logo_path' => storage_path('app/public/logos/institucional.png'),
+            'logo_institucional' => 'http://localhost:8080/storage/logos/institucional.png',
+            'logo_pdf' => '/storage/logos/pdf.png',
+        ]);
+
+        Cache::forget(system_config_cache_key());
+
+        $settings = system_config();
+
+        $this->assertSame('logos/institucional.png', $settings->logo_path);
+        $this->assertSame('logos/institucional.png', $settings->logo_institucional);
+        $this->assertSame('logos/pdf.png', $settings->logo_pdf);
+        $this->assertStringStartsWith('/storage/logos/institucional.png?v=', $settings->logo_institucional_url);
+        $this->assertStringStartsWith('/storage/logos/pdf.png?v=', $settings->logo_pdf_url);
+        $this->assertSame(
+            Storage::disk('public')->path('logos/institucional.png'),
+            $settings->logo_institucional_file_path
+        );
+        $this->assertSame(
+            Storage::disk('public')->path('logos/pdf.png'),
+            $settings->logo_pdf_file_path
+        );
     }
 
     private function crearUsuario(string $role): User

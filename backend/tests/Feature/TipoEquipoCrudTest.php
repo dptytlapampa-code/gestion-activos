@@ -121,6 +121,23 @@ class TipoEquipoCrudTest extends TestCase
         Storage::disk('public')->assertMissing($oldPath);
     }
 
+    public function test_tipo_equipo_resuelve_imagenes_legacy_con_url_publica_versionada(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('tipos-equipos/monitor-cctv.png', 'png');
+
+        $tipoEquipo = TipoEquipo::create([
+            'nombre' => 'Camara CCTV',
+            'descripcion' => 'Tipo con ruta legacy.',
+            'image_path' => 'storage/app/public/tipos-equipos/monitor-cctv.png',
+        ]);
+
+        $tipoEquipo->refresh();
+
+        $this->assertSame('tipos-equipos/monitor-cctv.png', $tipoEquipo->image_path);
+        $this->assertStringStartsWith('/storage/tipos-equipos/monitor-cctv.png?v=', $tipoEquipo->image_url);
+    }
+
     public function test_user_can_delete_tipo_equipo(): void
     {
         $user = $this->createUser(User::ROLE_SUPERADMIN);

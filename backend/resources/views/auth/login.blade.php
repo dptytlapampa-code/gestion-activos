@@ -6,14 +6,21 @@
     @php
         $systemConfig = system_config();
         $siteName = $systemConfig->nombre_sistema;
-        $systemLogoUrl = $systemConfig->system_logo_url;
         $logoInstitucionalUrl = $systemConfig->logo_url;
-        $loginLogoUrl = $logoInstitucionalUrl ?: $systemLogoUrl;
     @endphp
 
     <div class="card">
         <div class="flex flex-col items-center text-center">
-            <img src="{{ $loginLogoUrl }}" alt="Logo institucional" class="h-16 w-auto rounded-lg bg-surface-100 p-2">
+            @if ($logoInstitucionalUrl)
+                <img src="{{ $logoInstitucionalUrl }}" alt="Logo institucional" class="h-16 w-auto rounded-lg bg-surface-100 p-2">
+            @else
+                <div class="flex h-16 w-full max-w-[14rem] items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 text-sm font-medium text-slate-500">
+                    <span class="inline-flex items-center gap-2">
+                        <x-icon name="image" class="h-4 w-4" />
+                        Sin logo institucional
+                    </span>
+                </div>
+            @endif
             <h1 class="mt-3 text-xl font-semibold text-surface-800">{{ $siteName }}</h1>
             <p class="mt-1 text-sm text-surface-500">Acceso al sistema</p>
             <p class="mt-1 text-sm text-surface-500">Ingresa con tus credenciales institucionales.</p>

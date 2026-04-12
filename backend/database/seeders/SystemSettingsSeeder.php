@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\SystemSetting;
+use App\Services\PublicMediaService;
 use Illuminate\Database\Seeder;
 
 class SystemSettingsSeeder extends Seeder
@@ -26,7 +27,9 @@ class SystemSettingsSeeder extends Seeder
             return;
         }
 
-        $logoInstitucional = $setting->logo_institucional ?: $setting->logo_path;
+        $publicMediaService = app(PublicMediaService::class);
+        $logoInstitucional = $publicMediaService->normalizeStoredPath($setting->logo_institucional ?: $setting->logo_path);
+        $logoPdf = $publicMediaService->normalizeStoredPath($setting->logo_pdf);
 
         $setting->fill([
             'site_name' => $setting->site_name ?: $defaults['site_name'],
@@ -34,7 +37,7 @@ class SystemSettingsSeeder extends Seeder
             'sidebar_color' => $setting->sidebar_color ?: $defaults['sidebar_color'],
             'logo_path' => $logoInstitucional,
             'logo_institucional' => $logoInstitucional,
-            'logo_pdf' => $setting->logo_pdf,
+            'logo_pdf' => $logoPdf,
         ])->save();
 
         SystemSetting::query()
