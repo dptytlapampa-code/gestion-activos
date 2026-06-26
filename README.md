@@ -7,6 +7,8 @@
 
 ## Inicio rápido (desde clone limpio)
 
+Todos los comandos de PHP, Composer y Laravel deben ejecutarse dentro de Docker, usando el contenedor `app`. No ejecutes `composer` ni `php artisan` directamente en el host.
+
 ```bash
 git clone https://github.com/dptytlapampa-code/gestion-activos.git
 cd gestion-activos
@@ -27,6 +29,8 @@ Si activás `RUN_MIGRATIONS=true`, el seeder crea un usuario inicial para autent
 - **Password**: `password`
 
 ## Comandos útiles
+
+Estos comandos también deben ejecutarse desde Docker Compose; los comandos de Laravel se invocan siempre dentro del contenedor `app`.
 
 ```bash
 docker compose ps
